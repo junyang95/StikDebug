@@ -462,9 +462,9 @@ struct HeartbeatApp: App {
     @Environment(\.scenePhase) private var scenePhase   // Observe scene lifecycle
     
     let urls: [String] = [
-        "https://static.wow-app.store/Xcode_iOS_DDI_Personalized/BuildManifest.plist",
-        "https://static.wow-app.store/Xcode_iOS_DDI_Personalized/Image.dmg",
-        "https://static.wow-app.store/Xcode_iOS_DDI_Personalized/Image.dmg.trustcache"
+        "https://cdn.wow-app.store/Xcode_iOS_DDI_Personalized/BuildManifest.plist",
+        "https://cdn.wow-app.store/Xcode_iOS_DDI_Personalized/Image.dmg",
+        "https://cdn.wow-app.store/Xcode_iOS_DDI_Personalized/Image.dmg.trustcache"
     ]
     
     let outputDir: String = "DDI"
