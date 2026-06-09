@@ -35,6 +35,11 @@ jobs:
           LOCAL=$(git rev-parse HEAD)
           UPSTREAM=$(git rev-parse upstream/main)
 
+          # Generate version
+          SHORT_SHA=$(git rev-parse --short upstream/main)
+          DATE=$(date +%Y%m%d)
+          echo "version=${DATE}-${SHORT_SHA}" >> $GITHUB_OUTPUT
+
           # Check if upstream has new commits not in our branch
           NEW_COMMITS=$(git rev-list HEAD..upstream/main --count)
           if [ "$NEW_COMMITS" -eq 0 ]; then
@@ -50,15 +55,10 @@ jobs:
 
           git push origin main
 
-          # Version from upstream's latest commit
-          SHORT_SHA=$(git rev-parse --short upstream/main)
-          DATE=$(date +%Y%m%d)
-          echo "version=${DATE}-${SHORT_SHA}" >> $GITHUB_OUTPUT
-
   build:
     name: Build IPA
     needs: sync
-    if: needs.sync.outputs.has_changes == 'true'
+    if: needs.sync.outputs.has_changes == 'true' || github.event_name == 'workflow_dispatch'
     runs-on: macos-latest
 
     steps:
