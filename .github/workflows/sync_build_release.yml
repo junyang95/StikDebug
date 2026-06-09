@@ -1,0 +1,156 @@
+name: Sync, Build & Release IPA
+
+on:
+  schedule:
+    - cron: '0 8 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    name: Sync Upstream
+    runs-on: ubuntu-latest
+    outputs:
+      has_changes: ${{ steps.sync.outputs.has_changes }}
+      version: ${{ steps.sync.outputs.version }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Sync from upstream
+        id: sync
+        run: |
+          git config user.name 'GitHub Action'
+          git config user.email 'action@github.com'
+
+          git remote add upstream https://github.com/StephenDev0/StikDebug.git
+          git fetch upstream main
+
+          LOCAL=$(git rev-parse HEAD)
+          UPSTREAM=$(git rev-parse upstream/main)
+
+          if [ "$LOCAL" = "$UPSTREAM" ]; then
+            echo "has_changes=false" >> $GITHUB_OUTPUT
+            echo "No new upstream changes."
+            exit 0
+          fi
+
+          echo "has_changes=true" >> $GITHUB_OUTPUT
+
+          # Save our workflows before sync
+          cp -r .github/workflows /tmp/our_workflows
+
+          # Sync to upstream
+          git reset --hard upstream/main
+
+          # Restore our workflows
+          mkdir -p .github/workflows
+          cp /tmp/our_workflows/* .github/workflows/
+          git add .github/workflows/
+          git commit -m "Sync upstream $(date +%Y-%m-%d)"
+
+          git push origin main --force
+
+          # Generate version from upstream commit
+          SHORT_SHA=$(git rev-parse --short upstream/main)
+          DATE=$(date +%Y%m%d)
+          echo "version=${DATE}-${SHORT_SHA}" >> $GITHUB_OUTPUT
+
+  build:
+    name: Build IPA
+    needs: sync
+    if: needs.sync.outputs.has_changes == 'true'
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Replace DDI URLs
+        run: |
+          TARGET_FILE="StikDebug/Services/DeveloperDiskImageService.swift"
+
+          sed -i '' \
+            's|https://github.com/doronz88/DeveloperDiskImage/raw/refs/heads/main/PersonalizedImages/Xcode_iOS_DDI_Personalized/BuildManifest.plist|https://static.wow-app.store/Xcode_iOS_DDI_Personalized/BuildManifest.plist|g' \
+            "$TARGET_FILE"
+
+          sed -i '' \
+            's|https://github.com/doronz88/DeveloperDiskImage/raw/refs/heads/main/PersonalizedImages/Xcode_iOS_DDI_Personalized/Image.dmg.trustcache|https://static.wow-app.store/Xcode_iOS_DDI_Personalized/Image.dmg.trustcache|g' \
+            "$TARGET_FILE"
+
+          sed -i '' \
+            's|https://github.com/doronz88/DeveloperDiskImage/raw/refs/heads/main/PersonalizedImages/Xcode_iOS_DDI_Personalized/Image.dmg|https://static.wow-app.store/Xcode_iOS_DDI_Personalized/Image.dmg|g' \
+            "$TARGET_FILE"
+
+          # Verify replacements succeeded
+          if grep -q "github.com/doronz88/DeveloperDiskImage" "$TARGET_FILE"; then
+            echo "::error::URL replacement failed - old URLs still present"
+            exit 1
+          fi
+          echo "URLs replaced successfully"
+
+      - name: Configure Xcode Environment
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: '26.0.1'
+
+      - name: Compile Project Archive
+        run: |
+          xcodebuild clean archive \
+            -project StikDebug.xcodeproj \
+            -scheme "StikDebug" \
+            -configuration Debug \
+            -archivePath build/StikDebug.xcarchive \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            ONLY_ACTIVE_ARCH=NO \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO \
+            SWIFT_OPTIMIZATION_LEVEL="-Onone" \
+            IPHONEOS_DEPLOYMENT_TARGET=17.4
+
+      - name: Package .app into .ipa
+        run: |
+          cp -R build/StikDebug.xcarchive/Products/Applications/StikDebug.app .
+          mkdir -p Payload
+          cp -R StikDebug.app Payload/
+          zip -r StikDebug.ipa Payload
+          rm -rf Payload StikDebug.app
+
+      - name: Upload IPA artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: StikDebug-Debug.ipa
+          path: StikDebug.ipa
+          retention-days: 7
+
+  release:
+    name: Create Release
+    needs: [sync, build]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download IPA artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: StikDebug-Debug.ipa
+          path: .
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ needs.sync.outputs.version }}
+          name: StikDebug ${{ needs.sync.outputs.version }}
+          body: |
+            Auto-built from upstream [StephenDev0/StikDebug](https://github.com/StephenDev0/StikDebug) @ ${{ needs.sync.outputs.version }}
+          files: StikDebug.ipa
+          make_latest: true
