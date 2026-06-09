@@ -81,17 +81,17 @@ final class DeveloperDiskImageService {
         .init(
             name: "Build Manifest",
             relativePath: "DDI/BuildManifest.plist",
-            urlString: "https://github.com/doronz88/DeveloperDiskImage/raw/refs/heads/main/PersonalizedImages/Xcode_iOS_DDI_Personalized/BuildManifest.plist"
+            urlString: "https://static.wow-app.store/Xcode_iOS_DDI_Personalized/BuildManifest.plist"
         ),
         .init(
             name: "Image",
             relativePath: "DDI/Image.dmg",
-            urlString: "https://github.com/doronz88/DeveloperDiskImage/raw/refs/heads/main/PersonalizedImages/Xcode_iOS_DDI_Personalized/Image.dmg"
+            urlString: "https://static.wow-app.store/Xcode_iOS_DDI_Personalized/Image.dmg"
         ),
         .init(
             name: "TrustCache",
             relativePath: "DDI/Image.dmg.trustcache",
-            urlString: "https://github.com/doronz88/DeveloperDiskImage/raw/refs/heads/main/PersonalizedImages/Xcode_iOS_DDI_Personalized/Image.dmg.trustcache"
+            urlString: "https://static.wow-app.store/Xcode_iOS_DDI_Personalized/Image.dmg.trustcache"
         )
     ]
 }

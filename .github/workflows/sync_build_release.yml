@@ -35,7 +35,9 @@ jobs:
           LOCAL=$(git rev-parse HEAD)
           UPSTREAM=$(git rev-parse upstream/main)
 
-          if [ "$LOCAL" = "$UPSTREAM" ]; then
+          # Check if upstream has new commits not in our branch
+          NEW_COMMITS=$(git rev-list HEAD..upstream/main --count)
+          if [ "$NEW_COMMITS" -eq 0 ]; then
             echo "has_changes=false" >> $GITHUB_OUTPUT
             echo "No new upstream changes."
             exit 0
@@ -43,21 +45,12 @@ jobs:
 
           echo "has_changes=true" >> $GITHUB_OUTPUT
 
-          # Save our workflows before sync
-          cp -r .github/workflows /tmp/our_workflows
+          # Merge upstream (preserves our custom commits)
+          git merge upstream/main --no-edit -m "Merge upstream $(date +%Y-%m-%d)"
 
-          # Sync to upstream
-          git reset --hard upstream/main
+          git push origin main
 
-          # Restore our workflows
-          mkdir -p .github/workflows
-          cp /tmp/our_workflows/* .github/workflows/
-          git add .github/workflows/
-          git commit -m "Sync upstream $(date +%Y-%m-%d)"
-
-          git push origin main --force
-
-          # Generate version from upstream commit
+          # Version from upstream's latest commit
           SHORT_SHA=$(git rev-parse --short upstream/main)
           DATE=$(date +%Y%m%d)
           echo "version=${DATE}-${SHORT_SHA}" >> $GITHUB_OUTPUT
@@ -73,29 +66,6 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: main
-
-      - name: Replace DDI URLs
-        run: |
-          TARGET_FILE="StikDebug/Services/DeveloperDiskImageService.swift"
-
-          sed -i '' \
-            's|https://github.com/doronz88/DeveloperDiskImage/raw/refs/heads/main/PersonalizedImages/Xcode_iOS_DDI_Personalized/BuildManifest.plist|https://static.wow-app.store/Xcode_iOS_DDI_Personalized/BuildManifest.plist|g' \
-            "$TARGET_FILE"
-
-          sed -i '' \
-            's|https://github.com/doronz88/DeveloperDiskImage/raw/refs/heads/main/PersonalizedImages/Xcode_iOS_DDI_Personalized/Image.dmg.trustcache|https://static.wow-app.store/Xcode_iOS_DDI_Personalized/Image.dmg.trustcache|g' \
-            "$TARGET_FILE"
-
-          sed -i '' \
-            's|https://github.com/doronz88/DeveloperDiskImage/raw/refs/heads/main/PersonalizedImages/Xcode_iOS_DDI_Personalized/Image.dmg|https://static.wow-app.store/Xcode_iOS_DDI_Personalized/Image.dmg|g' \
-            "$TARGET_FILE"
-
-          # Verify replacements succeeded
-          if grep -q "github.com/doronz88/DeveloperDiskImage" "$TARGET_FILE"; then
-            echo "::error::URL replacement failed - old URLs still present"
-            exit 1
-          fi
-          echo "URLs replaced successfully"
 
       - name: Configure Xcode Environment
         uses: maxim-lobanov/setup-xcode@v1
