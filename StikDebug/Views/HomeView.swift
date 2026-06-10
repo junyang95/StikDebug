@@ -68,7 +68,7 @@ struct HomeView: View {
                 performExternalURLAction(action)
                 pendingExternalURLAction = nil
             }
-            Button("Cancel", role: .cancel) {
+            Button("取消", role: .cancel) {
                 pendingExternalURLAction = nil
             }
         } message: { action in
@@ -84,7 +84,7 @@ struct HomeView: View {
                 RunJSView(model: model)
                     .toolbar {
                         ToolbarItem(placement: .topBarTrailing) {
-                            Button("Done") { scriptRunModel = nil }
+                            Button("完成") { scriptRunModel = nil }
                         }
                     }
                     .navigationBarTitleDisplayMode(.inline)
@@ -275,15 +275,15 @@ struct HomeView: View {
             } catch {
                 semaphore.signal()
                 DispatchQueue.main.async {
-                    showAlert(title: "Error Occurred While Executing Script.".localized, message: error.localizedDescription, showOk: true)
+                    showAlert(title: "脚本执行出错", message: error.localizedDescription, showOk: true)
                 }
             }
         }
     }
 
     private func startJITInBackground(bundleID: String? = nil, pid: Int? = nil, scriptData: Data? = nil, scriptName: String? = nil, triggeredByURLScheme: Bool = false, displayName: String? = nil) {
-        let targetName = displayName ?? bundleID ?? pid.map { String(format: "process %d".localized, $0) } ?? "app".localized
-        let startingMessage = String(format: "Starting JIT for %@".localized, targetName)
+        let targetName = displayName ?? bundleID ?? pid.map { String(format: "进程 %d", $0) } ?? "应用"
+        let startingMessage = String(format: "正在为 %@ 启用 JIT", targetName)
         LogManager.shared.addInfoLog("Starting Debug for \(bundleID ?? String(pid ?? 0))")
         withAnimation {
             debugFeedback = DebugFeedback(message: startingMessage, isError: false, isWorking: true)
@@ -306,8 +306,8 @@ struct HomeView: View {
             let finishProcessing: (Bool, String?) -> Void = { success, detail in
                 DispatchQueue.main.async {
                     let message = success
-                        ? String(format: "JIT request completed for %@".localized, targetName)
-                        : String(format: "JIT failed for %@".localized, targetName)
+                        ? String(format: "%@ JIT 已启用", targetName)
+                        : String(format: "%@ JIT 启用失败", targetName)
                     let feedback = DebugFeedback(message: message, isError: !success, isWorking: false)
                     withAnimation {
                         debugFeedback = feedback
@@ -323,8 +323,8 @@ struct HomeView: View {
                     }
 
                     if !success {
-                        let failureMessage = detail ?? "StikDebug could not launch or attach to the selected app. Check that the VPN is enabled, the pairing file is current, and the app is still installed.".localized
-                        showAlert(title: "Failed to Enable JIT".localized, message: failureMessage, showOk: true)
+                        let failureMessage = detail ?? "无法启动或附加到所选应用。请检查 VPN 是否开启、配对文件是否有效、应用是否已安装。"
+                        showAlert(title: "JIT 启用失败", message: failureMessage, showOk: true)
                     }
                 }
             }
@@ -356,7 +356,7 @@ struct HomeView: View {
             } else if let bundleID {
                 success = JITEnableContext.shared.debugApp(withBundleID: bundleID, logger: logger, jsCallback: callback)
             } else {
-                lastDebugMessage = "Either bundle ID or PID should be specified.".localized
+                lastDebugMessage = "需要指定 Bundle ID 或 PID。"
                 success = false
             }
 

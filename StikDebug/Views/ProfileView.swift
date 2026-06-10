@@ -140,13 +140,13 @@ struct ProfileView: View {
                     Section {
                         HStack {
                             Spacer()
-                            ProgressView("Loading...")
+                            ProgressView("加载中…")
                             Spacer()
                         }
                     }
                 } else if entries.isEmpty && notMatchedProfiles.isEmpty {
                     Section {
-                        Text("No profiles found.")
+                        Text("未找到描述文件")
                             .foregroundStyle(.secondary)
                     }
                 }
@@ -158,14 +158,14 @@ struct ProfileView: View {
                             if let match = entry.bestMatchingProfile {
                                 HStack {
                                     Image(systemName: "clock")
-                                    Text("Expires: \(match.profile.formattedDate)")
+                                    Text("到期: \(match.profile.formattedDate)")
                                 }
                                 .foregroundStyle(match.profile.dateColor)
                                 .font(.subheadline)
                             } else {
                                 HStack {
                                     Image(systemName: "exclamationmark.triangle")
-                                    Text("No matching profile")
+                                    Text("无匹配的描述文件")
                                 }
                                 .font(.subheadline)
                                 .foregroundColor(.refreshRed)
@@ -203,7 +203,7 @@ struct ProfileView: View {
                                         else { expandedApps.insert(entry.id) }
                                     }
                                 } label: {
-                                    Label(showMore ? "Hide older profiles" : "Show \(extraProfiles.count) older profiles",
+                                    Label(showMore ? "收起" : "显示 \(extraProfiles.count) 个旧版本",
                                           systemImage: showMore ? "chevron.up" : "chevron.down")
                                         .font(.caption)
                                         .foregroundStyle(.blue)
@@ -216,7 +216,7 @@ struct ProfileView: View {
                 }
                 
                 if !notMatchedProfiles.isEmpty {
-                    Section("Other Profiles") {
+                    Section("其他描述文件") {
                         ForEach(notMatchedProfiles) { entry in
                             VStack(alignment: .leading) {
                                 Text(entry.id)
@@ -232,19 +232,19 @@ struct ProfileView: View {
                 }
             }
             .listStyle(.insetGrouped)
-            .navigationTitle("App Expiry")
+            .navigationTitle("证书有效期")
             .toolbar {
                 ToolbarItemGroup(placement: .navigationBarTrailing) {
                     Button {
                         isImporterPresented = true
                     } label: {
-                        Label("Add", systemImage: "plus")
+                        Label("添加", systemImage: "plus")
                     }
-                    
+
                     Button {
                         Task { await loadData(force: true) }
                     } label: {
-                        Label("Reload", systemImage: "arrow.clockwise")
+                        Label("刷新", systemImage: "arrow.clockwise")
                     }
                     
                 }
@@ -276,13 +276,13 @@ struct ProfileView: View {
         } message: {
             Text(alertMsg)
         }
-        .alert("Confirm Removal", isPresented: $confirmRemove) {
-            Button("Remove", role: .destructive) {
+        .alert("确认移除", isPresented: $confirmRemove) {
+            Button("移除", role: .destructive) {
                 Task { await removeProfile(uuid: removeTargetUUID) }
             }
-            Button("Cancel", role: .cancel) { }
+            Button("取消", role: .cancel) { }
         } message: {
-            Text("Remove profile for \(removeTargetName) (UUID: \(removeTargetUUID))?\nApps associated with this profile may become unavailable.")
+            Text("移除 \(removeTargetName) 的描述文件 (UUID: \(removeTargetUUID))？\n关联的应用可能无法使用。")
         }
     }
     
@@ -309,7 +309,7 @@ struct ProfileView: View {
     private func profileRow(match: ProfileMatch, isMostRecent: Bool) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack {
-                Text(isMostRecent ? "Most Recent Profile" : "Profile")
+                Text(isMostRecent ? "最新描述文件" : "描述文件")
                     .font(.subheadline.bold())
                     .foregroundStyle(.primary)
                 Spacer()
@@ -339,7 +339,7 @@ struct ProfileView: View {
             }
             if !match.missingEntitlements.isEmpty {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Missing entitlements:")
+                    Text("缺少的权限:")
                         .font(.caption)
                         .foregroundColor(.refreshRed)
                     ForEach(Array(formattedMissingLines(from: match.missingEntitlements).enumerated()), id: \.offset) { _, line in
@@ -415,7 +415,7 @@ struct ProfileView: View {
             }
         } catch {
             await MainActor.run {
-                alertTitle = "Failed to load"
+                alertTitle = "加载失败"
                 alertMsg = error.localizedDescription
                 alertSuccess = false
                 alert = true
@@ -545,15 +545,15 @@ struct ProfileView: View {
         working = true
         do {
             try JITEnableContext.shared.removeProfile(withUUID: uuid)
-            alertMsg = "Profile removed successfully"
-            alertTitle = "Success"
+            alertMsg = "描述文件已移除"
+            alertTitle = "成功"
             alertSuccess = true
             alert = true
             // Reload profiles after removal
             await loadData(force: true)
         } catch {
             alertMsg = error.localizedDescription
-            alertTitle = "Failed to Remove Profile"
+            alertTitle = "移除失败"
             alertSuccess = false
             alert = true
         }
@@ -579,8 +579,8 @@ struct ProfileView: View {
             let profileData = try Data(contentsOf: fileURL)
             try JITEnableContext.shared.addProfile(profileData)
             
-            alertMsg = "Profile added successfully"
-            alertTitle = "Success"
+            alertMsg = "描述文件已添加"
+            alertTitle = "成功"
             alertSuccess = true
             alert = true
             
@@ -588,7 +588,7 @@ struct ProfileView: View {
             await loadData(force: true)
         } catch {
             alertMsg = error.localizedDescription
-            alertTitle = "Failed to Add Profile"
+            alertTitle = "添加失败"
             alertSuccess = false
             alert = true
         }
