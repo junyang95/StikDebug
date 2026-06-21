@@ -323,8 +323,16 @@ struct HomeView: View {
                     }
 
                     if !success {
-                        let failureMessage = detail ?? "无法启动或附加到所选应用。请检查 VPN 是否开启、配对文件是否有效、应用是否已安装。"
-                        showAlert(title: "JIT 启用失败", message: failureMessage, showOk: true)
+                        if let detail, detail.localizedCaseInsensitiveContains("ServiceNotFound") {
+                            showAlert(
+                                title: "请稍候",
+                                message: "DDI 尚未挂载完成，请等待挂载完成后重试（通常需要 1~2 分钟）。",
+                                showOk: true
+                            )
+                        } else {
+                            let failureMessage = detail ?? "无法启动或附加到所选应用。请检查 VPN 是否开启、配对文件是否有效、应用是否已安装。"
+                            showAlert(title: "JIT 启用失败", message: failureMessage, showOk: true)
+                        }
                     }
                 }
             }
