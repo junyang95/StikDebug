@@ -175,6 +175,14 @@ struct HomeView: View {
             }
             if let scriptName = queryValue(["script-name", "scriptName", "script_name"], in: components) {
                 config.scriptName = scriptName
+                if config.scriptData == nil {
+                    if let namedScript = ScriptStore.script(named: scriptName) {
+                        config.scriptData = namedScript.data
+                        config.scriptName = namedScript.name
+                    } else {
+                        LogManager.shared.addWarningLog("Script \(scriptName) was not found in the scripts folder")
+                    }
+                }
             }
             if config.scriptData == nil, let bundleID = config.bundleID,
                let scriptInfo = ScriptStore.preferredScript(for: bundleID) {
@@ -259,12 +267,13 @@ struct HomeView: View {
         .accessibilityLabel(feedback.message)
     }
 
-    private func getJsCallback(_ script: Data, name: String? = nil) -> DebugAppCallback {
+    private func getJsCallback(_ script: Data, name: String? = nil, resumeBundleID: String? = nil) -> DebugAppCallback {
         return { pid, debugProxyHandle, remoteServerHandle, semaphore in
             let model = RunJSViewModel(pid: Int(pid),
                                        debugProxy: debugProxyHandle,
                                        remoteServer: remoteServerHandle,
-                                       semaphore: semaphore)
+                                       semaphore: semaphore,
+                                       resumeBundleID: resumeBundleID)
 
             DispatchQueue.main.async {
                 scriptRunModel = model
@@ -299,8 +308,18 @@ struct HomeView: View {
             let keepAliveLease = DebugKeepAliveLease()
             defer { keepAliveLease.invalidate() }
 
-            if triggeredByURLScheme {
-                sleep(1)
+            if triggeredByURLScheme, !waitForJITPrerequisites() {
+                DispatchQueue.main.async {
+                    withAnimation {
+                        debugFeedback = nil
+                    }
+                    showAlert(
+                        title: "Failed to Enable JIT".localized,
+                        message: "The device connection or Developer Disk Image wasn't ready in time. Open StikDebug directly, wait for it to finish connecting, then try again.".localized,
+                        showOk: true
+                    )
+                }
+                return
             }
 
             let finishProcessing: (Bool, String?) -> Void = { success, detail in
@@ -346,9 +365,11 @@ struct HomeView: View {
                 scriptData = preferred.data
             }
 
+            let resumeBundleID = pid == nil ? nil : bundleID
+
             var callback: DebugAppCallback? = nil
             if ProcessInfo.processInfo.hasTXM, let sd = scriptData {
-                callback = getJsCallback(sd, name: scriptName ?? bundleID ?? "Script")
+                callback = getJsCallback(sd, name: scriptName ?? bundleID ?? "Script", resumeBundleID: resumeBundleID)
             }
 
             var lastDebugMessage: String?
@@ -379,6 +400,17 @@ struct HomeView: View {
             }
             finishProcessing(success, success ? nil : lastDebugMessage)
         }
+    }
+
+    private func waitForJITPrerequisites(timeout: TimeInterval = 20) -> Bool {
+        let deadline = Date().addingTimeInterval(timeout)
+        while Date() < deadline {
+            if TunnelManager.shared.isConnected && MountingProgress.shared.coolisMounted {
+                return true
+            }
+            usleep(250_000)
+        }
+        return TunnelManager.shared.isConnected && MountingProgress.shared.coolisMounted
     }
 
     private func base64URLToBase64(_ base64url: String) -> String {

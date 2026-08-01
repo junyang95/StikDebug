@@ -20,6 +20,7 @@ extension ScriptStore {
                 "Manic EMU",
                 "Manic",
                 "DukeX",
+                "TachyonU",
             ],
             resource: ScriptResource(resourceName: "universal", fileName: "universal.js")
         ),
@@ -36,7 +37,7 @@ extension ScriptStore {
                 "Flycast",
                 "ARMSX2 iOS"
             ],
-            resource: ScriptResource(resourceName: "UTM-Dolphin", fileName: "UTM-Dolphin.js")
+            resource: ScriptResource(resourceName: "legacy", fileName: "legacy.js")
         ),
         AutoScriptAssignment(
             appNames: [
