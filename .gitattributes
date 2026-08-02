@@ -1,0 +1,8 @@
+# 同步上游时冲突一律保留我方的 CI 配置。
+#
+# 原因：sync_build_release.yml 里的 sync job 用默认 GITHUB_TOKEN 推送，而 GitHub
+# 禁止 GITHUB_TOKEN 推送 .github/workflows/ 下的任何改动，因此这个目录必须始终
+# 保持我方版本。sync 脚本会在合并后还原该目录；这里的 merge=ours 负责处理还原
+# 之后再次与上游产生冲突的情况（需要 `git config merge.ours.driver true`，
+# 脚本里已配置）。
+.github/workflows/** merge=ours

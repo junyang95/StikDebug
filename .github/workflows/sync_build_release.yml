@@ -50,8 +50,20 @@ jobs:
 
           echo "has_changes=true" >> $GITHUB_OUTPUT
 
+          # 让 .gitattributes 里 `merge=ours` 的路径生效（冲突时保留我方版本）
+          git config merge.ours.driver true
+
           # Merge upstream (preserves our custom commits)
           git merge upstream/main --no-edit -m "Merge upstream $(date +%Y-%m-%d)"
+
+          # GITHUB_TOKEN 无权推送 .github/workflows/ 下的任何改动（这是 GitHub 的硬性
+          # 限制，permissions 里没有可以打开的开关），所以合并后把该目录还原成我方版本。
+          if ! git diff --quiet "$LOCAL" HEAD -- .github/workflows; then
+            echo "Upstream touched .github/workflows/, restoring our version."
+            git rm -r -q --cached .github/workflows
+            git checkout "$LOCAL" -- .github/workflows
+            git commit -q -m "Keep our workflows (GITHUB_TOKEN cannot push workflow changes)"
+          fi
 
           git push origin main
 
