@@ -37,7 +37,7 @@
 > [!NOTE]
 > **Notice:** StikDebug is no longer available on the App Store. Please use the official download methods below.
 
-<h1>
+<h3>
 <div align="center" style="display: flex; justify-content: center; align-items: center; gap: 16px; flex-wrap: wrap;">
    <a href="https://altdirect.app/?url=https://stikdebug.xyz/index.json" target="_blank">
      <img src="https://altdirect.app/assets/png/AltSource_Blue.png" alt="Add AltSource" width="200">
@@ -46,7 +46,7 @@
      <img src="https://altdirect.app/assets/png/Download_Blue.png" alt="Download .ipa" width="200">
    </a>
 </div>
-</h1>
+</h3>
 
 ## Compatibility
 
