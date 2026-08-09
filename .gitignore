@@ -33,6 +33,10 @@ DerivedData/
 *.ipa
 *.dSYM.zip
 *.dSYM
+*.p12
+*.pfx
+*.mobileprovision
+*.provisionprofile
 
 ## Playgrounds
 timeline.xctimeline

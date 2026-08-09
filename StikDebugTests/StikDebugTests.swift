@@ -1,81 +1,56 @@
-//
-//  StikDebugTests.swift
-//  StikDebugTests
-//
-//  Created by Stephen on 3/26/25.
-//
-
-import Foundation
+import CoreLocation
 import Testing
 @testable import StikDebug
 
-struct StikDebugTests {
+struct PikminHelperTests {
+    @Test
+    func destinationMovesExpectedDistanceNorth() {
+        let start = CLLocationCoordinate2D(latitude: 31.2304, longitude: 121.4737)
+        let end = MovementMath.destination(
+            from: start,
+            distance: 100,
+            bearingDegrees: 0
+        )
+        let measured = CLLocation(latitude: start.latitude, longitude: start.longitude)
+            .distance(from: CLLocation(latitude: end.latitude, longitude: end.longitude))
 
-    @Test func txmDetectionUsesClassicTXMBeforeIOS266() async throws {
-        #expect(
-            ProcessInfo.hasTXMSupport(
-                isIOS266OrNewer: false,
-                hasTXMClassic: false,
-                hardwareIdentifier: "iPhone15,2"
-            ) == false
-        )
-        #expect(
-            ProcessInfo.hasTXMSupport(
-                isIOS266OrNewer: false,
-                hasTXMClassic: true,
-                hardwareIdentifier: "iPhone1,1"
-            ) == true
-        )
+        #expect(abs(measured - 100) < 0.5)
+        #expect(end.latitude > start.latitude)
     }
 
-    @Test func txmDetectionUsesClassicTXMWhenAvailableOnIOS266() async throws {
-        #expect(
-            ProcessInfo.hasTXMSupport(
-                isIOS266OrNewer: true,
-                hasTXMClassic: true,
-                hardwareIdentifier: "iPhone1,1"
-            ) == true
+    @Test
+    func destinationMovesExpectedBearingEast() {
+        let start = CLLocationCoordinate2D(latitude: 31.2304, longitude: 121.4737)
+        let end = MovementMath.destination(
+            from: start,
+            distance: 100,
+            bearingDegrees: 90
         )
+
+        #expect(end.longitude > start.longitude)
+        #expect(abs(end.latitude - start.latitude) < 0.0001)
     }
 
-    @Test func txmDetectionFallsBackToIPhoneThresholdOnIOS266() async throws {
-        #expect(
-            ProcessInfo.hasTXMSupport(
-                isIOS266OrNewer: true,
-                hasTXMClassic: false,
-                hardwareIdentifier: "iPhone14,1"
-            ) == false
-        )
-        #expect(
-            ProcessInfo.hasTXMSupport(
-                isIOS266OrNewer: true,
-                hasTXMClassic: false,
-                hardwareIdentifier: "iPhone14,2"
-            ) == true
-        )
+    @Test
+    func jitterOffsetStaysWithinConfiguredRadius() {
+        let start = CLLocationCoordinate2D(latitude: 31.2304, longitude: 121.4737)
+        let offset = MovementMath.offset(start, eastMeters: 1.8, northMeters: 2.0)
+        let measured = CLLocation(latitude: start.latitude, longitude: start.longitude)
+            .distance(from: CLLocation(latitude: offset.latitude, longitude: offset.longitude))
+
+        #expect(measured < 3)
+        #expect(measured > 2)
     }
 
-    @Test func txmDetectionFallsBackToIPadThresholdOnIOS266() async throws {
-        #expect(
-            ProcessInfo.hasTXMSupport(
-                isIOS266OrNewer: true,
-                hasTXMClassic: false,
-                hardwareIdentifier: "iPad14,4"
-            ) == false
+    @Test
+    func defaultWalkingMathMatchesPlan() {
+        let config = WalkingSessionConfig(
+            startLatitude: 31.2304,
+            startLongitude: 121.4737
         )
-        #expect(
-            ProcessInfo.hasTXMSupport(
-                isIOS266OrNewer: true,
-                hasTXMClassic: false,
-                hardwareIdentifier: "iPad14,5"
-            ) == true
-        )
-    }
+        let stepsPerKilometer = Int(1_000 / config.strideMeters)
 
-    @Test func deviceVersionParsesSupportedIdentifiers() async throws {
-        #expect(ProcessInfo.processInfo.deviceVersion(from: "iPhone14,2") == 14.2)
-        #expect(ProcessInfo.processInfo.deviceVersion(from: "iPad14,5") == 14.5)
-        #expect(ProcessInfo.processInfo.deviceVersion(from: "Mac14,2") == nil)
+        #expect(abs(config.speedMetersPerSecond - 2.2222) < 0.001)
+        #expect(stepsPerKilometer == 1_333)
     }
-
 }

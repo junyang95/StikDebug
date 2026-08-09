@@ -754,16 +754,11 @@ enum LocationSimulationCommandQueue {
     static let shared = DispatchQueue(label: "com.stik.location-sim", qos: .userInitiated)
 }
 
-func simulate_location(_ deviceIP: String, _ latitude: Double, _ longitude: Double, _ pairingFile: String) -> Int32 {
-    if let locationSimulation = LocationSimulationState.locationSimulation {
-        if let ffiError = location_simulation_set(locationSimulation, latitude, longitude) {
-            idevice_error_free(ffiError)
-            LocationSimulationState.cleanup()
-        } else {
-            return LocationSimulationStatus.ok
-        }
-    }
-
+/// 建立到设备的定位模拟通道，成功后 `LocationSimulationState.locationSimulation` 可用。
+///
+/// 单独抽出来是因为清除模拟定位也需要它：App 重启后本地句柄没了，
+/// 但设备上的模拟定位仍然生效，必须重新连上才能真正清掉。
+private func establishLocationSimulation(deviceIP: String, pairingFile: String) -> Int32 {
     var address = sockaddr_in()
     address.sin_family = sa_family_t(AF_INET)
     address.sin_port = in_port_t(49152).bigEndian
@@ -830,6 +825,24 @@ func simulate_location(_ deviceIP: String, _ latitude: Double, _ longitude: Doub
 
     LocationSimulationState.remoteServer = nil
 
+    return LocationSimulationStatus.ok
+}
+
+func simulate_location(_ deviceIP: String, _ latitude: Double, _ longitude: Double, _ pairingFile: String) -> Int32 {
+    if let locationSimulation = LocationSimulationState.locationSimulation {
+        if let ffiError = location_simulation_set(locationSimulation, latitude, longitude) {
+            idevice_error_free(ffiError)
+            LocationSimulationState.cleanup()
+        } else {
+            return LocationSimulationStatus.ok
+        }
+    }
+
+    let connectStatus = establishLocationSimulation(deviceIP: deviceIP, pairingFile: pairingFile)
+    guard connectStatus == LocationSimulationStatus.ok else {
+        return connectStatus
+    }
+
     let locationSetError = location_simulation_set(
         LocationSimulationState.locationSimulation,
         latitude,
@@ -844,7 +857,18 @@ func simulate_location(_ deviceIP: String, _ latitude: Double, _ longitude: Doub
     return LocationSimulationStatus.ok
 }
 
-func clear_simulated_location() -> Int32 {
+/// 清除设备上的模拟定位，让系统回到真实 GPS。
+///
+/// 本地句柄不存在时会先重新建立通道再清除，否则 App 重启后设备会一直卡在
+/// 上一次模拟的位置上，用户无论点多少次「恢复真实定位」都回不去。
+func clear_simulated_location(_ deviceIP: String, _ pairingFile: String) -> Int32 {
+    if LocationSimulationState.locationSimulation == nil {
+        let connectStatus = establishLocationSimulation(deviceIP: deviceIP, pairingFile: pairingFile)
+        guard connectStatus == LocationSimulationStatus.ok else {
+            return connectStatus
+        }
+    }
+
     guard let locationSimulation = LocationSimulationState.locationSimulation else {
         return LocationSimulationStatus.locationClear
     }

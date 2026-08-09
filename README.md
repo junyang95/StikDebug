@@ -1,158 +1,46 @@
-<div align="center">
-   <img width="217" height="217" src="/assets/StikDebug.png" alt="Logo">
-</div>
+# Pikmin Helper
 
-<div align="center">
-  <h1><b>StikDebug</b></h1>
-  <p><i>An on-device debugger/JIT enabler for iOS versions 17.4+ powered by <a href="https://github.com/jkcoxson/idevice">idevice</a>.</i></p>
-</div>
+Pikmin Helper 是基于 StikDebug 定位底层重构的内部学习项目，面向 iOS/iPadOS 17.4 及以上系统。
 
-<h6 align="center">
-  <a href="https://discord.gg/ZnNcrRT3M8">
-    <img src="https://img.shields.io/badge/Discord-join%20us-7289DA?logo=discord&logoColor=white&style=for-the-badge&labelColor=23272A" />
-  </a>
-  <a href="https://github.com/StephenDev0/StikDebug/blob/main/LICENSE">
-    <img src="https://img.shields.io/github/license/StephenDev0/StikDebug?label=License&color=5865F2&style=for-the-badge&labelColor=23272A" />
-  </a>
-  <a href="https://github.com/StephenDev0/StikDebug/stargazers">
-    <img src="https://img.shields.io/github/stars/StephenDev0/StikDebug?label=Stars&color=FEE75C&style=for-the-badge&labelColor=23272A" />
-  </a>
-  <a href="https://github.com/StephenDev0/StikDebug/releases">
-    <img src="https://img.shields.io/github/v/release/StephenDev0/StikDebug?label=Latest&color=00BFFF&style=for-the-badge&labelColor=23272A" />
-  </a>
-  <br />
-</h6>
+## 当前功能
 
-## Features
-- **JIT:** Enable Just In Time compilation for sideloaded apps that have the `get-task-allow` entitlement.
-- **App Launching:** Launch every app installed on your device.
-- **Console:** Live app and system logs.
-- **Scripts:** Manage automation scripts (mainly used for iOS 26 JIT). 
-- **App Expiry:** See when apps will expire and install/remove profiles.
-- **Device Info:** View detailed device metadata.
-- **Processes:** Inspect running apps/processes and terminate them.
-- **Location Simulator:** Simulate the GPS location of your device.
+- 地图定点与步行路线模拟
+- 可锁定方向、切换 App 后继续运行的虚拟摇杆
+- 步数、距离或时长目标
+- 2–3 米连续 GPS 漂移
+- HealthKit 步数读取、写入和来源统计
+- LocalDevVPN、pairing file、CoreDevice 隧道和 DDI 检查清单
+- SwiftData 行走历史
 
-## Download
-> [!NOTE]
-> **Notice:** StikDebug is no longer available on the App Store. Please use the official download methods below.
+## 开发环境
 
-<div align="center" style="display: flex; justify-content: center; align-items: center; gap: 16px; flex-wrap: wrap;">
-   <a href="https://stikstore.app/altdirect/?url=https://stikdebug.xyz/index.json" target="_blank">
-     <img src="https://github.com/stikstore/altdirect/blob/main/assets/png/AltSource_Blue.png" alt="Add AltSource" width="200">
-   </a>
-   <a href="https://github.com/StephenDev0/StikDebug/releases/download/3.1.6/StikDebug-3.1.6.ipa" target="_blank">
-     <img src="https://github.com/stikstore/altdirect/blob/main/assets/png/Download_Blue.png" alt="Download .ipa" width="200">
-   </a>
-</div>
+- macOS 与 Xcode 16+
+- 连接并信任的 iPhone 或 iPad
+- 内置 LocalDevVPN / StosVPN Packet Tunnel Extension
+- 对应设备的 pairing file
 
-## Compatibility
+可直接使用未修改的 idevice_pair：它会把本 App 识别为 `StikDebug`，并通过
+House Arrest 写入 `Documents/pairingFile.plist`。App 激活后会自动迁移并验证
+该文件。
+- 支持 HealthKit 的开发 provisioning profile
 
-| iOS Version              | Status               | Notes                                                                 |
-|--------------------------|----------------------|-----------------------------------------------------------------------|
-| 1.0 – 17.3.X             | Not supported        | Uses Different Connection Protocols                                   |
-| 17.4 – 18.x              | Fully supported      | Stable                                                                |
-| 26.0+              | Supported            | Limited App Availability (Developers need to update their apps to work.) |
+工程当前开发 Bundle ID 为 `com.jy.stikdebug.pikmin`。最终重签 Bundle ID 必须与实际 provisioning profile 匹配，参见 [重签名说明](docs/signing.md)。
 
-## How to Enable JIT
+## 构建
 
-StikDebug enables **JIT** for sideloaded apps on iOS 17.4+ without needing a computer after the initial pairing setup.
+```bash
+xcodebuild \
+  -project StikDebug.xcodeproj \
+  -scheme StikDebug \
+  -configuration Debug \
+  -destination 'generic/platform=iOS' \
+  build
+```
 
-### Requirements
-- StikDebug installed (via AltSource, direct .ipa, or self-built)
-- A valid **pairing file** (.plist / .mobiledevicepairing) for your device
-- SideStore / AltStore / similar sideload tool (for app refreshing)
-- A loopback VPN such as [LocalDevVPN](https://apps.apple.com/us/app/localdevvpn/id6755608044)
+## 风险
 
-### Steps
-1. **Obtain a pairing file**  
-   - Detailed guide: [Pairing File Instructions](https://github.com/StephenDev0/StikDebug-Guide/blob/main/pairing_file.md) (or ask in Discord).
+GPS spoofing 违反 Pikmin Bloom 服务政策，可能导致账号受限或永久封禁。本项目不保证游戏接受第三方 HealthKit 步数来源，仅供内部学习。
 
-2. **Set up VPN**  
-   - Launch LocalDevVPN and enable the VPN.
-
-4. **Enable JIT for an app**  
-   - Launch StikDebug and tapp the `Enable JIT` button.
-   - Select your sideloaded app from the list in StikDebug.  
-
-**Troubleshooting**  
-- "Connection dropped" or loopback errors → Check iOS version compatibility / beta warnings.  
-- Heartbeat errors → Ensure that the VPN is on and that you are connecected to Wi-Fi. It may be a pairing file issue.
-- Pairing file issues → Replace file with device unlocked & trusted.  
-- Still stuck? Join the [Discord](https://discord.gg/ZnNcrRT3M8) with logs/screenshots.
-
-<!-- 
-## Screenshots
-
-<div align="center">
-  <img src="screenshots/pairing-import.png" width="320" alt="Pairing file import screen">
-  <img src="screenshots/app-list.png" width="320" alt="Sideloaded apps list">
-  <img src="screenshots/jit-enabled.png" width="320" alt="JIT successfully enabled">
-  <img src="screenshots/processes.png" width="320" alt="Process management tab">
-</div>
-
-(Add images to a /screenshots/ folder in the repo and uncomment when ready.)
--->
-
-## Building from Source
-
-### Requirements
-- macOS (latest recommended)
-- Xcode 16+ (Xcode 26+ preferred for iOS 26+ support)
-- iOS device on iOS 17.4+ (for testing)
-- Git
-- Basic Xcode/Swift knowledge
-
-### Steps
-1. **Clone the repo**
-   ```bash
-   git clone https://github.com/StephenDev0/StikDebug.git
-   cd StikDebug
-   ```
-
-2. **Open in Xcode**
-   - Launch Xcode
-   - Open `StikDebug.xcodeproj`
-
-3. **Configure signing**
-   - Select the **StikDebug** target
-   - Go to **Signing & Capabilities**
-   - Sign in with your Apple ID (free or paid developer account)
-   - Set a unique **Bundle Identifier** (e.g., `com.yourname.StikDebug`)
-
-4. **Build & install**
-   - Select your connected device
-   - Press **Cmd + R** (or Product → Run)
-   - Trust the certificate on device: Settings → General → VPN & Device Management
-
-After install, follow the JIT setup steps above (pairing import, etc.).
-
-## Contributing
-
-Thank you for your interest in contributing to this project. Contributions of all kinds are welcome.
-
-### Reporting Bugs
-If you discover a bug, please open an issue and include:
-- A clear and descriptive title
-- Steps to reproduce the issue
-- Expected behavior vs. actual behavior
-- Relevant logs, screenshots, or environment details (iOS version, device model, etc.)
-
-### Suggesting Features
-To propose a new feature, open a feature request issue and provide:
-- A clear description of the feature
-- The problem it solves or the use case it addresses
-- Any relevant examples or implementation ideas
-
-### Code Contributions (Best Practices)
-- Follow normal Swift and SwiftUI style.
-- Write clear and easy to understand code.
-- Keep your changes consistent with how the project is already set up.
-- Make sure everything builds and works without errors.
-
-We appreciate your time and effort in helping improve this project.
-
-## Code Help
-[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/stephendev0/stikdebug)
 ## License
-StikDebug is licensed under **AGPL-3.0**. See [`LICENSE`](LICENSE) for details.
+
+本项目继承原项目的 AGPL-3.0 许可证，详见 [LICENSE](LICENSE)。

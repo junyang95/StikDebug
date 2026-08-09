@@ -1,16 +1,15 @@
-//
-//  StikDebugApp.swift
-//  StikDebug
-//
-//  Created by Stephen on 3/26/25.
-//
-
+import SwiftData
 import SwiftUI
 
 @main
 struct StikDebugApp: App {
     @Environment(\.scenePhase) private var scenePhase
-    @State private var shouldAttemptTunnelReconnect = false
+    @StateObject private var session = WalkingSessionController.shared
+    @StateObject private var preflight = EnvironmentPreflightService.shared
+    @StateObject private var permissions = PermissionChecklistService.shared
+    @StateObject private var health = HealthStepService.shared
+    @StateObject private var vpn = EmbeddedVPNService.shared
+    @StateObject private var localization = LocalizationManager.shared
 
     init() {
         AppBootstrapper.configure()
@@ -19,40 +18,37 @@ struct StikDebugApp: App {
     var body: some Scene {
         WindowGroup {
             MainTabView()
+                .environmentObject(session)
+                .environmentObject(preflight)
+                .environmentObject(permissions)
+                .environmentObject(health)
+                .environmentObject(vpn)
+                .environmentObject(localization)
+                .environment(\.locale, localization.locale)
+                // 重建整棵树，让已经渲染出来的文案按新语言重新查表。
+                .id(localization.language)
                 .task {
-                    await downloadMissingDeveloperDiskImageFiles()
+                    guard !ProcessInfo.processInfo.arguments.contains("--ui-testing") else { return }
+                    await vpn.load()
+                    if UserDefaults.standard.bool(forKey: "autoConnectEmbeddedVPN"),
+                       !vpn.status.isConnected {
+                        await vpn.connect()
+                    }
+                    try? await DeveloperDiskImageService.shared.downloadMissingFiles()
+                    await permissions.refresh()
+                    await preflight.refresh()
+                    await health.refreshToday()
                 }
-                .onChange(of: scenePhase) { _, newPhase in
-                    handleScenePhaseChange(newPhase)
+                .onChange(of: scenePhase) { _, phase in
+                    guard phase == .active else { return }
+                    Task {
+                        await vpn.load()
+                        await permissions.refresh()
+                        await preflight.refresh()
+                        await health.refreshToday()
+                    }
                 }
         }
-    }
-
-    private func handleScenePhaseChange(_ newPhase: ScenePhase) {
-        switch newPhase {
-        case .background:
-            shouldAttemptTunnelReconnect = true
-        case .active:
-            if shouldAttemptTunnelReconnect {
-                shouldAttemptTunnelReconnect = false
-                startTunnelInBackground(showErrorUI: false)
-            }
-        default:
-            break
-        }
-    }
-
-    private func downloadMissingDeveloperDiskImageFiles() async {
-        do {
-            try await DeveloperDiskImageService.shared.downloadMissingFiles()
-        } catch {
-            await MainActor.run {
-                showAlert(
-                    title: "An Error has Occurred",
-                    message: "[Download DDI Error]: \(error.localizedDescription)",
-                    showOk: true
-                )
-            }
-        }
+        .modelContainer(for: WalkingSessionRecord.self)
     }
 }

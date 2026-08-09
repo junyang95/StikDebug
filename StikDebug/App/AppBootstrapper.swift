@@ -1,48 +1,19 @@
-//
-//  AppBootstrapper.swift
-//  StikDebug
-//
-
 import Foundation
-import ObjectiveC.runtime
-import UIKit
 
 enum AppBootstrapper {
+    @MainActor
     static func configure() {
-        registerDefaultSettings()
-        startConfiguredKeepAliveServices()
-        applyDocumentPickerCopyWorkaround()
-    }
+        // 先装好语言覆盖，保证任何界面读取文案之前语言就已生效。
+        _ = LocalizationManager.shared
 
-    private static func registerDefaultSettings() {
-        let os = ProcessInfo.processInfo.operatingSystemVersion
-        let enableAdvancedOptions = os.majorVersion >= 19
-
-        UserDefaults.standard.register(defaults: [
-            "enableAdvancedOptions": enableAdvancedOptions,
-            UserDefaults.Keys.txmOverride: false,
-            UserDefaults.Keys.confirmExternalJITRequests: true,
+        var defaults: [String: Any] = [
+            "autoConnectEmbeddedVPN": true,
             "keepAliveAudio": true,
-            "keepAliveLocation": true
-        ])
-    }
-
-    private static func startConfiguredKeepAliveServices() {
-        guard UserDefaults.standard.bool(forKey: "keepAliveAudio") else {
-            return
-        }
-        BackgroundAudioManager.shared.start()
-    }
-
-    private static func applyDocumentPickerCopyWorkaround() {
-        let fixedSelector = NSSelectorFromString("fix_initForOpeningContentTypes:asCopy:")
-        let originalSelector = #selector(UIDocumentPickerViewController.init(forOpeningContentTypes:asCopy:))
-
-        guard let fixedMethod = class_getInstanceMethod(UIDocumentPickerViewController.self, fixedSelector),
-              let originalMethod = class_getInstanceMethod(UIDocumentPickerViewController.self, originalSelector) else {
-            return
-        }
-
-        method_exchangeImplementations(originalMethod, fixedMethod)
+            "keepAliveLocation": true,
+            AppearancePreference.storageKey: AppearancePreference.system.rawValue,
+            UserDefaults.Keys.targetDeviceIP: DeviceConnectionContext.defaultTargetIPAddress
+        ]
+        defaults.merge(MovementDefaultsKey.defaults) { current, _ in current }
+        UserDefaults.standard.register(defaults: defaults)
     }
 }

@@ -24,61 +24,14 @@ private struct CoordinateSnapshot: Equatable {
     }
 }
 
-private struct RouteSearchSelection {
-    let title: String
-    let coordinate: CLLocationCoordinate2D
-}
-
-private enum RouteSearchField {
-    case start
-    case end
-}
-
-private struct RouteSimulationPlan {
-    let displayCoordinates: [CLLocationCoordinate2D]
-    let distance: CLLocationDistance
-    let expectedTravelTime: TimeInterval
-}
 
 private enum RouteSimulationDefaults {
     static let pathSamplingDistance: CLLocationDistance = 10
-    static let playbackTickInterval: TimeInterval = 0.5
     static let minimumSpeedMetersPerSecond: CLLocationSpeed = 1.0
-    static let importedRouteFallbackSpeedMetersPerSecond: CLLocationSpeed = 13.4
 }
 
-private struct RoutePlaybackSample {
-    let coordinate: CLLocationCoordinate2D
-    let delayFromPrevious: TimeInterval
-}
 
-private struct OpenStreetMapWay {
-    let geometry: [CLLocationCoordinate2D]
-    let speedLimitMetersPerSecond: CLLocationSpeed
-}
-
-private enum OpenStreetMapSpeedLimitService {
-    static let endpoint = URL(string: "https://overpass-api.de/api/interpreter")!
-    static let copyrightURL = URL(string: "https://www.openstreetmap.org/copyright")!
-    static let boundingBoxPaddingDegrees = 0.0015
-    static let nearestWayThreshold: CLLocationDistance = 40
-}
-
-private struct OverpassResponse: Decodable {
-    let elements: [Element]
-
-    struct Element: Decodable {
-        let tags: [String: String]?
-        let geometry: [Coordinate]?
-    }
-
-    struct Coordinate: Decodable {
-        let lat: Double
-        let lon: Double
-    }
-}
-
-private extension MKPolyline {
+extension MKPolyline {
     var coordinateArray: [CLLocationCoordinate2D] {
         var coordinates = [CLLocationCoordinate2D](
             repeating: CLLocationCoordinate2D(latitude: 0, longitude: 0),
@@ -100,7 +53,7 @@ private func interpolateCoordinate(
     )
 }
 
-private func sampledRouteCoordinates(
+func sampledRouteCoordinates(
     from coordinates: [CLLocationCoordinate2D],
     targetDistance: CLLocationDistance
 ) -> [CLLocationCoordinate2D] {
@@ -126,228 +79,11 @@ private func sampledRouteCoordinates(
     return sampled
 }
 
-private func midpointCoordinate(
-    from start: CLLocationCoordinate2D,
-    to end: CLLocationCoordinate2D
-) -> CLLocationCoordinate2D {
-    interpolateCoordinate(from: start, to: end, fraction: 0.5)
-}
-
 private func distanceAlong(_ coordinates: [CLLocationCoordinate2D]) -> CLLocationDistance {
     zip(coordinates, coordinates.dropFirst()).reduce(0) { total, pair in
         total + CLLocation(latitude: pair.0.latitude, longitude: pair.0.longitude)
             .distance(from: CLLocation(latitude: pair.1.latitude, longitude: pair.1.longitude))
     }
-}
-
-private func distanceFromPoint(
-    _ point: MKMapPoint,
-    toSegmentFrom start: MKMapPoint,
-    to end: MKMapPoint
-) -> CLLocationDistance {
-    let dx = end.x - start.x
-    let dy = end.y - start.y
-
-    guard dx != 0 || dy != 0 else {
-        return point.distance(to: start)
-    }
-
-    let projection = max(0, min(1, ((point.x - start.x) * dx + (point.y - start.y) * dy) / ((dx * dx) + (dy * dy))))
-    let projectedPoint = MKMapPoint(
-        x: start.x + (dx * projection),
-        y: start.y + (dy * projection)
-    )
-    return point.distance(to: projectedPoint)
-}
-
-private func parseSpeedLimitMetersPerSecond(from rawValue: String) -> CLLocationSpeed? {
-    let normalized = rawValue
-        .lowercased()
-        .split(separator: ";")
-        .first?
-        .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-
-    guard !normalized.isEmpty else { return nil }
-    guard normalized != "none",
-          normalized != "signals",
-          normalized != "implicit",
-          normalized != "walk" else {
-        return nil
-    }
-
-    let scanner = Scanner(string: normalized)
-    guard let numericValue = scanner.scanDouble() else { return nil }
-
-    if normalized.contains("mph") {
-        return numericValue * 0.44704
-    }
-    if normalized.contains("knot") {
-        return numericValue * 0.514444
-    }
-
-    return numericValue / 3.6
-}
-
-private func speedLimitMetersPerSecond(from tags: [String: String]) -> CLLocationSpeed? {
-    if let maxspeed = tags["maxspeed"],
-       let parsed = parseSpeedLimitMetersPerSecond(from: maxspeed) {
-        return parsed
-    }
-
-    let directionalValues = [
-        tags["maxspeed:forward"],
-        tags["maxspeed:backward"]
-    ]
-        .compactMap { $0 }
-        .compactMap(parseSpeedLimitMetersPerSecond(from:))
-
-    guard !directionalValues.isEmpty else { return nil }
-    return directionalValues.min()
-}
-
-private func overpassQuery(for coordinates: [CLLocationCoordinate2D]) -> String? {
-    guard let first = coordinates.first else { return nil }
-
-    var minLatitude = first.latitude
-    var maxLatitude = first.latitude
-    var minLongitude = first.longitude
-    var maxLongitude = first.longitude
-
-    for coordinate in coordinates.dropFirst() {
-        minLatitude = min(minLatitude, coordinate.latitude)
-        maxLatitude = max(maxLatitude, coordinate.latitude)
-        minLongitude = min(minLongitude, coordinate.longitude)
-        maxLongitude = max(maxLongitude, coordinate.longitude)
-    }
-
-    let padding = OpenStreetMapSpeedLimitService.boundingBoxPaddingDegrees
-    let south = minLatitude - padding
-    let west = minLongitude - padding
-    let north = maxLatitude + padding
-    let east = maxLongitude + padding
-
-    let bbox = String(format: "%.6f,%.6f,%.6f,%.6f", south, west, north, east)
-
-    return """
-    [out:json][timeout:20];
-    (
-      way(\(bbox))[highway][maxspeed];
-      way(\(bbox))[highway]["maxspeed:forward"];
-      way(\(bbox))[highway]["maxspeed:backward"];
-    );
-    out tags geom;
-    """
-}
-
-private func fetchOpenStreetMapWays(for coordinates: [CLLocationCoordinate2D]) async throws -> [OpenStreetMapWay] {
-    guard let query = overpassQuery(for: coordinates) else { return [] }
-
-    var components = URLComponents(url: OpenStreetMapSpeedLimitService.endpoint, resolvingAgainstBaseURL: false)
-    components?.queryItems = [URLQueryItem(name: "data", value: query)]
-    guard let url = components?.url else { return [] }
-
-    let (data, response) = try await URLSession.shared.data(from: url)
-
-    if let httpResponse = response as? HTTPURLResponse,
-       !(200...299).contains(httpResponse.statusCode) {
-        throw NSError(
-            domain: "OpenStreetMapSpeedLimits",
-            code: httpResponse.statusCode,
-            userInfo: [NSLocalizedDescriptionKey: "Overpass returned HTTP \(httpResponse.statusCode)."]
-        )
-    }
-
-    let decoded = try JSONDecoder().decode(OverpassResponse.self, from: data)
-    return decoded.elements.compactMap { element in
-        guard let tags = element.tags,
-              let speedLimit = speedLimitMetersPerSecond(from: tags),
-              let geometry = element.geometry?.map({ CLLocationCoordinate2D(latitude: $0.lat, longitude: $0.lon) }),
-              geometry.count > 1 else {
-            return nil
-        }
-
-        return OpenStreetMapWay(
-            geometry: geometry,
-            speedLimitMetersPerSecond: speedLimit
-        )
-    }
-}
-
-private func nearestSpeedLimit(
-    forSegmentFrom start: CLLocationCoordinate2D,
-    to end: CLLocationCoordinate2D,
-    using ways: [OpenStreetMapWay]
-) -> CLLocationSpeed? {
-    let midpoint = MKMapPoint(midpointCoordinate(from: start, to: end))
-    var bestMatch: (speed: CLLocationSpeed, distance: CLLocationDistance)?
-
-    for way in ways {
-        for (wayStart, wayEnd) in zip(way.geometry, way.geometry.dropFirst()) {
-            let candidateDistance = distanceFromPoint(
-                midpoint,
-                toSegmentFrom: MKMapPoint(wayStart),
-                to: MKMapPoint(wayEnd)
-            )
-
-            if bestMatch == nil || candidateDistance < bestMatch!.distance {
-                bestMatch = (way.speedLimitMetersPerSecond, candidateDistance)
-            }
-        }
-    }
-
-    guard let bestMatch,
-          bestMatch.distance <= OpenStreetMapSpeedLimitService.nearestWayThreshold else {
-        return nil
-    }
-
-    return bestMatch.speed
-}
-
-private func buildPlaybackSamples(
-    from displayCoordinates: [CLLocationCoordinate2D],
-    speedWays: [OpenStreetMapWay],
-    fallbackSpeedMetersPerSecond: CLLocationSpeed
-) -> [RoutePlaybackSample] {
-    guard let firstCoordinate = displayCoordinates.first else { return [] }
-
-    var samples = [RoutePlaybackSample(coordinate: firstCoordinate, delayFromPrevious: 0)]
-
-    for (start, end) in zip(displayCoordinates, displayCoordinates.dropFirst()) {
-        let segmentDistance = CLLocation(latitude: start.latitude, longitude: start.longitude)
-            .distance(from: CLLocation(latitude: end.latitude, longitude: end.longitude))
-        guard segmentDistance > 0 else { continue }
-
-        let speedLimit = nearestSpeedLimit(forSegmentFrom: start, to: end, using: speedWays) ?? fallbackSpeedMetersPerSecond
-        let clampedSpeed = max(speedLimit, RouteSimulationDefaults.minimumSpeedMetersPerSecond)
-        let segmentTravelTime = segmentDistance / clampedSpeed
-        let segmentStepCount = max(1, Int(ceil(segmentTravelTime / RouteSimulationDefaults.playbackTickInterval)))
-        let stepDelay = segmentTravelTime / Double(segmentStepCount)
-
-        for index in 1...segmentStepCount {
-            let coordinate = interpolateCoordinate(
-                from: start,
-                to: end,
-                fraction: Double(index) / Double(segmentStepCount)
-            )
-            if samples.last.map({ CoordinateSnapshot($0.coordinate) }) != CoordinateSnapshot(coordinate) {
-                samples.append(RoutePlaybackSample(coordinate: coordinate, delayFromPrevious: stepDelay))
-            }
-        }
-    }
-
-    return samples
-}
-
-private func prefetchRoutePlaybackSamples(
-    displayCoordinates: [CLLocationCoordinate2D],
-    fallbackSpeedMetersPerSecond: CLLocationSpeed
-) async -> [RoutePlaybackSample] {
-    let speedWays = (try? await fetchOpenStreetMapWays(for: displayCoordinates)) ?? []
-    return buildPlaybackSamples(
-        from: displayCoordinates,
-        speedWays: speedWays,
-        fallbackSpeedMetersPerSecond: fallbackSpeedMetersPerSecond
-    )
 }
 
 private enum CoordinateImportError: LocalizedError {
@@ -357,9 +93,9 @@ private enum CoordinateImportError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .emptyFile:
-            return "The selected file is empty."
+            return "选择的文件是空的。".localized
         case .noCoordinates:
-            return "No valid coordinates were found. Use GPX, GeoJSON, JSON, CSV, or plain text with latitude and longitude values."
+            return "没有找到有效坐标。支持 GPX、KML、GeoJSON、JSON、CSV，或每行一组经纬度的纯文本。".localized
         }
     }
 }
@@ -723,18 +459,31 @@ final class LocationSearchCompleter: NSObject, ObservableObject, MKLocalSearchCo
     }
 }
 
+/// 地图点击的两种含义：连点画路线，或单点定位。
+private enum MapTapMode: String, CaseIterable, Identifiable {
+    case waypoints
+    case pin
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .waypoints: "路线"
+        case .pin: "定点"
+        }
+    }
+}
+
 struct LocationSimulationView: View {
+    @EnvironmentObject private var walkingSession: WalkingSessionController
+    @EnvironmentObject private var preflight: EnvironmentPreflightService
+    @AppStorage(MovementDefaultsKey.profile) private var profileRaw = MovementProfile.walking.rawValue
     @State private var coordinate: CLLocationCoordinate2D?
     @State private var position: MapCameraPosition = .userLocation(fallback: .automatic)
 
     @State private var backgroundTaskID: UIBackgroundTaskIdentifier = .invalid
     @State private var resendTimer: Timer?
-    @State private var routeLoadTask: Task<Void, Never>?
-    @State private var routeSpeedPrefetchTask: Task<Void, Never>?
-    @State private var routePlaybackTask: Task<Void, Never>?
     @State private var isBusy = false
-    @State private var isLoadingRoute = false
-    @State private var isPrefetchingRouteSpeeds = false
     @State private var isImportingCoordinates = false
     @State private var showAlert = false
     @State private var alertTitle = ""
@@ -743,15 +492,18 @@ struct LocationSimulationView: View {
     @State private var searchText = ""
     @StateObject private var searchCompleter = LocationSearchCompleter()
     @State private var showCoordinateImporter = false
-    @State private var showRouteSearch = false
-    @State private var routeStartSelection: RouteSearchSelection?
-    @State private var routeEndSelection: RouteSearchSelection?
-    @State private var routePlan: RouteSimulationPlan?
-    @State private var routePolyline: MKPolyline?
-    @State private var routePlaybackSamples: [RoutePlaybackSample] = []
-    @State private var routePlaybackCoordinate: CLLocationCoordinate2D?
     @State private var simulatedCoordinate: CLLocationCoordinate2D?
-    @State private var routeRequestID = UUID()
+    @State private var routeGoalKind: SessionGoalKind = .distance
+    @State private var routeGoalValue = 5.0
+
+    @State private var tapMode: MapTapMode = .waypoints
+    @StateObject private var waypointPlanner = WaypointRoutePlanner()
+    @State private var savedRoutes: [SavedWalkingRoute] = []
+    @State private var showSavedRoutes = false
+    @State private var showSaveRoute = false
+    @State private var newRouteName = ""
+    @State private var showCoordinateEntry = false
+    @State private var coordinateEntryText = ""
 
     private static let routeDurationFormatter: DateComponentsFormatter = {
         let formatter = DateComponentsFormatter()
@@ -779,67 +531,80 @@ struct LocationSimulationView: View {
         DeviceConnectionContext.targetIPAddress
     }
 
-    private var routeStartCoordinate: CLLocationCoordinate2D? {
-        routeStartSelection?.coordinate
-    }
-
-    private var routeEndCoordinate: CLLocationCoordinate2D? {
-        routeEndSelection?.coordinate
-    }
-
-    private var hasActiveSimulation: Bool {
-        simulatedCoordinate != nil || routePlaybackTask != nil
-    }
-
     private var isRouteRunning: Bool {
-        routePlaybackTask != nil
+        walkingSession.isActive
     }
 
-    private var hasRouteContext: Bool {
-        routeStartSelection != nil ||
-        routeEndSelection != nil ||
-        routePlan != nil ||
-        isLoadingRoute ||
-        isPrefetchingRouteSpeeds ||
-        routePlaybackCoordinate != nil
+    /// 地图当前是否处于连点画路线的状态。
+    private var hasWaypointContext: Bool {
+        tapMode == .waypoints
     }
 
-    private var routeSummaryText: String? {
-        guard let routePlan else { return nil }
+    private var profile: MovementProfile {
+        MovementProfile(rawValue: profileRaw) ?? .walking
+    }
+
+    private var waypointSpeedMetersPerSecond: CLLocationSpeed {
+        max(
+            MovementParameters.current().speedMetersPerSecond,
+            RouteSimulationDefaults.minimumSpeedMetersPerSecond
+        )
+    }
+
+    private var waypointStatusText: String {
+        if walkingSession.isActive {
+            return waypointPlanner.isClosedLoop
+                ? String(format: "正在绕圈%@，走完一圈会自动继续下一圈".localized, profile.title)
+                : String(format: "正在沿路径%@，到终点后自动原路返回".localized, profile.title)
+        }
+        if waypointPlanner.isEmpty {
+            return "在地图上点几个点，它们会按顺序连成行走路径".localized
+        }
+        if let name = waypointPlanner.importedName {
+            return String(format: "已载入「%@」，如需自己连点请先清空".localized, name)
+        }
+        if waypointPlanner.waypoints.count == 1 {
+            return "已放下起点，再点一个点就能生成路径".localized
+        }
+        if waypointPlanner.isPlanning {
+            return "正在规划步行路线…".localized
+        }
+        let straightCount = waypointPlanner.straightLineLegCount
+        if straightCount > 0 {
+            return String(format: "路径已就绪，其中 %d 段没有步行路线，按直线通过".localized, straightCount)
+        }
+        return waypointPlanner.isClosedLoop
+            ? "闭环路径已就绪，可以开始绕圈".localized
+            : String(format: "路径已就绪，可以%@".localized, profile.startActionTitle)
+    }
+
+    /// 目标输入框直接标出单位，避免「5」到底是 5 公里还是 5 米。
+    private var goalPlaceholder: String {
+        switch routeGoalKind {
+        case .steps: "步数".localized
+        case .distance: "公里".localized
+        case .duration: "分钟".localized
+        case .manual: ""
+        }
+    }
+
+    private var waypointSummaryText: String? {
+        guard waypointPlanner.waypoints.count >= 2, !waypointPlanner.isPlanning else { return nil }
         let distanceText = Measurement(
-            value: routePlan.distance / 1000,
+            value: waypointPlanner.totalDistance / 1000,
             unit: UnitLength.kilometers
         ).formatted(.measurement(width: .abbreviated, usage: .road))
-        let durationText = Self.routeDurationFormatter.string(from: routePlan.expectedTravelTime)
-        if let durationText, !durationText.isEmpty {
-            return "\(distanceText) • ETA \(durationText)"
-        }
-        return distanceText
-    }
-
-    private var routeStatusText: String {
-        if isLoadingRoute {
-            return "Calculating route…"
-        }
-        if isPrefetchingRouteSpeeds {
-            return "Prefetching road speeds…"
-        }
-        if routePlan != nil {
-            return "Route ready."
-        }
-        if routeStartSelection != nil || routeEndSelection != nil {
-            return "Pick both route endpoints to build the drive."
-        }
-        return "Plan a route from the toolbar."
-    }
-
-    private var routeAttributionLink: some View {
-        Link(
-            "Speed limit data © OpenStreetMap contributors (ODbL)",
-            destination: OpenStreetMapSpeedLimitService.copyrightURL
+        let duration = waypointPlanner.estimatedTravelTime(
+            speedMetersPerSecond: waypointSpeedMetersPerSecond
         )
-        .font(.caption2)
-        .foregroundStyle(.secondary)
+        let durationText = Self.routeDurationFormatter.string(from: duration)
+        let pointsText = waypointPlanner.isImported
+            ? String(format: "轨迹 %d 点".localized, waypointPlanner.importedPointCount)
+            : String(format: "%d 个点".localized, waypointPlanner.waypoints.count)
+        if let durationText, !durationText.isEmpty {
+            return String(format: "%1$@ • %2$@ • 约 %3$@".localized, pointsText, distanceText, durationText)
+        }
+        return "\(pointsText) • \(distanceText)"
     }
 
     private var searchResultsListBase: some View {
@@ -857,53 +622,68 @@ struct LocationSimulationView: View {
                     }
                 }
             }
+            .listRowBackground(Color.clear)
         }
         .listStyle(.plain)
-        .frame(maxHeight: 350)
+        .scrollContentBackground(.hidden)
+        .frame(maxHeight: 300)
         .scrollDisabled(true)
-        .padding(.horizontal, 16)
-        .padding(.top, 8)
     }
 
+    // 搜索结果做成和底部操作卡一致的不透明浮层，而不是半透明材质。
     @ViewBuilder
     private var searchResultsList: some View {
-        if #available(iOS 26, *) {
-            searchResultsListBase
-                .glassEffect(in: .rect(cornerRadius: 12))
-        } else {
-            searchResultsListBase
-        }
+        searchResultsListBase
+            .padding(.vertical, 6)
+            .background(PikminUI.cardBackground, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .shadow(color: .black.opacity(0.08), radius: 16, x: 0, y: 8)
+            .padding(.horizontal, 16)
+            .padding(.top, 10)
     }
 
     var body: some View {
         ZStack(alignment: .bottom) {
             MapReader { proxy in
                 Map(position: $position) {
-                    if hasRouteContext {
-                        if let routePolyline {
-                            MapPolyline(routePolyline)
-                                .stroke(.blue.opacity(0.8), lineWidth: 5)
+                    if hasWaypointContext {
+                        ForEach(waypointPlanner.legPolylines) { leg in
+                            MapPolyline(leg.polyline)
+                                .stroke(
+                                    leg.isStraightLine ? .orange.opacity(0.8) : .blue.opacity(0.8),
+                                    style: StrokeStyle(
+                                        lineWidth: 5,
+                                        lineCap: .round,
+                                        dash: leg.isStraightLine ? [10, 8] : []
+                                    )
+                                )
                         }
-                        if let routeStartCoordinate {
-                            Marker("Start", coordinate: routeStartCoordinate)
+                        ForEach(Array(waypointPlanner.waypoints.enumerated()), id: \.element.id) { index, waypoint in
+                            Annotation("", coordinate: waypoint.coordinate) {
+                                WaypointBadge(
+                                    number: index + 1,
+                                    total: waypointPlanner.waypoints.count,
+                                    isLoop: waypointPlanner.isClosedLoop
+                                )
+                            }
+                        }
+                        if walkingSession.isActive, let coordinate = walkingSession.currentCoordinate {
+                            Marker("行走中", coordinate: coordinate)
                                 .tint(.green)
                         }
-                        if let routeEndCoordinate {
-                            Marker("End", coordinate: routeEndCoordinate)
-                                .tint(.red)
-                        }
-                        if let routePlaybackCoordinate {
-                            Marker("Current", coordinate: routePlaybackCoordinate)
-                                .tint(.blue)
-                        }
                     } else if let coordinate {
-                        Marker("Pin", coordinate: coordinate)
+                        Marker("定点", coordinate: coordinate)
                             .tint(.red)
                     }
                 }
-                .mapStyle(.standard(elevation: .realistic))
+                // 平面地图，避免 3D 真实地形渲染在长时间会话中持续吃 GPU/CPU 发热。
+                .mapStyle(.standard(elevation: .flat))
                 .onTapGesture { point in
-                    if let loc = proxy.convert(point, from: .local) {
+                    guard let loc = proxy.convert(point, from: .local) else { return }
+                    if hasWaypointContext {
+                        guard !walkingSession.isActive else { return }
+                        waypointPlanner.append(loc)
+                        Haptic.light()
+                    } else {
                         applySelection(loc)
                     }
                 }
@@ -933,19 +713,28 @@ struct LocationSimulationView: View {
 
                 VStack(spacing: 12) {
                     if isImportingCoordinates {
-                        ProgressView("Importing coordinates…")
+                        ProgressView("正在导入坐标…")
                             .font(.footnote)
                     }
 
-                    if hasRouteContext {
-                        routeControls
+                    if !walkingSession.isActive {
+                        Picker("地图点击模式", selection: $tapMode) {
+                            ForEach(MapTapMode.allCases) { mode in
+                                Text(mode.title).tag(mode)
+                            }
+                        }
+                        .pickerStyle(.segmented)
+                    }
+
+                    if tapMode == .waypoints {
+                        waypointControls
                     } else {
                         pinControls
                     }
                 }
-                .padding(.bottom, 24)
+                .pikminControlCard()
                 .padding(.horizontal, 16)
-                .padding(.horizontal, 16)
+                .padding(.bottom, 16)
             }
         }
         .navigationBarTitleDisplayMode(.inline)
@@ -956,13 +745,15 @@ struct LocationSimulationView: View {
                 } label: {
                     Image(systemName: "bookmark.fill")
                 }
+                .accessibilityLabel("地点收藏")
 
                 Button {
-                    showRouteSearch = true
+                    showSavedRoutes = true
                 } label: {
                     Image(systemName: "point.topleft.down.curvedto.point.bottomright.up")
                 }
                 .disabled(isBusy || isRouteRunning)
+                .accessibilityLabel("已保存的路径")
 
                 Button {
                     showCoordinateImporter = true
@@ -970,10 +761,10 @@ struct LocationSimulationView: View {
                     Image(systemName: "square.and.arrow.down")
                 }
                 .disabled(isBusy || isRouteRunning || isImportingCoordinates)
-                .accessibilityLabel("Import Coordinates")
+                .accessibilityLabel("导入坐标文件")
             }
             ToolbarItem(placement: .topBarTrailing) {
-                TextField("Search location...", text: $searchText)
+                TextField("搜索地点…", text: $searchText)
                     .padding(.leading, 6)
                     .autocorrectionDisabled()
                     .submitLabel(.go)
@@ -986,16 +777,16 @@ struct LocationSimulationView: View {
             }
         }
         .alert(alertTitle, isPresented: $showAlert) {
-            Button("OK", role: .cancel) { }
+            Button("好", role: .cancel) { }
         } message: {
             Text(alertMessage)
         }
-        .alert("Save Bookmark", isPresented: $showSaveBookmark) {
-            TextField("Name", text: $newBookmarkName)
-            Button("Save") { addBookmark() }
-            Button("Cancel", role: .cancel) { newBookmarkName = "" }
+        .alert("收藏地点", isPresented: $showSaveBookmark) {
+            TextField("名称", text: $newBookmarkName)
+            Button("保存") { addBookmark() }
+            Button("取消", role: .cancel) { newBookmarkName = "" }
         } message: {
-            Text("Enter a name for this location.")
+            Text("给这个位置起个名字，方便下次直接选用。")
         }
         .sheet(isPresented: $showBookmarks) {
             BookmarksView(bookmarks: $bookmarks) { bookmark in
@@ -1006,14 +797,25 @@ struct LocationSimulationView: View {
                 saveBookmarks()
             }
         }
-        .sheet(isPresented: $showRouteSearch) {
-            RouteSearchSheet(
-                initialStart: routeStartSelection,
-                initialEnd: routeEndSelection
-            ) { startSelection, endSelection in
-                routeStartSelection = startSelection
-                routeEndSelection = endSelection
-                refreshRoute()
+        .alert("保存路径", isPresented: $showSaveRoute) {
+            TextField("名称，例如「公园一圈」", text: $newRouteName)
+            Button("保存") { saveCurrentRoute() }
+            Button("取消", role: .cancel) { newRouteName = "" }
+        } message: {
+            Text("保存后可以随时载入，不用重新点一遍。")
+        }
+        .sheet(isPresented: $showCoordinateEntry) {
+            CoordinateEntrySheet(initialText: coordinateEntryText) { coordinate, shouldTeleport in
+                applyEnteredCoordinate(coordinate, teleport: shouldTeleport)
+            }
+        }
+        .sheet(isPresented: $showSavedRoutes) {
+            SavedRoutesView(routes: $savedRoutes) { route in
+                loadRoute(route)
+                showSavedRoutes = false
+            } onDelete: { offsets in
+                savedRoutes.remove(atOffsets: offsets)
+                SavedWalkingRouteStore.save(savedRoutes)
             }
         }
         .fileImporter(
@@ -1025,13 +827,9 @@ struct LocationSimulationView: View {
         }
         .onAppear {
             loadBookmarks()
+            savedRoutes = SavedWalkingRouteStore.load()
         }
         .onDisappear {
-            routeLoadTask?.cancel()
-            routeLoadTask = nil
-            routeSpeedPrefetchTask?.cancel()
-            routeSpeedPrefetchTask = nil
-            cancelRoutePlayback(resetMarker: true)
             stopResendLoop()
             if backgroundTaskID != .invalid {
                 BackgroundLocationManager.shared.requestStop()
@@ -1067,19 +865,6 @@ struct LocationSimulationView: View {
         newBookmarkName = ""
     }
 
-    private func setRoutePlan(_ plan: RouteSimulationPlan?) {
-        routePlan = plan
-        routePolyline = plan.flatMap { makeRoutePolyline(for: $0.displayCoordinates) }
-    }
-
-    private func makeRoutePolyline(for coordinates: [CLLocationCoordinate2D]) -> MKPolyline? {
-        guard coordinates.count > 1 else { return nil }
-        return coordinates.withUnsafeBufferPointer { buffer in
-            guard let baseAddress = buffer.baseAddress else { return nil }
-            return MKPolyline(coordinates: baseAddress, count: buffer.count)
-        }
-    }
-
     // MARK: - Location
 
     private func selectSearchResult(_ result: MKLocalSearchCompletion) {
@@ -1096,11 +881,38 @@ struct LocationSimulationView: View {
 
     private func applyCoordinatesFromSearchText() {
         let importedCoordinates = CoordinateImportParser.parseInline(searchText)
-        guard !importedCoordinates.isEmpty else { return }
+        guard !importedCoordinates.isEmpty else {
+            // 之前解析失败时什么都不做，用户只会觉得「按了没反应」。
+            // 只要输入里带数字，就说明用户是想输坐标，给出明确提示。
+            if searchText.rangeOfCharacter(from: .decimalDigits) != nil {
+                alertTitle = "无法识别坐标".localized
+                alertMessage = "请输入形如 35.681236, 139.767125 的经纬度，或点「输入经纬度」按钮。".localized
+                showAlert = true
+            }
+            return
+        }
 
         searchText = ""
         searchCompleter.results = []
-        applyImportedCoordinates(importedCoordinates, sourceName: "Imported")
+        applyImportedCoordinates(importedCoordinates, sourceName: "手动输入".localized)
+    }
+
+    /// 应用手动输入的经纬度：切到定点、落点、移动地图，并可选直接传送。
+    private func applyEnteredCoordinate(_ coordinate: CLLocationCoordinate2D, teleport: Bool) {
+        guard !isRouteRunning else { return }
+        tapMode = .pin
+        self.coordinate = coordinate
+        position = .region(
+            MKCoordinateRegion(
+                center: coordinate,
+                latitudinalMeters: 800,
+                longitudinalMeters: 800
+            )
+        )
+        Haptic.success()
+        if teleport {
+            simulate(at: coordinate)
+        }
     }
 
     private func importCoordinates(_ result: Result<[URL], Error>) {
@@ -1120,7 +932,7 @@ struct LocationSimulationView: View {
                         isImportingCoordinates = false
                         applyImportedCoordinates(
                             coordinates,
-                            sourceName: sourceName.isEmpty ? "Imported" : sourceName
+                            sourceName: sourceName.isEmpty ? "导入轨迹".localized : sourceName
                         )
                     }
                 } catch {
@@ -1148,66 +960,32 @@ struct LocationSimulationView: View {
         }
 
         if coordinates.count == 1 {
+            tapMode = .pin
             applySelection(firstCoordinate)
             return
         }
 
-        routeLoadTask?.cancel()
-        routeLoadTask = nil
-        routeSpeedPrefetchTask?.cancel()
-        routeSpeedPrefetchTask = nil
-        routeRequestID = UUID()
-        setRoutePlan(nil)
-        routePlaybackSamples = []
-        routePlaybackCoordinate = nil
-        isLoadingRoute = false
-        isPrefetchingRouteSpeeds = false
-        coordinate = nil
-
+        // 导入的轨迹本身就是路径，交给连点路线统一渲染和行走。
         let displayCoordinates = sampledRouteCoordinates(
             from: coordinates,
             targetDistance: RouteSimulationDefaults.pathSamplingDistance
         )
-
-        guard displayCoordinates.count > 1,
-              let lastCoordinate = displayCoordinates.last else {
+        guard waypointPlanner.loadImportedPath(displayCoordinates, name: sourceName) else {
+            tapMode = .pin
             applySelection(firstCoordinate)
             return
         }
 
-        let distance = distanceAlong(displayCoordinates)
-        let fallbackSpeed = RouteSimulationDefaults.importedRouteFallbackSpeedMetersPerSecond
-        routeStartSelection = RouteSearchSelection(title: "\(sourceName) Start", coordinate: firstCoordinate)
-        routeEndSelection = RouteSearchSelection(title: "\(sourceName) End", coordinate: lastCoordinate)
-        setRoutePlan(RouteSimulationPlan(
-            displayCoordinates: displayCoordinates,
-            distance: distance,
-            expectedTravelTime: distance / fallbackSpeed
-        ))
-
-        if let routePolyline {
-            position = .rect(routePolyline.boundingMapRect)
+        coordinate = nil
+        tapMode = .waypoints
+        if let rect = waypointPlanner.boundingMapRect {
+            position = .rect(rect)
         }
-
-        let requestID = UUID()
-        routeRequestID = requestID
-        isPrefetchingRouteSpeeds = true
-        routeSpeedPrefetchTask = Task.detached(priority: .utility) {
-            let playbackSamples = await prefetchRoutePlaybackSamples(
-                displayCoordinates: displayCoordinates,
-                fallbackSpeedMetersPerSecond: fallbackSpeed
-            )
-            guard !Task.isCancelled else { return }
-            await MainActor.run {
-                guard routeRequestID == requestID else { return }
-                routePlaybackSamples = playbackSamples
-                isPrefetchingRouteSpeeds = false
-            }
-        }
+        Haptic.success()
     }
 
     private func showImportError(_ error: Error) {
-        alertTitle = "Import Failed"
+        alertTitle = "导入失败".localized
         alertMessage = error.localizedDescription
         showAlert = true
     }
@@ -1220,14 +998,14 @@ struct LocationSimulationView: View {
                 .foregroundStyle(.secondary)
 
             HStack(spacing: 12) {
-                Button("Stop", action: clear)
+                Button("恢复真实定位", action: clear)
                     .buttonStyle(.bordered)
                     .tint(.red)
-                    .disabled(!pairingExists || isBusy || !hasActiveSimulation)
+                    .disabled(!pairingExists || isBusy)
 
-                Button("Simulate Location", action: simulate)
+                Button("传送到此处", action: simulate)
                     .buttonStyle(.borderedProminent)
-                    .disabled(!pairingExists || isBusy || isLoadingRoute)
+                    .disabled(!pairingExists || isBusy)
 
                 Button {
                     showSaveBookmark = true
@@ -1237,92 +1015,265 @@ struct LocationSimulationView: View {
                 .buttonStyle(.bordered)
                 .tint(.blue)
                 .disabled(isRouteRunning)
+                .accessibilityLabel("收藏这个地点")
+            }
+
+            coordinateEntryButton
+
+            if simulatedCoordinate != nil {
+                Label(
+                    String(format: "定点模拟中，位置每 %@ 秒重发一次".localized, Self.fixedResendInterval.formatted()),
+                    systemImage: "location.fill"
+                )
+                .font(.caption)
+                .foregroundStyle(.green)
+            }
+
+            if !pairingExists {
+                Label("尚未导入 pairing file，请先在设置页完成配对", systemImage: "exclamationmark.triangle.fill")
+                    .font(.caption)
+                    .foregroundStyle(.orange)
+                    .multilineTextAlignment(.center)
             }
         } else {
-            Text("Tap map to drop pin")
+            Text("点击地图选择一个位置，或直接输入经纬度")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+
+            coordinateEntryButton
         }
     }
 
-    private var routeControls: some View {
+    /// 经纬度直传入口。放在底部卡片里，而不是只藏在顶部那个狭窄的搜索框中。
+    private var coordinateEntryButton: some View {
+        Button {
+            coordinateEntryText = coordinate.map { String(format: "%.6f, %.6f", $0.latitude, $0.longitude) } ?? ""
+            showCoordinateEntry = true
+        } label: {
+            Label("输入经纬度", systemImage: "numbers.rectangle")
+                .font(.footnote.weight(.semibold))
+                .frame(maxWidth: .infinity)
+        }
+        .buttonStyle(.bordered)
+        .controlSize(.small)
+    }
+
+    private var waypointControls: some View {
         VStack(spacing: 10) {
-            Text(routeStatusText)
+            Text(waypointStatusText)
                 .font(.footnote)
                 .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
 
-            if isLoadingRoute || isPrefetchingRouteSpeeds {
+            if waypointPlanner.isPlanning {
                 ProgressView()
                     .controlSize(.small)
-            } else if let routeSummaryText {
-                Text(routeSummaryText)
+            } else if let waypointSummaryText {
+                Text(waypointSummaryText)
                     .font(.footnote.monospaced())
                     .foregroundStyle(.secondary)
             }
 
-            routeAttributionLink
+            if !walkingSession.isActive {
+                if waypointPlanner.isEmpty {
+                    Button {
+                        showSavedRoutes = true
+                    } label: {
+                        Label("载入已保存的路径", systemImage: "list.bullet.rectangle")
+                    }
+                    .buttonStyle(.bordered)
+                    .disabled(savedRoutes.isEmpty)
+                } else {
+                    Toggle(isOn: $waypointPlanner.isLoop) {
+                        Text(waypointPlanner.canLoop ? "闭环：终点连回起点，循环绕圈" : "闭环：至少需要 3 个点")
+                            .font(.footnote)
+                    }
+                    .tint(.green)
+                    .disabled(!waypointPlanner.canLoop)
+                    .accessibilityHint("打开后走完一圈会自动继续，而不是原路折返")
+                }
+
+                HStack {
+                    Picker("目标", selection: $routeGoalKind) {
+                        ForEach(SessionGoalKind.allCases) { kind in
+                            Text(kind.title).tag(kind)
+                        }
+                    }
+                    if routeGoalKind != .manual {
+                        TextField(goalPlaceholder, value: $routeGoalValue, format: .number)
+                            .textFieldStyle(.roundedBorder)
+                            .keyboardType(.decimalPad)
+                            .frame(maxWidth: 100)
+                    }
+                }
+
+                if !waypointPlanner.isEmpty {
+                    HStack(spacing: 12) {
+                        // 导入轨迹是整条载入的，逐点撤销没有意义，只能整条清空。
+                        if !waypointPlanner.isImported {
+                            Button {
+                                waypointPlanner.removeLast()
+                                Haptic.light()
+                            } label: {
+                                Label("撤销", systemImage: "arrow.uturn.backward")
+                            }
+                            .buttonStyle(.bordered)
+                        }
+
+                        Button {
+                            showSaveRoute = true
+                        } label: {
+                            Label("保存", systemImage: "square.and.arrow.down")
+                        }
+                        .buttonStyle(.bordered)
+                        .disabled(waypointPlanner.waypoints.count < 2)
+
+                        Button(role: .destructive) {
+                            waypointPlanner.clear()
+                            Haptic.light()
+                        } label: {
+                            Label("清空", systemImage: "trash")
+                        }
+                        .buttonStyle(.bordered)
+                    }
+                    .labelStyle(.titleAndIcon)
+                    .font(.footnote)
+                }
+            }
 
             HStack(spacing: 12) {
-                Button("Stop", action: clear)
-                    .buttonStyle(.bordered)
-                    .tint(.red)
-                    .disabled(!pairingExists || isBusy || !hasActiveSimulation)
+                Button("停止") {
+                    Task { await walkingSession.stop() }
+                }
+                .buttonStyle(.bordered)
+                .tint(.red)
+                .disabled(!walkingSession.isActive)
 
-                Button("Play Route", action: simulateRoute)
+                Button(profile.startActionTitle, action: startWaypointWalk)
                     .buttonStyle(.borderedProminent)
+                    .tint(.green)
                     .disabled(
                         !pairingExists ||
+                        !preflight.canStartSession ||
+                        walkingSession.isActive ||
                         isBusy ||
-                        isLoadingRoute ||
-                        isPrefetchingRouteSpeeds ||
-                        routePlan == nil ||
-                        routePlaybackSamples.isEmpty
+                        !waypointPlanner.isReady
                     )
 
-                Button("Reset", action: resetRouteSelection)
+                Button("恢复真实定位", action: restoreRealLocation)
                     .buttonStyle(.bordered)
-                    .disabled(isBusy || isRouteRunning)
+                    .disabled(isBusy)
+            }
+
+            if let startBlockReason {
+                Label(startBlockReason, systemImage: "exclamationmark.triangle.fill")
+                    .font(.caption)
+                    .foregroundStyle(.orange)
+                    .multilineTextAlignment(.center)
+            }
+
+            if walkingSession.isActive {
+                Text(String(format: "%1$d 步 · %2$.2f km".localized, walkingSession.estimatedSteps, walkingSession.distanceMeters / 1000))
+                    .font(.caption.monospacedDigit())
             }
         }
     }
 
-    private func simulate() {
-        guard pairingExists, let coord = coordinate, !isBusy else { return }
-        runLocationCommand(
-            errorTitle: "Simulation Failed",
-            errorMessage: { code in
-                "Could not simulate location (error \(code)). Make sure the device is connected and the DDI is mounted."
-            },
-            operation: { locationUpdateCode(for: coord) }
-        ) {
-            routePlaybackCoordinate = nil
-            beginBackgroundTask()
-            startResendLoop(with: coord)
-            BackgroundLocationManager.shared.requestStart()
+    /// 「开始行走」变灰时告诉用户卡在哪一步，而不是让按钮默默不可点。
+    private var startBlockReason: String? {
+        guard !walkingSession.isActive, !waypointPlanner.isEmpty else { return nil }
+        if !pairingExists {
+            return "尚未导入 pairing file，请先在设置页完成配对".localized
+        }
+        if !preflight.canStartSession {
+            return "运行环境检查未通过，请先在设置页处理异常项".localized
+        }
+        return nil
+    }
+
+    private func startWaypointWalk() {
+        guard pairingExists, !isBusy else { return }
+        let coordinates = waypointPlanner.playbackCoordinates
+        guard let firstCoordinate = coordinates.first, coordinates.count > 1 else { return }
+
+        stopResendLoop()
+        if let rect = waypointPlanner.boundingMapRect {
+            position = .rect(rect)
+        }
+
+        let normalizedGoal: Double
+        switch routeGoalKind {
+        case .steps, .manual: normalizedGoal = routeGoalValue
+        case .distance: normalizedGoal = routeGoalValue * 1000
+        case .duration: normalizedGoal = routeGoalValue * 60
+        }
+        let movement = MovementParameters.current()
+        let config = WalkingSessionConfig(
+            mode: .route,
+            goalKind: routeGoalKind,
+            goalValue: normalizedGoal,
+            speedKilometersPerHour: movement.speedKPH,
+            strideMeters: movement.strideMeters,
+            startLatitude: firstCoordinate.latitude,
+            startLongitude: firstCoordinate.longitude
+        )
+        Haptic.success()
+        Task {
+            await walkingSession.startRoute(
+                config: config,
+                coordinates: coordinates,
+                isLoop: waypointPlanner.isClosedLoop
+            )
         }
     }
 
-    private func simulateRoute() {
-        guard pairingExists,
-              routePlan != nil,
-              let firstCoordinate = routePlaybackSamples.first?.coordinate,
-              !isBusy else {
-            return
+    // MARK: - 已保存的路径
+
+    private func saveCurrentRoute() {
+        let coordinates = waypointPlanner.waypoints.map(\.coordinate)
+        guard coordinates.count >= 2 else { return }
+        let trimmed = newRouteName.trimmingCharacters(in: .whitespacesAndNewlines)
+        let route = SavedWalkingRoute(
+            name: trimmed.isEmpty ? String(format: "路径 %d".localized, savedRoutes.count + 1) : trimmed,
+            coordinates: coordinates,
+            isLoop: waypointPlanner.isLoop
+        )
+        savedRoutes.append(route)
+        SavedWalkingRouteStore.save(savedRoutes)
+        newRouteName = ""
+        Haptic.success()
+    }
+
+    private func loadRoute(_ route: SavedWalkingRoute) {
+        guard !walkingSession.isActive else { return }
+        tapMode = .waypoints
+        waypointPlanner.replaceAll(with: route.coordinates, isLoop: route.isLoop)
+        if let rect = waypointPlanner.waypointsBoundingMapRect {
+            position = .rect(rect)
         }
-        stopResendLoop()
-        cancelRoutePlayback(resetMarker: false)
+        Haptic.success()
+    }
+
+    private func simulate() {
+        guard let coord = coordinate else { return }
+        simulate(at: coord)
+    }
+
+    // 显式传坐标：手动输入经纬度时刚写完 @State 就要用，不依赖状态回读的时序。
+    private func simulate(at coord: CLLocationCoordinate2D) {
+        guard pairingExists, !isBusy else { return }
         runLocationCommand(
-            errorTitle: "Route Simulation Failed",
+            errorTitle: "定点失败".localized,
             errorMessage: { code in
-                "Could not start route simulation (error \(code)). Make sure the device is connected and the DDI is mounted."
+                String(format: "无法模拟定位（错误 %d）。请确认设备已连接、隧道正常且 DDI 已挂载。".localized, code)
             },
-            operation: { locationUpdateCode(for: firstCoordinate) }
+            operation: { locationUpdateCode(for: coord) }
         ) {
             beginBackgroundTask()
+            startResendLoop(with: coord)
             BackgroundLocationManager.shared.requestStart()
-            simulatedCoordinate = nil
-            routePlaybackCoordinate = firstCoordinate
-            startRoutePlayback()
+            Haptic.success()
         }
     }
 
@@ -1348,21 +1299,42 @@ struct LocationSimulationView: View {
         }
     }
 
+    /// 恢复真实定位。
+    ///
+    /// 必须先停掉 4 秒一次的重发定时器，否则清除刚生效就又被下一次重发顶回去，
+    /// 用户会以为「恢复真实定位」根本没用。
     private func clear() {
-        guard pairingExists, !isBusy else { return }
-        routeLoadTask?.cancel()
-        routeLoadTask = nil
-        routeSpeedPrefetchTask?.cancel()
-        routeSpeedPrefetchTask = nil
-        cancelRoutePlayback(resetMarker: true)
+        guard !isBusy else { return }
         stopResendLoop()
+        let ip = deviceIP
+        let path = pairingFilePath
         runLocationCommand(
-            errorTitle: "Clear Failed",
-            errorMessage: { code in "Could not clear simulated location (error \(code))." },
-            operation: clear_simulated_location
+            errorTitle: "恢复失败".localized,
+            errorMessage: { code in
+                String(format: "无法清除模拟定位（错误 %d）。请确认设备仍然连接后重试。".localized, code)
+            },
+            operation: { clear_simulated_location(ip, path) }
         ) {
             endBackgroundTask()
             BackgroundLocationManager.shared.requestStop()
+            BackgroundAudioManager.shared.requestStop()
+            Haptic.success()
+        }
+    }
+
+    /// 路线模式下的「恢复真实定位」：先停会话，再走和定点一样的清除流程。
+    private func restoreRealLocation() {
+        stopResendLoop()
+        Task {
+            await walkingSession.restoreRealLocation()
+            endBackgroundTask()
+            if let error = walkingSession.lastError {
+                alertTitle = "恢复失败".localized
+                alertMessage = error
+                showAlert = true
+            } else {
+                Haptic.success()
+            }
         }
     }
 
@@ -1377,13 +1349,22 @@ struct LocationSimulationView: View {
         backgroundTaskID = .invalid
     }
 
+    // 定点重发间隔：原来 4 秒，MHNow 等实时游戏容易判定「定位过期」。
+    // 改成每秒一次（与行走会话同频），让静止定位持续刷新时间戳。
+    private static let fixedResendInterval: TimeInterval = 1
+
     private func startResendLoop(with coordinate: CLLocationCoordinate2D) {
         simulatedCoordinate = coordinate
         resendTimer?.invalidate()
-        resendTimer = Timer.scheduledTimer(withTimeInterval: 4, repeats: true) { _ in
-            guard let simulatedCoordinate else { return }
+        resendTimer = Timer.scheduledTimer(withTimeInterval: Self.fixedResendInterval, repeats: true) { _ in
+            guard let base = simulatedCoordinate else { return }
+            // 每次在原点 ±1.5m 内加随机微抖：真实 GPS 即使静止也在这个量级漂移，
+            // 逐字节完全不变的坐标更像「假信号」。抖动不累积，始终围绕选定点。
+            let jitterEast = Double.random(in: -1.5...1.5)
+            let jitterNorth = Double.random(in: -1.5...1.5)
+            let jittered = MovementMath.offset(base, eastMeters: jitterEast, northMeters: jitterNorth)
             LocationSimulationCommandQueue.shared.async {
-                _ = locationUpdateCode(for: simulatedCoordinate)
+                _ = locationUpdateCode(for: jittered)
             }
         }
     }
@@ -1394,177 +1375,9 @@ struct LocationSimulationView: View {
         simulatedCoordinate = nil
     }
 
-    private func cancelRoutePlayback(resetMarker: Bool) {
-        routePlaybackTask?.cancel()
-        routePlaybackTask = nil
-        if resetMarker {
-            routePlaybackCoordinate = nil
-        }
-    }
-
     private func applySelection(_ coordinate: CLLocationCoordinate2D) {
         guard !isRouteRunning else { return }
-        if hasRouteContext {
-            resetRouteSelection()
-        }
         self.coordinate = coordinate
-    }
-
-    private func resetRouteSelection() {
-        routeLoadTask?.cancel()
-        routeLoadTask = nil
-        routeSpeedPrefetchTask?.cancel()
-        routeSpeedPrefetchTask = nil
-        routeRequestID = UUID()
-        setRoutePlan(nil)
-        routeStartSelection = nil
-        routeEndSelection = nil
-        routePlaybackSamples = []
-        routePlaybackCoordinate = nil
-        isLoadingRoute = false
-        isPrefetchingRouteSpeeds = false
-    }
-
-    private func refreshRoute() {
-        routeLoadTask?.cancel()
-        routeSpeedPrefetchTask?.cancel()
-        setRoutePlan(nil)
-        routePlaybackSamples = []
-
-        guard let routeStart = routeStartSelection?.coordinate,
-              let routeEnd = routeEndSelection?.coordinate else {
-            isLoadingRoute = false
-            isPrefetchingRouteSpeeds = false
-            return
-        }
-
-        let requestID = UUID()
-        routeRequestID = requestID
-        isLoadingRoute = true
-        isPrefetchingRouteSpeeds = false
-
-        let request = MKDirections.Request()
-        request.source = MKMapItem(placemark: MKPlacemark(coordinate: routeStart))
-        request.destination = MKMapItem(placemark: MKPlacemark(coordinate: routeEnd))
-        request.requestsAlternateRoutes = false
-        request.transportType = .automobile
-
-        routeLoadTask = Task {
-            do {
-                let response = try await MKDirections(request: request).calculate()
-                guard !Task.isCancelled else { return }
-                guard let route = response.routes.first else {
-                    throw NSError(
-                        domain: "RouteSimulation",
-                        code: -1,
-                        userInfo: [NSLocalizedDescriptionKey: "No drivable route was returned."]
-                    )
-                }
-
-                let displayCoordinates = sampledRouteCoordinates(
-                    from: route.polyline.coordinateArray,
-                    targetDistance: RouteSimulationDefaults.pathSamplingDistance
-                )
-                let routePlan = RouteSimulationPlan(
-                    displayCoordinates: displayCoordinates,
-                    distance: route.distance,
-                    expectedTravelTime: route.expectedTravelTime
-                )
-
-                await MainActor.run {
-                    guard routeRequestID == requestID else { return }
-                    self.setRoutePlan(routePlan)
-                    isLoadingRoute = false
-                    isPrefetchingRouteSpeeds = true
-                    if let routePolyline {
-                        position = .rect(routePolyline.boundingMapRect)
-                    }
-                }
-
-                let fallbackSpeed = route.expectedTravelTime > 0
-                    ? route.distance / route.expectedTravelTime
-                    : 13.4
-
-                await MainActor.run {
-                    guard routeRequestID == requestID else { return }
-                    routeSpeedPrefetchTask?.cancel()
-                    routeSpeedPrefetchTask = Task.detached(priority: .utility) {
-                        let playbackSamples = await prefetchRoutePlaybackSamples(
-                            displayCoordinates: displayCoordinates,
-                            fallbackSpeedMetersPerSecond: fallbackSpeed
-                        )
-                        guard !Task.isCancelled else { return }
-                        await MainActor.run {
-                            guard routeRequestID == requestID else { return }
-                            routePlaybackSamples = playbackSamples
-                            isPrefetchingRouteSpeeds = false
-                        }
-                    }
-                }
-            } catch is CancellationError {
-                await MainActor.run {
-                    guard routeRequestID == requestID else { return }
-                    isLoadingRoute = false
-                    isPrefetchingRouteSpeeds = false
-                }
-            } catch {
-                await MainActor.run {
-                    guard routeRequestID == requestID else { return }
-                    isLoadingRoute = false
-                    isPrefetchingRouteSpeeds = false
-                    alertTitle = "Route Failed"
-                    alertMessage = error.localizedDescription
-                    showAlert = true
-                }
-            }
-        }
-    }
-
-    private func startRoutePlayback() {
-        routePlaybackTask = Task {
-            var lastSuccessfulCoordinate = routePlaybackSamples.first?.coordinate
-
-            for sample in routePlaybackSamples.dropFirst() {
-                try? await Task.sleep(for: .seconds(sample.delayFromPrevious))
-                guard !Task.isCancelled else { return }
-
-                let code = await sendLocationUpdate(for: sample.coordinate)
-                guard code == 0 else {
-                    await MainActor.run {
-                        routePlaybackTask = nil
-                        routePlaybackCoordinate = lastSuccessfulCoordinate
-                        if let lastSuccessfulCoordinate {
-                            startResendLoop(with: lastSuccessfulCoordinate)
-                        }
-                        alertTitle = "Route Simulation Failed"
-                        alertMessage = "Could not continue route simulation (error \(code))."
-                        showAlert = true
-                    }
-                    return
-                }
-
-                lastSuccessfulCoordinate = sample.coordinate
-                await MainActor.run {
-                    routePlaybackCoordinate = sample.coordinate
-                }
-            }
-
-            await MainActor.run {
-                routePlaybackTask = nil
-                if let lastSuccessfulCoordinate {
-                    routePlaybackCoordinate = lastSuccessfulCoordinate
-                    startResendLoop(with: lastSuccessfulCoordinate)
-                }
-            }
-        }
-    }
-
-    private func sendLocationUpdate(for coordinate: CLLocationCoordinate2D) async -> Int32 {
-        await withCheckedContinuation { continuation in
-            LocationSimulationCommandQueue.shared.async {
-                continuation.resume(returning: locationUpdateCode(for: coordinate))
-            }
-        }
     }
 
     private func locationUpdateCode(for coordinate: CLLocationCoordinate2D) -> Int32 {
@@ -1572,248 +1385,177 @@ struct LocationSimulationView: View {
     }
 }
 
-private struct RouteSearchSheet: View {
+/// 经纬度直传输入页。边输边校验，明确告诉用户识别成什么，不做静默失败。
+private struct CoordinateEntrySheet: View {
     @Environment(\.dismiss) private var dismiss
+    let onApply: (CLLocationCoordinate2D, Bool) -> Void
 
-    let initialStart: RouteSearchSelection?
-    let initialEnd: RouteSearchSelection?
-    let onApply: (RouteSearchSelection, RouteSearchSelection) -> Void
+    @State private var text: String
+    @FocusState private var isFocused: Bool
 
-    @StateObject private var startCompleter = LocationSearchCompleter()
-    @StateObject private var endCompleter = LocationSearchCompleter()
-    @State private var startQuery: String
-    @State private var endQuery: String
-    @State private var startSelection: RouteSearchSelection?
-    @State private var endSelection: RouteSearchSelection?
-    @State private var isResolvingSelection = false
-    @State private var errorMessage: String?
-    @FocusState private var focusedField: RouteSearchField?
-
-    init(
-        initialStart: RouteSearchSelection?,
-        initialEnd: RouteSearchSelection?,
-        onApply: @escaping (RouteSearchSelection, RouteSearchSelection) -> Void
-    ) {
-        self.initialStart = initialStart
-        self.initialEnd = initialEnd
+    init(initialText: String, onApply: @escaping (CLLocationCoordinate2D, Bool) -> Void) {
+        _text = State(initialValue: initialText)
         self.onApply = onApply
-        _startQuery = State(initialValue: initialStart?.title ?? "")
-        _endQuery = State(initialValue: initialEnd?.title ?? "")
-        _startSelection = State(initialValue: initialStart)
-        _endSelection = State(initialValue: initialEnd)
     }
 
-    private var activeResults: [MKLocalSearchCompletion] {
-        switch focusedField {
-        case .start:
-            return startCompleter.results
-        case .end:
-            return endCompleter.results
-        case .none:
-            return []
-        }
+    private var trimmed: String {
+        text.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
-    private var canApply: Bool {
-        startSelection != nil && endSelection != nil && !isResolvingSelection
+    private var parsed: CLLocationCoordinate2D? {
+        CoordinateImportParser.parseInline(text).first
     }
 
     var body: some View {
         NavigationStack {
-            VStack(alignment: .leading, spacing: 16) {
-                routeField(
-                    title: "Start",
-                    icon: "circle.fill",
-                    tint: .green,
-                    text: $startQuery,
-                    selection: startSelection,
-                    field: .start
-                )
+            Form {
+                Section {
+                    TextField("35.681236, 139.767125", text: $text, axis: .vertical)
+                        .font(.body.monospaced())
+                        .keyboardType(.numbersAndPunctuation)
+                        .autocorrectionDisabled()
+                        .textInputAutocapitalization(.never)
+                        .focused($isFocused)
 
-                routeField(
-                    title: "End",
-                    icon: "flag.checkered.circle.fill",
-                    tint: .red,
-                    text: $endQuery,
-                    selection: endSelection,
-                    field: .end
-                )
-
-                if let errorMessage {
-                    Text(errorMessage)
-                        .font(.footnote)
-                        .foregroundStyle(.red)
-                }
-
-                if isResolvingSelection {
-                    ProgressView("Resolving location…")
-                        .font(.footnote)
-                } else if !activeResults.isEmpty {
-                    ScrollView {
-                        LazyVStack(spacing: 0) {
-                            ForEach(Array(activeResults.enumerated()), id: \.element) { index, result in
-                                Button {
-                                    resolve(result)
-                                } label: {
-                                    VStack(alignment: .leading, spacing: 2) {
-                                        Text(result.title)
-                                            .font(.subheadline)
-                                            .foregroundStyle(.primary)
-                                            .frame(maxWidth: .infinity, alignment: .leading)
-                                        if !result.subtitle.isEmpty {
-                                            Text(result.subtitle)
-                                                .font(.caption)
-                                                .foregroundStyle(.secondary)
-                                                .frame(maxWidth: .infinity, alignment: .leading)
-                                        }
-                                    }
-                                    .padding(.vertical, 10)
-                                    .padding(.horizontal, 12)
-                                }
-                                .buttonStyle(.plain)
-
-                                if index < activeResults.count - 1 {
-                                    Divider()
-                                }
-                            }
+                    Button {
+                        if let clipboard = UIPasteboard.general.string {
+                            text = clipboard
                         }
+                    } label: {
+                        Label("从剪贴板粘贴", systemImage: "doc.on.clipboard")
                     }
-                    .frame(maxHeight: 260)
-                } else {
-                    Text("Search for a start and destination to build the route.")
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
+                } header: {
+                    Text("经纬度")
+                } footer: {
+                    if let parsed {
+                        Label(
+                            String(format: "识别为 纬度 %.6f · 经度 %.6f".localized, parsed.latitude, parsed.longitude),
+                            systemImage: "checkmark.circle.fill"
+                        )
+                        .foregroundStyle(.green)
+                    } else if trimmed.isEmpty {
+                        Text("支持「纬度, 经度」，逗号或空格分隔；负数表示南纬/西经。")
+                    } else {
+                        Label("无法识别，请输入形如 35.681236, 139.767125", systemImage: "exclamationmark.triangle.fill")
+                            .foregroundStyle(.orange)
+                    }
                 }
 
-                Spacer(minLength: 0)
+                Section {
+                    Button {
+                        guard let parsed else { return }
+                        onApply(parsed, true)
+                        dismiss()
+                    } label: {
+                        Label("传送到此处", systemImage: "location.fill")
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .tint(PikminUI.green)
+                    .disabled(parsed == nil)
+
+                    Button {
+                        guard let parsed else { return }
+                        onApply(parsed, false)
+                        dismiss()
+                    } label: {
+                        Label("只放置定点，不传送", systemImage: "mappin.and.ellipse")
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.bordered)
+                    .disabled(parsed == nil)
+                }
+                .listRowBackground(Color.clear)
             }
-            .padding(16)
-            .navigationTitle("Simulate Route")
+            .navigationTitle("输入经纬度")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") {
-                        dismiss()
-                    }
-                }
-
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Use Route") {
-                        guard let startSelection, let endSelection else { return }
-                        onApply(startSelection, endSelection)
-                        dismiss()
-                    }
-                    .disabled(!canApply)
+                ToolbarItem(placement: .topBarLeading) {
+                    Button("取消") { dismiss() }
                 }
             }
-        }
-        .presentationDetents([.medium, .large])
-        .onAppear {
-            if startSelection == nil {
-                focusedField = .start
-            } else if endSelection == nil {
-                focusedField = .end
-            }
+            .onAppear { isFocused = true }
         }
     }
+}
 
-    private func routeField(
-        title: String,
-        icon: String,
-        tint: Color,
-        text: Binding<String>,
-        selection: RouteSearchSelection?,
-        field: RouteSearchField
-    ) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text(title)
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(.secondary)
+private struct SavedRoutesView: View {
+    @Environment(\.dismiss) private var dismiss
+    @Binding var routes: [SavedWalkingRoute]
+    let onSelect: (SavedWalkingRoute) -> Void
+    let onDelete: (IndexSet) -> Void
 
-            HStack(spacing: 10) {
-                Image(systemName: icon)
-                    .foregroundStyle(tint)
-
-                TextField(title, text: text)
-                    .textInputAutocapitalization(.words)
-                    .autocorrectionDisabled()
-                    .focused($focusedField, equals: field)
-                    .submitLabel(field == .start ? .next : .done)
-                    .onChange(of: text.wrappedValue) { _, newValue in
-                        errorMessage = nil
-                        update(query: newValue, for: field)
-                    }
-                    .onSubmit {
-                        if field == .start {
-                            focusedField = .end
-                        } else {
-                            focusedField = nil
+    var body: some View {
+        NavigationStack {
+            Group {
+                if routes.isEmpty {
+                    ContentUnavailableView(
+                        "还没有保存的路径",
+                        systemImage: "map",
+                        description: Text("在地图上点几个点连成路径后，点「保存」即可留到下次直接用。")
+                    )
+                } else {
+                    List {
+                        ForEach(routes) { route in
+                            Button {
+                                onSelect(route)
+                            } label: {
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text(route.name)
+                                        .font(.body)
+                                    HStack(spacing: 6) {
+                                        Text(String(format: "%d 个点".localized, route.points.count))
+                                        if route.isLoop {
+                                            Label("闭环", systemImage: "arrow.triangle.capsulepath")
+                                        }
+                                        Text(route.createdAt, format: .dateTime.year().month().day())
+                                    }
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                                }
+                            }
+                            .tint(.primary)
                         }
+                        .onDelete(perform: onDelete)
                     }
-            }
-            .padding(.horizontal, 2)
-            .padding(.vertical, 4)
-
-            if let selection {
-                Text(String(format: "%.5f, %.5f", selection.coordinate.latitude, selection.coordinate.longitude))
-                    .font(.caption.monospaced())
-                    .foregroundStyle(.secondary)
-            }
-        }
-    }
-
-    private func update(query: String, for field: RouteSearchField) {
-        switch field {
-        case .start:
-            if query != startSelection?.title {
-                startSelection = nil
-            }
-            startCompleter.update(query: query)
-        case .end:
-            if query != endSelection?.title {
-                endSelection = nil
-            }
-            endCompleter.update(query: query)
-        }
-    }
-
-    private func resolve(_ completion: MKLocalSearchCompletion) {
-        let field = focusedField ?? .start
-        let request = MKLocalSearch.Request(completion: completion)
-        isResolvingSelection = true
-        errorMessage = nil
-
-        MKLocalSearch(request: request).start { response, error in
-            DispatchQueue.main.async {
-                isResolvingSelection = false
-
-                guard let item = response?.mapItems.first else {
-                    errorMessage = error?.localizedDescription ?? "Could not resolve that location."
-                    return
                 }
-
-                let name = item.name?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-                let title = name.isEmpty ? completion.title : name
-                let selection = RouteSearchSelection(title: title, coordinate: item.placemark.coordinate)
-
-                switch field {
-                case .start:
-                    startSelection = selection
-                    startQuery = title
-                    startCompleter.results = []
-                    focusedField = .end
-                case .end:
-                    endSelection = selection
-                    endQuery = title
-                    endCompleter.results = []
-                    focusedField = nil
+            }
+            .navigationTitle("已保存的路径")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("完成") { dismiss() }
                 }
             }
         }
     }
 }
 
-// MARK: - Bookmarks Sheet
+/// 地图上的编号途经点，起点和终点用颜色区分。
+private struct WaypointBadge: View {
+    let number: Int
+    let total: Int
+    let isLoop: Bool
+
+    private var fill: Color {
+        if number == 1 { return .green }
+        // 闭环没有真正的终点，不要把最后一个点标成红色。
+        if number == total, total > 1, !isLoop { return .red }
+        return .blue
+    }
+
+    var body: some View {
+        Text("\(number)")
+            .font(.caption.bold().monospacedDigit())
+            .foregroundStyle(.white)
+            .frame(width: 26, height: 26)
+            .background(fill.gradient, in: Circle())
+            .overlay(Circle().stroke(.white, lineWidth: 2))
+            .shadow(radius: 3)
+            .accessibilityLabel(String(format: "途经点 %d".localized, number))
+    }
+}
+
 
 struct BookmarksView: View {
     @Binding var bookmarks: [LocationBookmark]
@@ -1825,9 +1567,9 @@ struct BookmarksView: View {
             Group {
                 if bookmarks.isEmpty {
                     ContentUnavailableView(
-                        "No Bookmarks",
+                        "还没有收藏地点",
                         systemImage: "bookmark.slash",
-                        description: Text("Drop a pin on the map and tap the bookmark icon to save a location.")
+                        description: Text("切换到「定点」，在地图上选好位置后点书签图标即可收藏。")
                     )
                 } else {
                     List {
@@ -1848,7 +1590,7 @@ struct BookmarksView: View {
                     }
                 }
             }
-            .navigationTitle("Bookmarks")
+            .navigationTitle("地点收藏")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 if !bookmarks.isEmpty {

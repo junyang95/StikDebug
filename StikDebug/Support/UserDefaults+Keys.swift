@@ -15,5 +15,7 @@ extension UserDefaults {
         static let defaultScriptName = "DefaultScriptName"
         static let defaultScriptNameValue = ""
         static let targetDeviceIP = "TunnelDeviceIP"
+        /// 界面语言；未设置或为 system 时跟随设备语言。
+        static let appLanguage = "AppLanguage"
     }
 }

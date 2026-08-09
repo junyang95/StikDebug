@@ -1,0 +1,7021 @@
+{
+  "sourceLanguage": "zh-Hans",
+  "strings": {
+    "%1$@ • %2$@ • 约 %3$@": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ • %2$@ • 约 %3$@"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ • %2$@ • 約 %3$@"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ • %2$@ • approx. %3$@"
+          }
+        }
+      }
+    },
+    "%1$d 步 · %2$.2f km": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$d 步 · %2$.2f km"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$d 步 · %2$.2f km"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$d steps · %2$.2f km"
+          }
+        }
+      }
+    },
+    "%@ 步": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ 步"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ 步"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ steps"
+          }
+        }
+      }
+    },
+    "%d 个点": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%d 个点"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%d 個點"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%d points"
+          }
+        }
+      }
+    },
+    "%d 步": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%d 步"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%d 步"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%d steps"
+          }
+        }
+      }
+    },
+    "0–3 万 合理": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "0–3 万 合理"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "0–3 萬 合理"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "0–30k healthy"
+          }
+        }
+      }
+    },
+    "1. 打开 设置 → 隐私与安全 → 开发者模式": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1. 打开 设置 → 隐私与安全 → 开发者模式"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1. 開啟 設定 → 隱私權與安全性 → 開發者模式"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1. Open Settings → Privacy & Security → Developer Mode"
+          }
+        }
+      }
+    },
+    "2. 关闭开发者模式（会提示重启）": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "2. 关闭开发者模式（会提示重启）"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "2. 關閉開發者模式（會提示重新啟動）"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "2. Turn Developer Mode off (it will ask to restart)"
+          }
+        }
+      }
+    },
+    "3. 重启后重新打开开发者模式": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "3. 重启后重新打开开发者模式"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "3. 重新啟動後再次開啟開發者模式"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "3. Turn Developer Mode back on after the restart"
+          }
+        }
+      }
+    },
+    "3–4 万 偏多": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "3–4 万 偏多"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "3–4 萬 偏多"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "30–40k elevated"
+          }
+        }
+      }
+    },
+    "4. 回到本 App 点下方「重新检查」": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "4. 回到本 App 点下方「重新检查」"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "4. 回到本 App 點下方「重新檢查」"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "4. Come back and tap “Check again” below"
+          }
+        }
+      }
+    },
+    "4–5 万 接近上限": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "4–5 万 接近上限"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "4–5 萬 接近上限"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "40–50k near cap"
+          }
+        }
+      }
+    },
+    "CoreDevice 隧道": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CoreDevice 隧道"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CoreDevice 通道"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CoreDevice tunnel"
+          }
+        }
+      }
+    },
+    "CoreDevice 隧道不可用": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CoreDevice 隧道不可用"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CoreDevice 通道無法使用"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CoreDevice tunnel unavailable"
+          }
+        }
+      }
+    },
+    "CoreDevice/RSD 握手成功": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CoreDevice/RSD 握手成功"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CoreDevice/RSD 交握成功"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CoreDevice/RSD handshake succeeded"
+          }
+        }
+      }
+    },
+    "DDI 下载失败": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "DDI 下载失败"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "DDI 下載失敗"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "DDI download failed"
+          }
+        }
+      }
+    },
+    "DDI 已挂载": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "DDI 已挂载"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "DDI 已掛載"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "DDI mounted"
+          }
+        }
+      }
+    },
+    "DDI 文件下载完成": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "DDI 文件下载完成"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "DDI 檔案下載完成"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "DDI files downloaded"
+          }
+        }
+      }
+    },
+    "DDI 文件可用，但尚未挂载": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "DDI 文件可用，但尚未挂载"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "DDI 檔案可用，但尚未掛載"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "DDI files ready but not mounted"
+          }
+        }
+      }
+    },
+    "DDI 文件可用，等待 CoreDevice/RSD 后挂载": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "DDI 文件可用，等待 CoreDevice/RSD 后挂载"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "DDI 檔案可用，等待 CoreDevice/RSD 後掛載"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "DDI files ready; waiting for CoreDevice/RSD to mount"
+          }
+        }
+      }
+    },
+    "DDI 文件已准备，等待 CoreDevice/RSD 通道后挂载": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "DDI 文件已准备，等待 CoreDevice/RSD 通道后挂载"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "DDI 檔案已準備，等待 CoreDevice/RSD 通道後掛載"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "DDI files ready; will mount once the CoreDevice/RSD channel is up"
+          }
+        }
+      }
+    },
+    "DDI 文件缺失，先下载 DDI": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "DDI 文件缺失，先下载 DDI"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "DDI 檔案缺失，請先下載 DDI"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "DDI files missing — download them first"
+          }
+        }
+      }
+    },
+    "HealthKit 权限被拒绝后，系统通常不会重复弹出授权页。请到系统设置或健康 App 的数据访问权限中为本 App 打开步数读写。": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "HealthKit 权限被拒绝后，系统通常不会重复弹出授权页。请到系统设置或健康 App 的数据访问权限中为本 App 打开步数读写。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "HealthKit 權限被拒絕後，系統通常不會重複跳出授權頁。請到系統設定或健康 App 的資料存取權限中，為本 App 開啟步數讀寫。"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Once HealthKit access is denied, iOS usually won't prompt again. Enable step read/write for this app in Settings or in the Health app's data access section."
+          }
+        }
+      }
+    },
+    "Helper 写入": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Helper 写入"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Helper 寫入"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Written by Helper"
+          }
+        }
+      }
+    },
+    "Mac 版": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mac 版"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mac 版"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "For Mac"
+          }
+        }
+      }
+    },
+    "Pikmin Helper 仅供内部学习使用。模拟定位可能违反游戏服务条款。": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pikmin Helper 仅供内部学习使用。模拟定位可能违反游戏服务条款。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pikmin Helper 僅供內部學習使用。模擬定位可能違反遊戲服務條款。"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pikmin Helper is for internal study use only. Simulating location may violate the game's terms of service."
+          }
+        }
+      }
+    },
+    "Pikmin Helper 本地隧道": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pikmin Helper 本地隧道"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pikmin Helper 本機通道"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pikmin Helper local tunnel"
+          }
+        }
+      }
+    },
+    "Pikmin 日常助手": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pikmin 日常助手"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pikmin 日常助手"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pikmin Daily Helper"
+          }
+        }
+      }
+    },
+    "VPN 状态": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "VPN 状态"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "VPN 狀態"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "VPN status"
+          }
+        }
+      }
+    },
+    "VPN 配置存在但未启用": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "VPN 配置存在但未启用"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "VPN 設定存在但未啟用"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "VPN configuration exists but is disabled"
+          }
+        }
+      }
+    },
+    "VPN 配置已授权并已连接": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "VPN 配置已授权并已连接"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "VPN 設定已授權並已連線"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "VPN configuration authorized and connected"
+          }
+        }
+      }
+    },
+    "VPN 配置已授权；当前未连接": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "VPN 配置已授权；当前未连接"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "VPN 設定已授權；目前未連線"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "VPN configuration authorized; not connected"
+          }
+        }
+      }
+    },
+    "VPN 配置权限": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "VPN 配置权限"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "VPN 設定權限"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "VPN configuration"
+          }
+        }
+      }
+    },
+    "Wi-Fi 已连接": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wi-Fi 已连接"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wi-Fi 已連線"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wi-Fi connected"
+          }
+        }
+      }
+    },
+    "Wi-Fi 网络": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wi-Fi 网络"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wi-Fi 網路"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wi-Fi network"
+          }
+        }
+      }
+    },
+    "Windows 版": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Windows 版"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Windows 版"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "For Windows"
+          }
+        }
+      }
+    },
+    "iOS 不会在拒绝后重复弹出位置授权框。请到系统设置中把位置权限改为“始终允许”。": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "iOS 不会在拒绝后重复弹出位置授权框。请到系统设置中把位置权限改为“始终允许”。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "iOS 不會在拒絕後重複跳出位置授權視窗。請到系統設定中把位置權限改為「永遠允許」。"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "iOS won't prompt again once location access is denied. Change it to “Always” in Settings."
+          }
+        }
+      }
+    },
+    "iOS 不提供让 App 主动弹出“无线局域网与蜂窝网络”授权框的 API。请确认本 App 允许使用无线局域网与蜂窝数据；如果系统需要本地网络授权，会在实际网络访问时自动弹出。": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "iOS 不提供让 App 主动弹出“无线局域网与蜂窝网络”授权框的 API。请确认本 App 允许使用无线局域网与蜂窝数据；如果系统需要本地网络授权，会在实际网络访问时自动弹出。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "iOS 未提供讓 App 主動跳出「無線區域網路與行動數據」授權視窗的 API。請確認本 App 允許使用無線區域網路與行動數據；若系統需要本機網路授權，會在實際存取網路時自動跳出。"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "iOS provides no API for an app to trigger the “Wi-Fi & Cellular” prompt. Make sure this app is allowed to use Wi-Fi and cellular data; if local network access is needed, iOS prompts on first use."
+          }
+        }
+      }
+    },
+    "pairing file 内容无效": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "pairing file 内容无效"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "pairing file 內容無效"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pairing file contents are invalid"
+          }
+        }
+      }
+    },
+    "pairing file 可读取": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "pairing file 可读取"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "pairing file 可讀取"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pairing file is readable"
+          }
+        }
+      }
+    },
+    "pairing file 无法解析": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "pairing file 无法解析"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "pairing file 無法解析"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pairing file couldn't be parsed"
+          }
+        }
+      }
+    },
+    "≥5 万 已达上限": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "≥5 万 已达上限"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "≥5 萬 已達上限"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "≥50k at cap"
+          }
+        }
+      }
+    },
+    "上限 %@ 步 · 超过后当天不再计入花苗成长": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "上限 %@ 步 · 超过后当天不再计入花苗成长"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "上限 %@ 步 · 超過後當天不再計入花苗成長"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cap %@ steps · beyond this, today's steps no longer grow seedlings"
+          }
+        }
+      }
+    },
+    "下一步：下载 BuildManifest、Image.dmg 和 trustcache。": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "下一步：下载 BuildManifest、Image.dmg 和 trustcache。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "下一步：下載 BuildManifest、Image.dmg 與 trustcache。"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Next: download BuildManifest, Image.dmg and trustcache."
+          }
+        }
+      }
+    },
+    "下一步：允许本 App 添加 VPN 配置。": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "下一步：允许本 App 添加 VPN 配置。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "下一步：允許本 App 加入 VPN 設定。"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Next: allow this app to add a VPN configuration."
+          }
+        }
+      }
+    },
+    "下一步：把 DDI 挂载到设备，供定位模拟服务使用。": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "下一步：把 DDI 挂载到设备，供定位模拟服务使用。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "下一步：把 DDI 掛載到裝置，供定位模擬服務使用。"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Next: mount the DDI on the device so location simulation can use it."
+          }
+        }
+      }
+    },
+    "下一步：授权读取/写入步数。": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "下一步：授权读取/写入步数。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "下一步：授權讀取／寫入步數。"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Next: authorize reading and writing steps."
+          }
+        }
+      }
+    },
+    "下一步：检查 App 是否允许使用无线局域网与蜂窝数据。": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "下一步：检查 App 是否允许使用无线局域网与蜂窝数据。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "下一步：檢查 App 是否允許使用無線區域網路與行動數據。"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Next: check that the app is allowed to use Wi-Fi and cellular data."
+          }
+        }
+      }
+    },
+    "下一步：用 pairing file 和内置 VPN 路由建立 CoreDevice/RSD 通道；定位模拟和 DDI 挂载依赖它。": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "下一步：用 pairing file 和内置 VPN 路由建立 CoreDevice/RSD 通道；定位模拟和 DDI 挂载依赖它。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "下一步：用 pairing file 與內建 VPN 路由建立 CoreDevice/RSD 通道；定位模擬與 DDI 掛載都依賴它。"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Next: use the pairing file and the built-in VPN route to open a CoreDevice/RSD channel — location simulation and DDI mounting depend on it."
+          }
+        }
+      }
+    },
+    "下一步：连接内置 LocalDevVPN 路由，让 App 访问 %@:49152。": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "下一步：连接内置 LocalDevVPN 路由，让 App 访问 %@:49152。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "下一步：連接內建 LocalDevVPN 路由，讓 App 存取 %@:49152。"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Next: connect the built-in LocalDevVPN route so the app can reach %@:49152."
+          }
+        }
+      }
+    },
+    "下一步：连接和电脑同一网络的 Wi‑Fi。": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "下一步：连接和电脑同一网络的 Wi‑Fi。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "下一步：連接與電腦相同網路的 Wi‑Fi。"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Next: join the same Wi-Fi network as your computer."
+          }
+        }
+      }
+    },
+    "下一步：选择“始终允许”，后台行走保活需要它。": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "下一步：选择“始终允许”，后台行走保活需要它。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "下一步：選擇「永遠允許」，背景行走保活需要它。"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Next: choose “Always Allow” — background walking needs it to stay alive."
+          }
+        }
+      }
+    },
+    "下载/重新下载 DDI 文件": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "下载/重新下载 DDI 文件"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "下載／重新下載 DDI 檔案"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Download / re-download DDI files"
+          }
+        }
+      }
+    },
+    "主题": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "主题"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "主題"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Theme"
+          }
+        }
+      }
+    },
+    "仅允许使用期间；后台行走保活需要始终允许": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "仅允许使用期间；后台行走保活需要始终允许"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "僅允許使用期間；背景行走保活需要永遠允許"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "While-in-use only; background walking needs Always"
+          }
+        }
+      }
+    },
+    "仅限设备本地开发连接": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "仅限设备本地开发连接"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "僅限裝置本機開發連線"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Local device development connections only"
+          }
+        }
+      }
+    },
+    "今天步数已达每日上限": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "今天步数已达每日上限"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "今天步數已達每日上限"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Daily step cap reached"
+          }
+        }
+      }
+    },
+    "今天步数接近每日上限": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "今天步数接近每日上限"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "今天步數接近每日上限"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Approaching the daily step cap"
+          }
+        }
+      }
+    },
+    "今日总步数": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "今日总步数"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "今日總步數"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Steps today"
+          }
+        }
+      }
+    },
+    "从剪贴板粘贴": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "从剪贴板粘贴"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "從剪貼簿貼上"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Paste from clipboard"
+          }
+        }
+      }
+    },
+    "传送到此处": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "传送到此处"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "傳送到此處"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Teleport here"
+          }
+        }
+      }
+    },
+    "位置始终允许": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "位置始终允许"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "位置永遠允許"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Always-on location"
+          }
+        }
+      }
+    },
+    "位置权限受系统限制": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "位置权限受系统限制"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "位置權限受系統限制"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Location access is restricted by the system"
+          }
+        }
+      }
+    },
+    "位置权限已开启": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "位置权限已开启"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "位置權限已開啟"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Location access enabled"
+          }
+        }
+      }
+    },
+    "位置连接中断（错误 %d），会话已暂停": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "位置连接中断（错误 %d），会话已暂停"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "位置連線中斷（錯誤 %d），工作階段已暫停"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Location connection dropped (error %d) — session paused"
+          }
+        }
+      }
+    },
+    "保存": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "保存"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "儲存"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Save"
+          }
+        }
+      }
+    },
+    "保存后可以随时载入，不用重新点一遍。": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "保存后可以随时载入，不用重新点一遍。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "儲存後可以隨時載入，不用重新點一遍。"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Once saved you can load it any time instead of re-tapping every point."
+          }
+        }
+      }
+    },
+    "保存路径": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "保存路径"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "儲存路徑"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Save route"
+          }
+        }
+      }
+    },
+    "偏多": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "偏多"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "偏多"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Elevated"
+          }
+        }
+      }
+    },
+    "停止": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "停止"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "停止"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stop"
+          }
+        }
+      }
+    },
+    "健康": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "健康"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "健康"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Health"
+          }
+        }
+      }
+    },
+    "健康写入 %1$d 步 · %2$@": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "健康写入 %1$d 步 · %2$@"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "健康寫入 %1$d 步 · %2$@"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$d steps written to Health · %2$@"
+          }
+        }
+      }
+    },
+    "健康步数权限": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "健康步数权限"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "健康步數權限"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Health step access"
+          }
+        }
+      }
+    },
+    "先下载 DDI 文件": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "先下载 DDI 文件"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "請先下載 DDI 檔案"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Download the DDI files first"
+          }
+        }
+      }
+    },
+    "先连接 Wi‑Fi，再连接内置 VPN": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "先连接 Wi‑Fi，再连接内置 VPN"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "先連接 Wi‑Fi，再連接內建 VPN"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Connect Wi-Fi first, then the built-in VPN"
+          }
+        }
+      }
+    },
+    "公里": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "公里"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "公里"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "km"
+          }
+        }
+      }
+    },
+    "关于今天的步数": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "关于今天的步数"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "關於今天的步數"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "About today's steps"
+          }
+        }
+      }
+    },
+    "其他网络": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "其他网络"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "其他網路"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Other"
+          }
+        }
+      }
+    },
+    "内置 VPN 已连接，但访问不到设备开发服务(%@:49152)。最有效的修复是重新开关一次「开发者模式」：": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "内置 VPN 已连接，但访问不到设备开发服务(%@:49152)。最有效的修复是重新开关一次「开发者模式」："
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "內建 VPN 已連線，但存取不到裝置開發服務(%@:49152)。最有效的修復是重新開關一次「開發者模式」："
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The built-in VPN is connected but the device's developer service (%@:49152) is unreachable. The most reliable fix is toggling Developer Mode:"
+          }
+        }
+      }
+    },
+    "内置 VPN 路由": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "内置 VPN 路由"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "內建 VPN 路由"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Built-in VPN route"
+          }
+        }
+      }
+    },
+    "内置本地隧道": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "内置本地隧道"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "內建本機通道"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Built-in local tunnel"
+          }
+        }
+      }
+    },
+    "内置隧道基于 LocalDevVPN / StosVPN（SideStore Team）": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "内置隧道基于 LocalDevVPN / StosVPN（SideStore Team）"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "內建通道基於 LocalDevVPN / StosVPN（SideStore Team）"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Built-in tunnel is based on LocalDevVPN / StosVPN (SideStore Team)"
+          }
+        }
+      }
+    },
+    "准备下载 DDI 文件…": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "准备下载 DDI 文件…"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "準備下載 DDI 檔案…"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Preparing to download DDI files…"
+          }
+        }
+      }
+    },
+    "准备中": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "准备中"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "準備中"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Preparing"
+          }
+        }
+      }
+    },
+    "分享给开发者": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "分享给开发者"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "分享給開發者"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Share with developer"
+          }
+        }
+      }
+    },
+    "分享链接": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "分享链接"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "分享連結"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Share links"
+          }
+        }
+      }
+    },
+    "分钟": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "分钟"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "分鐘"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "min"
+          }
+        }
+      }
+    },
+    "切换到「定点」，在地图上选好位置后点书签图标即可收藏。": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "切换到「定点」，在地图上选好位置后点书签图标即可收藏。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "切換到「定點」，在地圖上選好位置後點書籤圖示即可收藏。"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Switch to “Fixed pin”, choose a spot on the map, then tap the bookmark icon to save it."
+          }
+        }
+      }
+    },
+    "删除本 App 写入的步数": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "删除本 App 写入的步数"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "刪除本 App 寫入的步數"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete steps written by this app"
+          }
+        }
+      }
+    },
+    "历史": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "历史"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "歷史"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "History"
+          }
+        }
+      }
+    },
+    "取消": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "取消"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "取消"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cancel"
+          }
+        }
+      }
+    },
+    "只放置定点，不传送": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "只放置定点，不传送"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "只放置定點，不傳送"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Drop a pin without teleporting"
+          }
+        }
+      }
+    },
+    "合理范围": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "合理范围"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "合理範圍"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Healthy"
+          }
+        }
+      }
+    },
+    "名称": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "名称"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "名稱"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Name"
+          }
+        }
+      }
+    },
+    "名称，例如「公园一圈」": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "名称，例如「公园一圈」"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "名稱，例如「公園一圈」"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Name, e.g. “Loop around the park”"
+          }
+        }
+      }
+    },
+    "启动 App 时自动连接": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "启动 App 时自动连接"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "啟動 App 時自動連線"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Connect automatically on launch"
+          }
+        }
+      }
+    },
+    "在地图上点几个点连成路径后，点「保存」即可留到下次直接用。": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "在地图上点几个点连成路径后，点「保存」即可留到下次直接用。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "在地圖上點幾個點連成路徑後，點「儲存」即可留到下次直接用。"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tap a few points on the map to build a route, then tap “Save” to keep it for next time."
+          }
+        }
+      }
+    },
+    "在地图上点几个点，它们会按顺序连成行走路径": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "在地图上点几个点，它们会按顺序连成行走路径"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "在地圖上點幾個點，它們會依序連成行走路徑"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tap points on the map and they'll be joined in order into a walking route"
+          }
+        }
+      }
+    },
+    "地图点击模式": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "地图点击模式"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "地圖點按模式"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Map tap mode"
+          }
+        }
+      }
+    },
+    "地点收藏": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "地点收藏"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "地點收藏"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Saved places"
+          }
+        }
+      }
+    },
+    "复制链接": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "复制链接"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "複製連結"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Copy links"
+          }
+        }
+      }
+    },
+    "外观": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "外观"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "外觀"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Appearance"
+          }
+        }
+      }
+    },
+    "失败": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "失败"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "失敗"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Failed"
+          }
+        }
+      }
+    },
+    "失败：%@": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "失败：%@"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "失敗：%@"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Failed: %@"
+          }
+        }
+      }
+    },
+    "好": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "好"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "好"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "OK"
+          }
+        }
+      }
+    },
+    "完成": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "完成"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "完成"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Done"
+          }
+        }
+      }
+    },
+    "完成一次行走会话后会显示在这里。": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "完成一次行走会话后会显示在这里。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "完成一次行走工作階段後會顯示在這裡。"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sessions show up here once you finish a walk."
+          }
+        }
+      }
+    },
+    "定位场景": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "定位场景"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "定位場景"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Location scenes"
+          }
+        }
+      }
+    },
+    "定点": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "定点"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "定點"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fixed pin"
+          }
+        }
+      }
+    },
+    "定点失败": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "定点失败"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "定點失敗"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pin failed"
+          }
+        }
+      }
+    },
+    "定点模拟中，位置每 %@ 秒重发一次": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "定点模拟中，位置每 %@ 秒重发一次"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "定點模擬中，位置每 %@ 秒重送一次"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Simulating a fixed location; resent every %@ seconds"
+          }
+        }
+      }
+    },
+    "导入 pairing file": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "导入 pairing file"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "匯入 pairing file"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Import pairing file"
+          }
+        }
+      }
+    },
+    "导入坐标文件": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "导入坐标文件"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "匯入座標檔案"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Import coordinates"
+          }
+        }
+      }
+    },
+    "导入失败": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "导入失败"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "匯入失敗"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Import failed"
+          }
+        }
+      }
+    },
+    "导入失败：%@": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "导入失败：%@"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "匯入失敗：%@"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Import failed: %@"
+          }
+        }
+      }
+    },
+    "导入成功": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "导入成功"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "匯入成功"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Import succeeded"
+          }
+        }
+      }
+    },
+    "导入轨迹": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "导入轨迹"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "匯入軌跡"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Import track"
+          }
+        }
+      }
+    },
+    "尚未导入 pairing file": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "尚未导入 pairing file"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "尚未匯入 pairing file"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No pairing file imported"
+          }
+        }
+      }
+    },
+    "尚未导入 pairing file，请先在设置页完成配对": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "尚未导入 pairing file，请先在设置页完成配对"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "尚未匯入 pairing file，請先在設定頁完成配對"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No pairing file yet — finish pairing on the Settings page first"
+          }
+        }
+      }
+    },
+    "尚未检查": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "尚未检查"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "尚未檢查"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not checked yet"
+          }
+        }
+      }
+    },
+    "尚未添加本 App 的 VPN 配置；首次连接时需同意系统弹窗": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "尚未添加本 App 的 VPN 配置；首次连接时需同意系统弹窗"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "尚未加入本 App 的 VPN 設定；首次連接時需同意系統彈出視窗"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No VPN configuration for this app yet; approve the system prompt on first connect"
+          }
+        }
+      }
+    },
+    "尚未请求位置权限": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "尚未请求位置权限"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "尚未要求位置權限"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Location access not requested yet"
+          }
+        }
+      }
+    },
+    "尚未请求健康步数权限": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "尚未请求健康步数权限"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "尚未要求健康步數權限"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Health step access not requested yet"
+          }
+        }
+      }
+    },
+    "已保存的路径": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已保存的路径"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已儲存的路徑"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Saved routes"
+          }
+        }
+      }
+    },
+    "已允许写入步数；读权限由系统隐私保护，无法直接查询": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已允许写入步数；读权限由系统隐私保护，无法直接查询"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已允許寫入步數；讀取權限受系統隱私保護，無法直接查詢"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Step writing allowed; read access is protected by iOS privacy and can't be queried directly"
+          }
+        }
+      }
+    },
+    "已允许始终访问位置": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已允许始终访问位置"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已允許永遠存取位置"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Always-on location allowed"
+          }
+        }
+      }
+    },
+    "已复制": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已复制"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已複製"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Copied"
+          }
+        }
+      }
+    },
+    "已复制 Mac 和 Windows 的 idevice_pair 下载链接。请在电脑浏览器中打开对应链接。": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已复制 Mac 和 Windows 的 idevice_pair 下载链接。请在电脑浏览器中打开对应链接。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已複製 Mac 與 Windows 的 idevice_pair 下載連結。請在電腦瀏覽器中開啟對應連結。"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Copied the idevice_pair download links for Mac and Windows. Open the right one in your computer's browser."
+          }
+        }
+      }
+    },
+    "已完成": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已完成"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已完成"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Completed"
+          }
+        }
+      }
+    },
+    "已拒绝位置权限，请到系统设置中改为始终允许": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已拒绝位置权限，请到系统设置中改为始终允许"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已拒絕位置權限，請到系統設定中改為永遠允許"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Location access denied — change it to Always in Settings"
+          }
+        }
+      }
+    },
+    "已拒绝步数写入，请到系统健康权限中打开": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已拒绝步数写入，请到系统健康权限中打开"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已拒絕步數寫入，請到系統健康權限中開啟"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Step writing denied — enable it in Health permissions"
+          }
+        }
+      }
+    },
+    "已放下起点，再点一个点就能生成路径": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已放下起点，再点一个点就能生成路径"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已放下起點，再點一個點就能產生路徑"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Start placed — tap one more point to build a route"
+          }
+        }
+      }
+    },
+    "已暂停": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已暂停"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已暫停"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Paused"
+          }
+        }
+      }
+    },
+    "已载入「%@」，如需自己连点请先清空": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已载入「%@」，如需自己连点请先清空"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已載入「%@」，如需自己連點請先清除"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Loaded “%@” — clear it first if you want to tap your own points"
+          }
+        }
+      }
+    },
+    "已达上限": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已达上限"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已達上限"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "At cap"
+          }
+        }
+      }
+    },
+    "已连接": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已连接"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已連線"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Connected"
+          }
+        }
+      }
+    },
+    "已连接到 %@:49152": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已连接到 %@:49152"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已連線到 %@:49152"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Connected to %@:49152"
+          }
+        }
+      }
+    },
+    "建立 CoreDevice/RSD 通道": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "建立 CoreDevice/RSD 通道"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "建立 CoreDevice/RSD 通道"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open CoreDevice/RSD channel"
+          }
+        }
+      }
+    },
+    "开始步行": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "开始步行"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "開始步行"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Start walking"
+          }
+        }
+      }
+    },
+    "开始骑行": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "开始骑行"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "開始騎乘"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Start cycling"
+          }
+        }
+      }
+    },
+    "当前位置": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "当前位置"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "目前位置"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Current location"
+          }
+        }
+      }
+    },
+    "当前没有可用网络": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "当前没有可用网络"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "目前沒有可用網路"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No network available"
+          }
+        }
+      }
+    },
+    "当前设备不支持 HealthKit": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "当前设备不支持 HealthKit"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "目前裝置不支援 HealthKit"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This device doesn't support HealthKit"
+          }
+        }
+      }
+    },
+    "快捷功能": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "快捷功能"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "快捷功能"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quick actions"
+          }
+        }
+      }
+    },
+    "恢复失败": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "恢复失败"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "恢復失敗"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Restore failed"
+          }
+        }
+      }
+    },
+    "恢复真实定位": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "恢复真实定位"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "恢復真實定位"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Restore real location"
+          }
+        }
+      }
+    },
+    "手动停止": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "手动停止"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "手動停止"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Manual stop"
+          }
+        }
+      }
+    },
+    "手动输入": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "手动输入"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "手動輸入"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Manual entry"
+          }
+        }
+      }
+    },
+    "打开 App 无线数据设置": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "打开 App 无线数据设置"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "開啟 App 無線資料設定"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open app network settings"
+          }
+        }
+      }
+    },
+    "打开 Wi‑Fi 设置": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "打开 Wi‑Fi 设置"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "開啟 Wi‑Fi 設定"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open Wi-Fi settings"
+          }
+        }
+      }
+    },
+    "打开后走完一圈会自动继续，而不是原路折返": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "打开后走完一圈会自动继续，而不是原路折返"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "開啟後走完一圈會自動繼續，而不是原路折返"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "When on, finishing a lap continues automatically instead of retracing the path"
+          }
+        }
+      }
+    },
+    "打开开发者模式设置": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "打开开发者模式设置"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "開啟開發者模式設定"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open Developer Mode settings"
+          }
+        }
+      }
+    },
+    "打开设置": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "打开设置"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "開啟設定"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open Settings"
+          }
+        }
+      }
+    },
+    "挂载 DDI": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "挂载 DDI"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "掛載 DDI"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mount DDI"
+          }
+        }
+      }
+    },
+    "接近上限": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "接近上限"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "接近上限"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Near cap"
+          }
+        }
+      }
+    },
+    "搜索地点…": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "搜索地点…"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "搜尋地點…"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Search for a place…"
+          }
+        }
+      }
+    },
+    "摇杆": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "摇杆"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "搖桿"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Joystick"
+          }
+        }
+      }
+    },
+    "撤销": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "撤销"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "復原"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Undo"
+          }
+        }
+      }
+    },
+    "支持「纬度, 经度」，逗号或空格分隔；负数表示南纬/西经。": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "支持「纬度, 经度」，逗号或空格分隔；负数表示南纬/西经。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "支援「緯度, 經度」，以逗號或空格分隔；負數表示南緯／西經。"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Accepts “latitude, longitude” separated by a comma or space; negative means south/west."
+          }
+        }
+      }
+    },
+    "收藏地点": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "收藏地点"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "收藏地點"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Save place"
+          }
+        }
+      }
+    },
+    "收藏这个地点": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "收藏这个地点"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "收藏這個地點"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Save this place"
+          }
+        }
+      }
+    },
+    "断开内置 VPN": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "断开内置 VPN"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "中斷內建 VPN"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Disconnect built-in VPN"
+          }
+        }
+      }
+    },
+    "方式": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "方式"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "方式"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Type"
+          }
+        }
+      }
+    },
+    "无法开始位置模拟（错误 %d）": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无法开始位置模拟（错误 %d）"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "無法開始位置模擬（錯誤 %d）"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Could not start location simulation (error %d)"
+          }
+        }
+      }
+    },
+    "无法模拟定位（错误 %d）。请确认设备已连接、隧道正常且 DDI 已挂载。": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无法模拟定位（错误 %d）。请确认设备已连接、隧道正常且 DDI 已挂载。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "無法模擬定位（錯誤 %d）。請確認裝置已連線、通道正常且 DDI 已掛載。"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Could not simulate the location (error %d). Check that the device is connected, the tunnel is up, and the DDI is mounted."
+          }
+        }
+      }
+    },
+    "无法清除模拟定位（错误 %d）。请确认设备仍然连接后重试。": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无法清除模拟定位（错误 %d）。请确认设备仍然连接后重试。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "無法清除模擬定位（錯誤 %d）。請確認裝置仍然連線後重試。"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Could not clear the simulated location (error %d). Make sure the device is still connected and try again."
+          }
+        }
+      }
+    },
+    "无法访问目标地址，请先连接内置 VPN": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无法访问目标地址，请先连接内置 VPN"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "無法存取目標位址，請先連接內建 VPN"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Target address unreachable — connect the built-in VPN first"
+          }
+        }
+      }
+    },
+    "无法识别坐标": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无法识别坐标"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "無法辨識座標"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Couldn't read coordinates"
+          }
+        }
+      }
+    },
+    "无法识别，请输入形如 35.681236, 139.767125": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无法识别，请输入形如 35.681236, 139.767125"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "無法辨識，請輸入形如 35.681236, 139.767125"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Couldn't read that — try something like 35.681236, 139.767125"
+          }
+        }
+      }
+    },
+    "无法读取 VPN 配置：%@": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无法读取 VPN 配置：%@"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "無法讀取 VPN 設定：%@"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Could not read VPN configuration: %@"
+          }
+        }
+      }
+    },
+    "无法读取设备端 DDI 状态": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无法读取设备端 DDI 状态"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "無法讀取裝置端 DDI 狀態"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Could not read the device's DDI status"
+          }
+        }
+      }
+    },
+    "无线局域网与蜂窝网络": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无线局域网与蜂窝网络"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "無線區域網路與行動數據"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wi-Fi & Cellular"
+          }
+        }
+      }
+    },
+    "时长": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "时长"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "時長"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Duration"
+          }
+        }
+      }
+    },
+    "时间": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "时间"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "時間"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Time"
+          }
+        }
+      }
+    },
+    "暂无行走记录": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "暂无行走记录"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "尚無行走記錄"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No walks yet"
+          }
+        }
+      }
+    },
+    "有线网络": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "有线网络"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "有線網路"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wired"
+          }
+        }
+      }
+    },
+    "未开始": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "未开始"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "未開始"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not started"
+          }
+        }
+      }
+    },
+    "未检测到 Wi-Fi；若 VPN 隧道可用仍可继续": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "未检测到 Wi-Fi；若 VPN 隧道可用仍可继续"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "未偵測到 Wi-Fi；若 VPN 通道可用仍可繼續"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No Wi-Fi detected; you can continue if the VPN tunnel works"
+          }
+        }
+      }
+    },
+    "未连接": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "未连接"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "未連線"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not connected"
+          }
+        }
+      }
+    },
+    "本 App 今日写入": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "本 App 今日写入"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "本 App 今日寫入"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Written by this app today"
+          }
+        }
+      }
+    },
+    "查看官方说明": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "查看官方说明"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "查看官方說明"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Read the official FAQ"
+          }
+        }
+      }
+    },
+    "检查": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "检查"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "檢查"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Check"
+          }
+        }
+      }
+    },
+    "正在下载 DDI…": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在下载 DDI…"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在下載 DDI…"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Downloading DDI…"
+          }
+        }
+      }
+    },
+    "正在导入坐标…": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在导入坐标…"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在匯入座標…"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Importing coordinates…"
+          }
+        }
+      }
+    },
+    "正在断开…": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在断开…"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在中斷…"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Disconnecting…"
+          }
+        }
+      }
+    },
+    "正在检查…": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在检查…"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在檢查…"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Checking…"
+          }
+        }
+      }
+    },
+    "正在沿路径%@，到终点后自动原路返回": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在沿路径%@，到终点后自动原路返回"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在沿路徑%@，到終點後自動原路返回"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Following the route (%@) — retraces automatically at the end"
+          }
+        }
+      }
+    },
+    "正在绕圈%@，走完一圈会自动继续下一圈": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在绕圈%@，走完一圈会自动继续下一圈"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在繞圈%@，走完一圈會自動繼續下一圈"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Looping (%@) — each lap continues automatically"
+          }
+        }
+      }
+    },
+    "正在规划步行路线…": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在规划步行路线…"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在規劃步行路線…"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Planning a walking route…"
+          }
+        }
+      }
+    },
+    "正在读取…": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在读取…"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在讀取…"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Loading…"
+          }
+        }
+      }
+    },
+    "正在连接…": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在连接…"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在連線…"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Connecting…"
+          }
+        }
+      }
+    },
+    "步": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "步"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "步"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "steps"
+          }
+        }
+      }
+    },
+    "步幅": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "步幅"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "步幅"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stride"
+          }
+        }
+      }
+    },
+    "步数": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "步数"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "步數"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Steps"
+          }
+        }
+      }
+    },
+    "步数来自 Apple 健康，皮克敏同步可能有几小时延迟，不会马上显示。": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "步数来自 Apple 健康，皮克敏同步可能有几小时延迟，不会马上显示。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "步數來自 Apple 健康，皮克敏同步可能有幾小時延遲，不會馬上顯示。"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Steps come from Apple Health. Pikmin may take a few hours to sync, so they won't appear right away."
+          }
+        }
+      }
+    },
+    "步数辅助": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "步数辅助"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "步數輔助"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Step helper"
+          }
+        }
+      }
+    },
+    "步行": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "步行"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "步行"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Walking"
+          }
+        }
+      }
+    },
+    "步行中": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "步行中"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "步行中"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Walking"
+          }
+        }
+      }
+    },
+    "步行参数": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "步行参数"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "步行參數"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Walking settings"
+          }
+        }
+      }
+    },
+    "步频": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "步频"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "步頻"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cadence"
+          }
+        }
+      }
+    },
+    "步频由速度和步幅换算：速度越快步频越高。": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "步频由速度和步幅换算：速度越快步频越高。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "步頻由速度與步幅換算：速度越快步頻越高。"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cadence is derived from speed and stride — the faster you go, the higher it gets."
+          }
+        }
+      }
+    },
+    "没有找到有效坐标。支持 GPX、KML、GeoJSON、JSON、CSV，或每行一组经纬度的纯文本。": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "没有找到有效坐标。支持 GPX、KML、GeoJSON、JSON、CSV，或每行一组经纬度的纯文本。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "找不到有效座標。支援 GPX、KML、GeoJSON、JSON、CSV，或每行一組經緯度的純文字。"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No valid coordinates found. Supports GPX, KML, GeoJSON, JSON, CSV, or plain text with one lat/lon pair per line."
+          }
+        }
+      }
+    },
+    "浅色": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "浅色"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "淺色"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Light"
+          }
+        }
+      }
+    },
+    "深色": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "深色"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "深色"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dark"
+          }
+        }
+      }
+    },
+    "深色模式适配 iOS 夜览。选「跟随系统」则随系统自动切换。": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "深色模式适配 iOS 夜览。选「跟随系统」则随系统自动切换。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "深色模式配合 iOS 夜覽。選「跟隨系統」則隨系統自動切換。"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dark mode works with iOS Night Shift. Pick “Follow system” to switch automatically."
+          }
+        }
+      }
+    },
+    "清空": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "清空"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "清除"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Clear"
+          }
+        }
+      }
+    },
+    "清除模拟定位失败（错误 %d），请确认设备仍然连接后重试": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "清除模拟定位失败（错误 %d），请确认设备仍然连接后重试"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "清除模擬定位失敗（錯誤 %d），請確認裝置仍然連線後重試"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Failed to clear the simulated location (error %d) — check the device is still connected and retry"
+          }
+        }
+      }
+    },
+    "点击地图选择一个位置，或直接输入经纬度": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "点击地图选择一个位置，或直接输入经纬度"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "點按地圖選擇一個位置，或直接輸入經緯度"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tap the map to pick a spot, or enter coordinates directly"
+          }
+        }
+      }
+    },
+    "点击地图选择起点": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "点击地图选择起点"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "點按地圖選擇起點"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tap the map to pick a starting point"
+          }
+        }
+      }
+    },
+    "环境检查": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "环境检查"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "環境檢查"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Environment check"
+          }
+        }
+      }
+    },
+    "环境检查尚未通过": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "环境检查尚未通过"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "環境檢查尚未通過"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Environment check hasn't passed"
+          }
+        }
+      }
+    },
+    "环境诊断": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "环境诊断"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "環境診斷"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Diagnostics"
+          }
+        }
+      }
+    },
+    "生成诊断日志": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "生成诊断日志"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "產生診斷紀錄"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Generate diagnostics"
+          }
+        }
+      }
+    },
+    "用户停止": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "用户停止"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "使用者停止"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stopped by user"
+          }
+        }
+      }
+    },
+    "界面语言": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "界面语言"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "介面語言"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "App language"
+          }
+        }
+      }
+    },
+    "皮克敏官方规定：盆栽花苗每天最多只反映 %1$@ 步。你今天已经 %2$@ 步，已达上限。\\n\\n之后多走的步数今天不会再计入花苗成长，要等隔天重置；继续使用也不会加快花苗，还可能让数据显得异常。是否继续由你决定，App 不会自动停止或停写。": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "皮克敏官方规定：盆栽花苗每天最多只反映 %1$@ 步。你今天已经 %2$@ 步，已达上限。\\n\\n之后多走的步数今天不会再计入花苗成长，要等隔天重置；继续使用也不会加快花苗，还可能让数据显得异常。是否继续由你决定，App 不会自动停止或停写。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "皮克敏官方規定：盆栽花苗每天最多只反映 %1$@ 步。你今天已經 %2$@ 步，已達上限。\\n\\n之後多走的步數今天不會再計入花苗成長，要等隔天重置；繼續使用也不會加快花苗，還可能讓資料顯得異常。是否繼續由你決定，App 不會自動停止或停寫。"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pikmin caps seedling growth at %1$@ steps per day. You're at %2$@ steps today, which hits the cap.\\n\\nFurther steps won't count toward seedling growth until tomorrow's reset, and continuing won't speed anything up — it may just make your data look odd. It's your call whether to keep going; the app won't stop or pause writing on its own."
+          }
+        }
+      }
+    },
+    "皮克敏官方规定：盆栽花苗每天最多只反映 %1$@ 步。你今天已经 %2$@ 步，快到上限了。\\n\\n超过后，今天多走的步数不会再让花苗成长，要等隔天重置。是否继续由你决定，App 不会自动停止或停写。": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "皮克敏官方规定：盆栽花苗每天最多只反映 %1$@ 步。你今天已经 %2$@ 步，快到上限了。\\n\\n超过后，今天多走的步数不会再让花苗成长，要等隔天重置。是否继续由你决定，App 不会自动停止或停写。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "皮克敏官方規定：盆栽花苗每天最多只反映 %1$@ 步。你今天已經 %2$@ 步，快到上限了。\\n\\n超過後，今天多走的步數不會再讓花苗成長，要等隔天重置。是否繼續由你決定，App 不會自動停止或停寫。"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pikmin caps seedling growth at %1$@ steps per day. You're at %2$@ steps today, close to the cap.\\n\\nPast it, extra steps no longer grow seedlings until tomorrow's reset. It's your call whether to keep going — the app won't stop or pause writing on its own."
+          }
+        }
+      }
+    },
+    "目标": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "目标"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "目標"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Goal"
+          }
+        }
+      }
+    },
+    "目标完成": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "目标完成"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "目標完成"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Goal reached"
+          }
+        }
+      }
+    },
+    "知道了": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "知道了"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "知道了"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Got it"
+          }
+        }
+      }
+    },
+    "种花路线": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "种花路线"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "種花路線"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Planting route"
+          }
+        }
+      }
+    },
+    "移动": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "移动"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "移動"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Movement"
+          }
+        }
+      }
+    },
+    "移动摇杆": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "移动摇杆"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "移動搖桿"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Movement joystick"
+          }
+        }
+      }
+    },
+    "移动方式": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "移动方式"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "移動方式"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Movement type"
+          }
+        }
+      }
+    },
+    "移动模式": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "移动模式"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "移動模式"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Movement mode"
+          }
+        }
+      }
+    },
+    "等待 Wi‑Fi": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "等待 Wi‑Fi"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "等待 Wi‑Fi"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Waiting for Wi-Fi"
+          }
+        }
+      }
+    },
+    "等待 pairing file": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "等待 pairing file"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "等待 pairing file"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Waiting for a pairing file"
+          }
+        }
+      }
+    },
+    "等待内置 VPN 路由": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "等待内置 VPN 路由"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "等待內建 VPN 路由"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Waiting for the built-in VPN route"
+          }
+        }
+      }
+    },
+    "等待系统返回网络状态": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "等待系统返回网络状态"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "等待系統回傳網路狀態"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Waiting for network status"
+          }
+        }
+      }
+    },
+    "等待系统返回网络状态；Wi‑Fi/蜂窝不是单独授权项": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "等待系统返回网络状态；Wi‑Fi/蜂窝不是单独授权项"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "等待系統回傳網路狀態；Wi‑Fi／行動網路不是單獨授權項目"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Waiting for the system's network status; Wi-Fi/cellular isn't a separate permission"
+          }
+        }
+      }
+    },
+    "系统权限": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "系统权限"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "系統權限"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Permissions"
+          }
+        }
+      }
+    },
+    "系统返回未知 HealthKit 授权状态": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "系统返回未知 HealthKit 授权状态"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "系統回傳未知的 HealthKit 授權狀態"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "iOS returned an unknown HealthKit authorization state"
+          }
+        }
+      }
+    },
+    "系统返回未知位置授权状态": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "系统返回未知位置授权状态"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "系統回傳未知的位置授權狀態"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "iOS returned an unknown location authorization state"
+          }
+        }
+      }
+    },
+    "经纬度": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "经纬度"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "經緯度"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Coordinates"
+          }
+        }
+      }
+    },
+    "结束": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "结束"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "結束"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stop"
+          }
+        }
+      }
+    },
+    "结束当前会话": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "结束当前会话"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "結束目前工作階段"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "End current session"
+          }
+        }
+      }
+    },
+    "给这个位置起个名字，方便下次直接选用。": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "给这个位置起个名字，方便下次直接选用。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "為這個位置取個名字，方便下次直接選用。"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Give this spot a name so you can pick it again later."
+          }
+        }
+      }
+    },
+    "继续使用": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "继续使用"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "繼續使用"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keep going"
+          }
+        }
+      }
+    },
+    "缺少 DDI 文件：%@": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "缺少 DDI 文件：%@"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "缺少 DDI 檔案：%@"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Missing DDI files: %@"
+          }
+        }
+      }
+    },
+    "网络可用：%@。普通 Wi‑Fi/蜂窝访问不是用户授权项": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "网络可用：%@。普通 Wi‑Fi/蜂窝访问不是用户授权项"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "網路可用：%@。一般 Wi‑Fi／行動網路存取不是使用者授權項目"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Network available: %@. Ordinary Wi-Fi/cellular access isn't a user-granted permission"
+          }
+        }
+      }
+    },
+    "网络连通性": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "网络连通性"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "網路連線"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Network connectivity"
+          }
+        }
+      }
+    },
+    "虚拟步行": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "虚拟步行"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "虛擬步行"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Virtual walk"
+          }
+        }
+      }
+    },
+    "蜂窝网络": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "蜂窝网络"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "行動網路"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cellular"
+          }
+        }
+      }
+    },
+    "行走中": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "行走中"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "行走中"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Walking"
+          }
+        }
+      }
+    },
+    "行走会话": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "行走会话"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "行走工作階段"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Walking session"
+          }
+        }
+      }
+    },
+    "行走状态": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "行走状态"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "行走狀態"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Walk status"
+          }
+        }
+      }
+    },
+    "记录": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "记录"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "記錄"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "History"
+          }
+        }
+      }
+    },
+    "设备连接": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "设备连接"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "裝置連線"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Device connection"
+          }
+        }
+      }
+    },
+    "设备配对文件": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "设备配对文件"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "裝置配對檔案"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Device pairing file"
+          }
+        }
+      }
+    },
+    "设置": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "设置"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "設定"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Settings"
+          }
+        }
+      }
+    },
+    "识别为 纬度 %.6f · 经度 %.6f": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "识别为 纬度 %.6f · 经度 %.6f"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "辨識為 緯度 %.6f · 經度 %.6f"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Read as lat %.6f · lon %.6f"
+          }
+        }
+      }
+    },
+    "诊断日志": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "诊断日志"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "診斷紀錄"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Diagnostics log"
+          }
+        }
+      }
+    },
+    "语言": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "语言"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "語言"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Language"
+          }
+        }
+      }
+    },
+    "请求 HealthKit 权限": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请求 HealthKit 权限"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "要求 HealthKit 權限"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Request HealthKit access"
+          }
+        }
+      }
+    },
+    "请求 HealthKit 步数权限": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请求 HealthKit 步数权限"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "要求 HealthKit 步數權限"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Request HealthKit step access"
+          }
+        }
+      }
+    },
+    "请求 VPN 配置权限": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请求 VPN 配置权限"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "要求 VPN 設定權限"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Request VPN access"
+          }
+        }
+      }
+    },
+    "请求位置始终允许": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请求位置始终允许"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "要求位置永遠允許"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Request always-on location"
+          }
+        }
+      }
+    },
+    "请输入形如 35.681236, 139.767125 的经纬度，或点「输入经纬度」按钮。": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请输入形如 35.681236, 139.767125 的经纬度，或点「输入经纬度」按钮。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "請輸入形如 35.681236, 139.767125 的經緯度，或點「輸入經緯度」按鈕。"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enter a latitude/longitude like 35.681236, 139.767125, or tap “Enter coordinates”."
+          }
+        }
+      }
+    },
+    "请选择有效的起点": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请选择有效的起点"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "請選擇有效的起點"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pick a valid starting point"
+          }
+        }
+      }
+    },
+    "起点已选择 · %1$@ %2$@ km/h": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "起点已选择 · %1$@ %2$@ km/h"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "起點已選擇 · %1$@ %2$@ km/h"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Start selected · %1$@ %2$@ km/h"
+          }
+        }
+      }
+    },
+    "距离": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "距离"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "距離"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Distance"
+          }
+        }
+      }
+    },
+    "跟随系统": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "跟随系统"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "跟隨系統"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Follow system"
+          }
+        }
+      }
+    },
+    "路径 %d": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "路径 %d"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "路徑 %d"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Route %d"
+          }
+        }
+      }
+    },
+    "路径已就绪，其中 %d 段没有步行路线，按直线通过": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "路径已就绪，其中 %d 段没有步行路线，按直线通过"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "路徑已就緒，其中 %d 段沒有步行路線，以直線通過"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Route ready; %d segments have no walking path and go straight through"
+          }
+        }
+      }
+    },
+    "路径已就绪，可以%@": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "路径已就绪，可以%@"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "路徑已就緒，可以%@"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Route ready — you can %@"
+          }
+        }
+      }
+    },
+    "路线": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "路线"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "路線"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Route"
+          }
+        }
+      }
+    },
+    "路线与定点": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "路线与定点"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "路線與定點"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Route & pin"
+          }
+        }
+      }
+    },
+    "路线模拟": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "路线模拟"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "路線模擬"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Route sim"
+          }
+        }
+      }
+    },
+    "路线至少需要两个有效坐标": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "路线至少需要两个有效坐标"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "路線至少需要兩個有效座標"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A route needs at least two valid coordinates"
+          }
+        }
+      }
+    },
+    "踏频": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "踏频"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "踏頻"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cadence"
+          }
+        }
+      }
+    },
+    "踏频跟速度线性相关：拖动速度时踏频同步升降（齿比不变），拖动踏频相当于换挡。": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "踏频跟速度线性相关：拖动速度时踏频同步升降（齿比不变），拖动踏频相当于换挡。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "踏頻跟速度線性相關：拖動速度時踏頻同步升降（齒比不變），拖動踏頻相當於換檔。"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cadence scales linearly with speed: dragging speed moves cadence with it (same gear ratio); dragging cadence is like shifting gears."
+          }
+        }
+      }
+    },
+    "轨迹 %d 点": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "轨迹 %d 点"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "軌跡 %d 點"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Track, %d points"
+          }
+        }
+      }
+    },
+    "载入已保存的路径": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "载入已保存的路径"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "載入已儲存的路徑"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Load a saved route"
+          }
+        }
+      }
+    },
+    "输入经纬度": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "输入经纬度"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "輸入經緯度"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enter coordinates"
+          }
+        }
+      }
+    },
+    "达到每日花苗上限": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "达到每日花苗上限"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "達到每日花苗上限"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Daily seedling cap reached"
+          }
+        }
+      }
+    },
+    "运行中": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "运行中"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "執行中"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Running"
+          }
+        }
+      }
+    },
+    "运行环境": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "运行环境"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "執行環境"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Environment"
+          }
+        }
+      }
+    },
+    "运行环境检查未通过，请先在设置页处理异常项": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "运行环境检查未通过，请先在设置页处理异常项"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "執行環境檢查未通過，請先在設定頁處理異常項目"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Environment check hasn't passed — resolve the flagged items on the Settings page first"
+          }
+        }
+      }
+    },
+    "还没有保存的路径": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "还没有保存的路径"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "還沒有儲存的路徑"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No saved routes yet"
+          }
+        }
+      }
+    },
+    "还没有收藏地点": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "还没有收藏地点"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "還沒有收藏地點"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No saved places yet"
+          }
+        }
+      }
+    },
+    "连接内置 VPN": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "连接内置 VPN"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "連接內建 VPN"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Connect built-in VPN"
+          }
+        }
+      }
+    },
+    "连接内置 VPN 失败：%@": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "连接内置 VPN 失败：%@"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "連接內建 VPN 失敗：%@"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Failed to connect the built-in VPN: %@"
+          }
+        }
+      }
+    },
+    "连接并挂载 DDI": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "连接并挂载 DDI"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "連接並掛載 DDI"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Connect and mount DDI"
+          }
+        }
+      }
+    },
+    "选择的文件是空的。": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "选择的文件是空的。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "選擇的檔案是空的。"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The selected file is empty."
+          }
+        }
+      }
+    },
+    "途经点 %d": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "途经点 %d"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "途經點 %d"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Waypoint %d"
+          }
+        }
+      }
+    },
+    "速度": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "速度"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "速度"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Speed"
+          }
+        }
+      }
+    },
+    "遇到「VPN 未连接 / 等待 VPN」等问题时，点这里生成核心状态快照，再分享给开发者排查。日志不含 pairing file 内容或定位数据。": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "遇到「VPN 未连接 / 等待 VPN」等问题时，点这里生成核心状态快照，再分享给开发者排查。日志不含 pairing file 内容或定位数据。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "遇到「VPN 未連線 / 等待 VPN」等問題時，點這裡產生核心狀態快照，再分享給開發者排查。紀錄不含 pairing file 內容或定位資料。"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hitting problems like “VPN not connected” or “waiting for VPN”? Generate a snapshot of the core state here and share it with the developer. It contains no pairing file contents or location data."
+          }
+        }
+      }
+    },
+    "重新检查": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "重新检查"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "重新檢查"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Check again"
+          }
+        }
+      }
+    },
+    "锁定方向并在后台巡航": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "锁定方向并在后台巡航"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "鎖定方向並在背景巡航"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lock heading and cruise in background"
+          }
+        }
+      }
+    },
+    "闭环": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "闭环"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "閉環"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Loop"
+          }
+        }
+      }
+    },
+    "闭环路径已就绪，可以开始绕圈": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "闭环路径已就绪，可以开始绕圈"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "閉環路徑已就緒，可以開始繞圈"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Loop route ready — you can start circling"
+          }
+        }
+      }
+    },
+    "闭环：终点连回起点，循环绕圈": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "闭环：终点连回起点，循环绕圈"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "閉環：終點連回起點，循環繞圈"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Loop: end connects back to start and repeats"
+          }
+        }
+      }
+    },
+    "闭环：至少需要 3 个点": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "闭环：至少需要 3 个点"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "閉環：至少需要 3 個點"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Loop: needs at least 3 points"
+          }
+        }
+      }
+    },
+    "问题反馈": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "问题反馈"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "問題回報"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Report a problem"
+          }
+        }
+      }
+    },
+    "隧道已连接，但访问不到设备开发服务(:49152)。多数可通过「关闭开发者模式再重新打开（会重启）」修复；也可能是 pairing file 不是本机生成": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "隧道已连接，但访问不到设备开发服务(:49152)。多数可通过「关闭开发者模式再重新打开（会重启）」修复；也可能是 pairing file 不是本机生成"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "通道已連線，但存取不到裝置開發服務(:49152)。多數可透過「關閉開發者模式再重新開啟（會重新啟動）」修復；也可能是 pairing file 不是本機產生"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tunnel is up but the device's developer service (:49152) is unreachable. Toggling Developer Mode off and on (device reboots) fixes most cases; the pairing file may also be from another machine"
+          }
+        }
+      }
+    },
+    "需先完成 pairing file 并连接内置 VPN 路由": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "需先完成 pairing file 并连接内置 VPN 路由"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "需先完成 pairing file 並連接內建 VPN 路由"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Import a pairing file and connect the built-in VPN route first"
+          }
+        }
+      }
+    },
+    "需要在电脑上运行 idevice_pair：连接 iPhone → 选择 StikDebug → 导入 pairing file → 回到本 App 点“检查”。": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "需要在电脑上运行 idevice_pair：连接 iPhone → 选择 StikDebug → 导入 pairing file → 回到本 App 点“检查”。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "需要在電腦上執行 idevice_pair：連接 iPhone → 選擇 StikDebug → 匯入 pairing file → 回到本 App 點「檢查」。"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Run idevice_pair on your computer: connect the iPhone → pick StikDebug → import the pairing file → come back and tap “Check”."
+          }
+        }
+      }
+    },
+    "需要在设置中开启位置权限": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "需要在设置中开启位置权限"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "需要在設定中開啟位置權限"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enable location access in Settings"
+          }
+        }
+      }
+    },
+    "需要在设置中开启健康权限": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "需要在设置中开启健康权限"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "需要在設定中開啟健康權限"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enable Health access in Settings"
+          }
+        }
+      }
+    },
+    "首次连接时，iOS 会请求添加 VPN 配置。隧道仅在本机映射 10.7.0.1，不连接外部 VPN 服务器。": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "首次连接时，iOS 会请求添加 VPN 配置。隧道仅在本机映射 10.7.0.1，不连接外部 VPN 服务器。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "首次連接時，iOS 會要求加入 VPN 設定。通道僅在本機對應 10.7.0.1，不會連接外部 VPN 伺服器。"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "On first connect, iOS asks to add a VPN configuration. The tunnel only maps 10.7.0.1 locally — it never connects to an external VPN server."
+          }
+        }
+      }
+    },
+    "首页": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "首页"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "首頁"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Home"
+          }
+        }
+      }
+    },
+    "骑行": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "骑行"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "騎乘"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cycling"
+          }
+        }
+      }
+    },
+    "骑行中": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "骑行中"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "騎乘中"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cycling"
+          }
+        }
+      }
+    },
+    "骑行参数": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "骑行参数"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "騎乘參數"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cycling settings"
+          }
+        }
+      }
+    },
+    "默认跟随系统语言。切换后立即生效，系统弹窗等界面在下次启动后跟上。": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "默认跟随系统语言。切换后立即生效，系统弹窗等界面在下次启动后跟上。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "預設跟隨系統語言。切換後立即生效，系統彈出視窗等介面會在下次啟動後跟上。"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Follows the system language by default. Changes apply immediately; system dialogs catch up on next launch."
+          }
+        }
+      }
+    }
+  },
+  "version": "1.0"
+}
