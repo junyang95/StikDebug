@@ -10,8 +10,16 @@ struct StikDebugApp: App {
     @StateObject private var health = HealthStepService.shared
     @StateObject private var vpn = EmbeddedVPNService.shared
     @StateObject private var localization = LocalizationManager.shared
+    private let isTesting: Bool
+    private let modelContainer: ModelContainer
 
     init() {
+        let testing = ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil
+        isTesting = testing
+        modelContainer = try! ModelContainer(
+            for: WalkingSessionRecord.self,
+            configurations: ModelConfiguration(isStoredInMemoryOnly: testing)
+        )
         AppBootstrapper.configure()
     }
 
@@ -28,7 +36,8 @@ struct StikDebugApp: App {
                 // 重建整棵树，让已经渲染出来的文案按新语言重新查表。
                 .id(localization.language)
                 .task {
-                    guard !ProcessInfo.processInfo.arguments.contains("--ui-testing") else { return }
+                    guard !isTesting,
+                          !ProcessInfo.processInfo.arguments.contains("--ui-testing") else { return }
                     await vpn.load()
                     if UserDefaults.standard.bool(forKey: "autoConnectEmbeddedVPN"),
                        !vpn.status.isConnected {
@@ -49,6 +58,6 @@ struct StikDebugApp: App {
                     }
                 }
         }
-        .modelContainer(for: WalkingSessionRecord.self)
+        .modelContainer(modelContainer)
     }
 }

@@ -226,7 +226,11 @@ final class EnvironmentPreflightService: ObservableObject {
         let beforeMigrationSignature = PairingFileStore.stateSignature()
         guard beforeMigrationSignature != lastPairingSignature else { return }
 
-        _ = PairingFileStore.prepareURL()
+        do {
+            _ = try PairingFileStore.synchronizeFromDocuments()
+        } catch {
+            LogManager.shared.addErrorLog("Pairing file sync failed: \(error.localizedDescription)")
+        }
         lastPairingSignature = PairingFileStore.stateSignature()
         await refresh()
     }
@@ -263,21 +267,29 @@ final class EnvironmentPreflightService: ObservableObject {
     }
 
     nonisolated private static func validatePairingFile() -> PreflightStatus {
+        let synchronizationResult: PairingFileStore.SynchronizationResult
+        do {
+            synchronizationResult = try PairingFileStore.synchronizeFromDocuments()
+        } catch {
+            let existingURL = PairingFileStore.prepareURL()
+            if PairingFileStore.isValidPairingFile(at: existingURL) {
+                return .warning(error.localizedDescription)
+            }
+            return .failed(error.localizedDescription)
+        }
+
         let url = PairingFileStore.prepareURL()
         guard FileManager.default.fileExists(atPath: url.path) else {
             return .failed("尚未导入 pairing file".localized)
         }
 
-        var handle: OpaquePointer?
-        let error = url.path.withCString { rp_pairing_file_read($0, &handle) }
-        if let error {
-            idevice_error_free(error)
-            return .failed("pairing file 无法解析".localized)
-        }
-        guard let handle else {
+        guard PairingFileStore.isValidPairingFile(at: url) else {
             return .failed("pairing file 内容无效".localized)
         }
-        rp_pairing_file_free(handle)
+
+        if synchronizationResult == .rejected {
+            return .warning("pairing file 内容无效".localized)
+        }
         return .ready("pairing file 可读取".localized)
     }
 

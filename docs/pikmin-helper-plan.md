@@ -77,6 +77,7 @@ GPS spoofing 违反 Pikmin Bloom 官方政策，存在账号处罚风险。
 - 内置 VPN 路由只在 Wi‑Fi 已连接后显示“连接内置 VPN”；Wi‑Fi 未完成时显示等待前置条件。
 - pairing file 缺失时显示电脑端 idevice_pair 最短步骤，并提供 Mac / Windows 下载链接、分享和复制链接入口。
 - pairing file 导入后通过通知和 2 秒轻量轮询自动刷新 UI；idevice_pair 通过 Documents 写入 `pairingFile.plist` 时，App 会自动迁移并更新清单状态。
+- Documents 中同时出现新旧文件名时，按修改时间选择最新且可解析的候选文件；候选文件先复制到受保护目录中的临时文件，经 `rp_pairing_file_read` 验证后再原子替换。无效或写入不完整的新文件不会破坏现有可用 pairing file，成功导入后会清理 Documents 中的文件共享副本。
 - DDI 文件缺失时提供“下载/重新下载 DDI 文件”；不再只依赖 App 启动时自动下载缺失文件。
 - CoreDevice/RSD 通道只在 Wi‑Fi、VPN 路由、pairing file 和 DDI 文件都满足后显示建立按钮。
 - DDI 文件已准备但未挂载时，等待 CoreDevice/RSD 通道；通道建立后显示挂载动作。

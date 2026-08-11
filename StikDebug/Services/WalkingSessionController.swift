@@ -161,7 +161,7 @@ final class WalkingSessionController: ObservableObject {
         BackgroundAudioManager.shared.requestStop()
         BackgroundLocationManager.shared.requestStop()
 
-        let pairingPath = PairingFileStore.prepareURL().path
+        let pairingPath = PairingFileStore.url.path
         let code = await withCheckedContinuation { continuation in
             locationQueue.async {
                 continuation.resume(returning: clear_simulated_location(
@@ -333,7 +333,7 @@ final class WalkingSessionController: ObservableObject {
     }
 
     private func sendLocation(_ coordinate: CLLocationCoordinate2D) async -> Int32 {
-        let pairingPath = PairingFileStore.prepareURL().path
+        let pairingPath = PairingFileStore.url.path
         return await withCheckedContinuation { continuation in
             locationQueue.async {
                 continuation.resume(returning: simulate_location(
