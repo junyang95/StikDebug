@@ -4,6 +4,22 @@ import NetworkExtension
 import UIKit
 import idevice
 
+private final class DiagnosticsCompletionGate: @unchecked Sendable {
+    private let lock = NSLock()
+    private var didFinish = false
+
+    func runOnce(_ action: () -> Void) {
+        lock.lock()
+        guard !didFinish else {
+            lock.unlock()
+            return
+        }
+        didFinish = true
+        lock.unlock()
+        action()
+    }
+}
+
 /// 一键生成「核心状态快照」，给用户导出后发给开发者排查。
 ///
 /// 只收集诊断需要的状态（VPN、网络、路由探测、配对/DDI 是否就位、最近日志），
@@ -125,20 +141,20 @@ enum DiagnosticsReport {
         await withCheckedContinuation { continuation in
             let monitor = NWPathMonitor()
             let queue = DispatchQueue(label: "com.pikminhelper.diagnostics.path")
-            var resumed = false
+            let gate = DiagnosticsCompletionGate()
             monitor.pathUpdateHandler = { path in
-                guard !resumed else { return }
-                resumed = true
-                let text = describe(path)
-                monitor.cancel()
-                continuation.resume(returning: text)
+                gate.runOnce {
+                    let text = describe(path)
+                    monitor.cancel()
+                    continuation.resume(returning: text)
+                }
             }
             monitor.start(queue: queue)
             queue.asyncAfter(deadline: .now() + 2) {
-                guard !resumed else { return }
-                resumed = true
-                monitor.cancel()
-                continuation.resume(returning: "网络状态：2 秒内未返回")
+                gate.runOnce {
+                    monitor.cancel()
+                    continuation.resume(returning: "网络状态：2 秒内未返回")
+                }
             }
         }
     }
@@ -180,13 +196,13 @@ enum DiagnosticsReport {
                 using: .tcp
             )
             let queue = DispatchQueue(label: "com.pikminhelper.diagnostics.probe")
-            var resumed = false
-            func finish(_ text: String) {
-                guard !resumed else { return }
-                resumed = true
-                connection.stateUpdateHandler = nil
-                connection.cancel()
-                continuation.resume(returning: text)
+            let gate = DiagnosticsCompletionGate()
+            let finish: @Sendable (String) -> Void = { text in
+                gate.runOnce {
+                    connection.stateUpdateHandler = nil
+                    connection.cancel()
+                    continuation.resume(returning: text)
+                }
             }
             connection.stateUpdateHandler = { state in
                 switch state {

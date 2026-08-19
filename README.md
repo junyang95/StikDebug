@@ -48,6 +48,14 @@ xcodebuild \
   build
 ```
 
+完整的无签名构建、测试目标、隐私清单和 Extension 打包验证可运行：
+
+```bash
+Tools/verify-pikmin-helper.sh
+```
+
+真机版本矩阵与安装步骤见 [docs/device-test-matrix.md](docs/device-test-matrix.md)。
+
 ## 风险
 
 GPS spoofing 违反 Pikmin Bloom 服务政策，可能导致账号受限或永久封禁。本项目不保证游戏接受第三方 HealthKit 步数来源，仅供内部学习。

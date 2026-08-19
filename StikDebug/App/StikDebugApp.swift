@@ -77,6 +77,9 @@ struct StikDebugApp: App {
     }
 
     private var shouldPresentSetup: Bool {
+        if ProcessInfo.processInfo.arguments.contains("--ui-testing-skip-setup") {
+            return false
+        }
         let pairingFileExists = FileManager.default.fileExists(
             atPath: PairingFileStore.prepareURL().path
         )
