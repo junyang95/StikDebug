@@ -58,9 +58,16 @@ enum WalkingSessionPhase: String, Codable {
     case idle
     case preparing
     case running
+    case reconnecting
     case paused
     case completed
     case failed
+}
+
+enum SessionReconnectPolicy {
+    /// 间隔逐步拉长，兼顾短暂抖动的快速恢复与设备通道重建所需时间。
+    static let retryDelaysSeconds: [UInt64] = [1, 2, 4, 8]
+    static var maximumAttempts: Int { retryDelaysSeconds.count }
 }
 
 @Model

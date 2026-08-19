@@ -107,22 +107,40 @@ struct MovementControlView: View {
                 Toggle("锁定方向并在后台巡航", isOn: $session.cruiseLocked)
                     .tint(.green)
 
-                HStack {
-                    Button(session.phase == .paused ? "继续" : "暂停") {
-                        session.phase == .paused ? session.resume() : session.pause()
+                if session.phase == .reconnecting {
+                    HStack {
+                        ProgressView()
+                        Text(String(
+                            format: "正在重连（%1$d/%2$d）".localized,
+                            max(session.reconnectAttempt, 1),
+                            SessionReconnectPolicy.maximumAttempts
+                        ))
+                        .font(.subheadline.weight(.medium))
+                        Spacer()
+                        Button("停止", role: .destructive) {
+                            Task { await session.stop() }
+                        }
+                        .buttonStyle(.bordered)
                     }
-                    .buttonStyle(.bordered)
+                } else {
+                    HStack {
+                        Button(session.phase == .paused ? "继续" : "暂停") {
+                            session.phase == .paused ? session.resume() : session.pause()
+                        }
+                        .buttonStyle(.bordered)
+                        .disabled(session.phase == .preparing)
 
-                    Button("结束") {
-                        Task { await session.stop() }
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .tint(.orange)
+                        Button("结束") {
+                            Task { await session.stop() }
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .tint(.orange)
 
-                    Button("恢复真实定位", role: .destructive) {
-                        Task { await session.restoreRealLocation() }
+                        Button("恢复真实定位", role: .destructive) {
+                            Task { await session.restoreRealLocation() }
+                        }
+                        .buttonStyle(.bordered)
                     }
-                    .buttonStyle(.bordered)
                 }
             } else {
                 HStack {

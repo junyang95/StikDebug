@@ -13,6 +13,7 @@ final class WalkingSessionController: ObservableObject {
     @Published private(set) var healthStepsWritten = 0
     @Published private(set) var elapsedSeconds = 0.0
     @Published private(set) var lastError: String?
+    @Published private(set) var reconnectAttempt = 0
     @Published var headingDegrees = 0.0
     @Published var cruiseLocked = false
 
@@ -32,6 +33,7 @@ final class WalkingSessionController: ObservableObject {
     private var jitterTargetAge = 0.0
     private var isSendingLocation = false
     private var healthWriteTask: Task<Void, Never>?
+    private var reconnectTask: Task<Void, Never>?
     private var routeCoordinates: [CLLocationCoordinate2D] = []
     private var routeTargetIndex = 1
     private var routeDirection = 1
@@ -42,7 +44,7 @@ final class WalkingSessionController: ObservableObject {
     private init() {}
 
     var isActive: Bool {
-        phase == .running || phase == .paused || phase == .preparing
+        phase == .running || phase == .reconnecting || phase == .paused || phase == .preparing
     }
 
     /// 当前会话真正采用的模式和速度。设置页里的值可能在会话开始后被修改，
@@ -116,6 +118,10 @@ final class WalkingSessionController: ObservableObject {
 
         phase = .preparing
         lastError = nil
+        reconnectAttempt = 0
+        reconnectTask?.cancel()
+        reconnectTask = nil
+        SessionNotificationService.shared.requestAuthorizationIfNeeded()
         _ = await HealthStepService.shared.requestAuthorization()
 
         let initialCode = await sendLocation(config.startCoordinate)
@@ -152,6 +158,8 @@ final class WalkingSessionController: ObservableObject {
 
     func resume() {
         guard phase == .paused else { return }
+        reconnectAttempt = 0
+        lastError = nil
         phase = .running
         lastTickAt = Date()
     }
@@ -246,10 +254,7 @@ final class WalkingSessionController: ObservableObject {
             let code = await sendLocation(simulatedCoordinate)
             await MainActor.run {
                 self.isSendingLocation = false
-                if code != 0 {
-                    self.phase = .paused
-                    self.lastError = String(format: "位置连接中断（错误 %d），会话已暂停".localized, code)
-                }
+                self.handleLocationResult(code)
             }
         }
 
@@ -305,6 +310,9 @@ final class WalkingSessionController: ObservableObject {
     private func finish(reason: String, phase finalPhase: WalkingSessionPhase) {
         timer?.cancel()
         timer = nil
+        reconnectTask?.cancel()
+        reconnectTask = nil
+        reconnectAttempt = 0
         BackgroundAudioManager.shared.requestStop()
         BackgroundLocationManager.shared.requestStop()
 
@@ -338,8 +346,75 @@ final class WalkingSessionController: ObservableObject {
     private func fail(_ message: String) {
         timer?.cancel()
         timer = nil
+        reconnectTask?.cancel()
+        reconnectTask = nil
+        reconnectAttempt = 0
         phase = .failed
         lastError = message
+    }
+
+    private func handleLocationResult(_ code: Int32) {
+        guard phase == .running, config != nil else { return }
+        guard code != 0 else { return }
+        beginReconnect(after: code)
+    }
+
+    private func beginReconnect(after initialErrorCode: Int32) {
+        guard config != nil, reconnectTask == nil else { return }
+        phase = .reconnecting
+        reconnectAttempt = 0
+        lastError = String(
+            format: "位置连接中断（错误 %d），正在自动重连".localized,
+            initialErrorCode
+        )
+        SessionNotificationService.shared.notifyConnectionDropped()
+
+        reconnectTask = Task { [weak self] in
+            guard let self else { return }
+            var latestErrorCode = initialErrorCode
+
+            for (index, delay) in SessionReconnectPolicy.retryDelaysSeconds.enumerated() {
+                guard !Task.isCancelled, self.config != nil else { return }
+                self.reconnectAttempt = index + 1
+
+                if !EmbeddedVPNService.shared.status.isConnected {
+                    await EmbeddedVPNService.shared.connect()
+                }
+
+                do {
+                    try await Task.sleep(for: .seconds(delay))
+                } catch {
+                    return
+                }
+
+                guard !Task.isCancelled,
+                      self.config != nil,
+                      let coordinate = self.currentCoordinate else { return }
+
+                latestErrorCode = await self.sendLocation(coordinate)
+                if latestErrorCode == 0 {
+                    self.reconnectTask = nil
+                    self.reconnectAttempt = 0
+                    self.lastError = nil
+                    self.lastTickAt = Date()
+                    self.phase = .running
+                    SessionNotificationService.shared.notifyReconnected()
+                    LogManager.shared.addInfoLog("位置连接已自动恢复")
+                    return
+                }
+            }
+
+            guard !Task.isCancelled, self.config != nil else { return }
+            self.reconnectTask = nil
+            self.phase = .paused
+            self.lastError = String(
+                format: "自动重连 %1$d 次后仍失败（错误 %2$d），会话已暂停".localized,
+                SessionReconnectPolicy.maximumAttempts,
+                latestErrorCode
+            )
+            SessionNotificationService.shared.notifyReconnectFailed()
+            LogManager.shared.addErrorLog(self.lastError ?? "位置自动重连失败".localized)
+        }
     }
 
     private func sendLocation(_ coordinate: CLLocationCoordinate2D) async -> Int32 {

@@ -55,6 +55,16 @@ private struct PairingStoreFixture {
 }
 
 struct PikminHelperTests {
+    @Test
+    func reconnectPolicyIsBoundedAndBacksOff() {
+        let delays = SessionReconnectPolicy.retryDelaysSeconds
+
+        #expect(!delays.isEmpty)
+        #expect(SessionReconnectPolicy.maximumAttempts == delays.count)
+        #expect(delays == delays.sorted())
+        #expect(delays.last == 8)
+    }
+
     @Test(arguments: [
         (completed: false, forceShow: false, pairingFileExists: false, expected: true),
         (completed: true, forceShow: false, pairingFileExists: false, expected: false),

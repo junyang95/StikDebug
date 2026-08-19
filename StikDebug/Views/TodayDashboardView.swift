@@ -518,6 +518,7 @@ struct TodayDashboardView: View {
         case .idle: "未开始".localized
         case .preparing: "准备中".localized
         case .running: "运行中".localized
+        case .reconnecting: "重连中".localized
         case .paused: "已暂停".localized
         case .completed: "已完成".localized
         case .failed: "失败".localized

@@ -51,6 +51,18 @@ struct MovementStatusCapsule: View {
                 tint: PikminUI.green,
                 isProgressing: false
             )
+        case .reconnecting:
+            return MovementStatusPresentation(
+                title: "正在重新连接…".localized,
+                detail: String(
+                    format: "第 %1$d / %2$d 次尝试".localized,
+                    max(session.reconnectAttempt, 1),
+                    SessionReconnectPolicy.maximumAttempts
+                ),
+                symbol: "arrow.trianglehead.2.clockwise.rotate.90",
+                tint: .orange,
+                isProgressing: true
+            )
         case .paused:
             return MovementStatusPresentation(
                 title: "模拟已暂停".localized,
@@ -221,7 +233,10 @@ struct MovementStatusCapsule: View {
     }
 
     private var summaryLine: String {
-        if session.phase == .running || session.phase == .paused {
+        if session.phase == .running || session.phase == .reconnecting || session.phase == .paused {
+            if session.phase == .reconnecting {
+                return presentation.detail
+            }
             let profileTitle = selectedProfile.title
             let modeTitle = effectiveMode.title
             return String(format: "%1$@ · %2$@ · %3$.1f km/h".localized, profileTitle, modeTitle, effectiveSpeed)
