@@ -5,6 +5,7 @@ import SwiftUI
 struct MovementControlView: View {
     @EnvironmentObject private var session: WalkingSessionController
     @EnvironmentObject private var preflight: EnvironmentPreflightService
+    @EnvironmentObject private var vpn: EmbeddedVPNService
 
     @AppStorage(MovementDefaultsKey.profile) private var profileRaw = MovementProfile.walking.rawValue
     @AppStorage(MovementDefaultsKey.walkingSpeed) private var walkingSpeedKPH = 8.0
@@ -33,10 +34,20 @@ struct MovementControlView: View {
                 .pickerStyle(.segmented)
                 .padding()
 
-                if selectedMode == .joystick {
-                    joystickContent
-                } else {
-                    LocationSimulationView()
+                ZStack(alignment: .top) {
+                    if selectedMode == .joystick {
+                        joystickContent
+                    } else {
+                        LocationSimulationView()
+                    }
+
+                    MovementStatusCapsule(
+                        selectedMode: selectedMode,
+                        selectedProfile: profile,
+                        selectedSpeedKilometersPerHour: displaySpeedKPH
+                    )
+                    .padding(.horizontal, 16)
+                    .padding(.top, 8)
                 }
             }
             .navigationTitle("移动")
@@ -65,10 +76,6 @@ struct MovementControlView: View {
             .ignoresSafeArea(edges: .bottom)
 
             VStack(spacing: 12) {
-                if !preflight.canStartSession {
-                    PreflightChecklistView(service: preflight, compact: true)
-                }
-
                 sessionControls
 
                 if session.phase == .running || session.phase == .paused {

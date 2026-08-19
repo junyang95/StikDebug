@@ -45,6 +45,16 @@ final class WalkingSessionController: ObservableObject {
         phase == .running || phase == .paused || phase == .preparing
     }
 
+    /// 当前会话真正采用的模式和速度。设置页里的值可能在会话开始后被修改，
+    /// 状态界面应显示已经锁定到本次会话里的配置，而不是最新偏好值。
+    var activeMode: MovementMode? {
+        config?.mode
+    }
+
+    var activeSpeedKilometersPerHour: Double? {
+        config?.speedKilometersPerHour
+    }
+
     var progress: Double? {
         guard let config, config.goalKind != .manual, config.goalValue > 0 else { return nil }
         let current: Double
