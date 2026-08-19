@@ -14,6 +14,8 @@ struct HelperSettingsView: View {
     @AppStorage(MovementDefaultsKey.cyclingDevelopment) private var cyclingDevelopment = 5.0
     @AppStorage(AppearancePreference.storageKey) private var appearanceRaw = AppearancePreference.system.rawValue
     @AppStorage("autoConnectEmbeddedVPN") private var autoConnectVPN = true
+    @AppStorage(SetupGate.completedKey) private var setupCompleted = false
+    @AppStorage(SetupGate.forceShowKey) private var forceShowSetup = false
     @State private var showPairingImporter = false
     @State private var showOnDevicePairing = false
     @State private var importMessage: String?
@@ -212,6 +214,19 @@ struct HelperSettingsView: View {
                     PreflightChecklistView(service: preflight)
                         .listRowInsets(EdgeInsets())
                         .listRowBackground(Color.clear)
+                }
+
+                Section("设置向导") {
+                    Button {
+                        SetupGate.restart()
+                        setupCompleted = false
+                        forceShowSetup = true
+                    } label: {
+                        Label("重新运行首次设置", systemImage: "arrow.clockwise.circle")
+                    }
+                    Text("重新打开欢迎、权限、配对、内置 VPN 和环境检查流程；不会删除现有 pairing file 或历史记录。")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                 }
 
                 Section("问题反馈") {

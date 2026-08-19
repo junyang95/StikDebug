@@ -11,6 +11,8 @@ struct StikDebugApp: App {
     @StateObject private var vpn = EmbeddedVPNService.shared
     @StateObject private var onDevicePairing = OnDevicePairingService.shared
     @StateObject private var localization = LocalizationManager.shared
+    @AppStorage(SetupGate.completedKey) private var setupCompleted = false
+    @AppStorage(SetupGate.forceShowKey) private var forceShowSetup = false
     private let isTesting: Bool
     private let modelContainer: ModelContainer
 
@@ -26,7 +28,17 @@ struct StikDebugApp: App {
 
     var body: some Scene {
         WindowGroup {
-            MainTabView()
+            Group {
+                if shouldPresentSetup {
+                    FirstRunSetupView {
+                        SetupGate.markComplete()
+                        setupCompleted = true
+                        forceShowSetup = false
+                    }
+                } else {
+                    MainTabView()
+                }
+            }
                 .environmentObject(session)
                 .environmentObject(preflight)
                 .environmentObject(permissions)
@@ -61,5 +73,16 @@ struct StikDebugApp: App {
                 }
         }
         .modelContainer(modelContainer)
+    }
+
+    private var shouldPresentSetup: Bool {
+        let pairingFileExists = FileManager.default.fileExists(
+            atPath: PairingFileStore.prepareURL().path
+        )
+        return SetupGate.shouldPresent(
+            completed: setupCompleted,
+            forceShow: forceShowSetup,
+            pairingFileExists: pairingFileExists
+        )
     }
 }

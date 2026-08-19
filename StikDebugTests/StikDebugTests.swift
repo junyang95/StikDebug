@@ -55,6 +55,25 @@ private struct PairingStoreFixture {
 }
 
 struct PikminHelperTests {
+    @Test(arguments: [
+        (completed: false, forceShow: false, pairingFileExists: false, expected: true),
+        (completed: true, forceShow: false, pairingFileExists: false, expected: false),
+        (completed: false, forceShow: false, pairingFileExists: true, expected: false),
+        (completed: true, forceShow: true, pairingFileExists: true, expected: true)
+    ])
+    func setupGateChoosesTheExpectedEntryPoint(
+        completed: Bool,
+        forceShow: Bool,
+        pairingFileExists: Bool,
+        expected: Bool
+    ) {
+        #expect(SetupGate.shouldPresent(
+            completed: completed,
+            forceShow: forceShow,
+            pairingFileExists: pairingFileExists
+        ) == expected)
+    }
+
     @Test
     func destinationMovesExpectedDistanceNorth() {
         let start = CLLocationCoordinate2D(latitude: 31.2304, longitude: 121.4737)
