@@ -15,6 +15,7 @@ struct MovementStatusCapsule: View {
     @EnvironmentObject private var preflight: EnvironmentPreflightService
     @EnvironmentObject private var vpn: EmbeddedVPNService
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @ObservedObject private var fixedSession = FixedLocationSessionController.shared
 
     let selectedMode: MovementMode
     let selectedProfile: MovementProfile
@@ -88,6 +89,15 @@ struct MovementStatusCapsule: View {
                 isProgressing: false
             )
         case .idle:
+            if fixedSession.coordinate != nil {
+                return MovementStatusPresentation(
+                    title: "定点模拟中".localized,
+                    detail: "后台持续刷新设备位置".localized,
+                    symbol: "mappin.circle.fill",
+                    tint: PikminUI.green,
+                    isProgressing: false
+                )
+            }
             return idlePresentation
         }
     }
@@ -246,7 +256,7 @@ struct MovementStatusCapsule: View {
 
     private var diagnosticContent: some View {
         VStack(alignment: .leading, spacing: 10) {
-            if let coordinate = session.currentCoordinate {
+            if let coordinate = session.currentCoordinate ?? fixedSession.coordinate {
                 diagnosticRow(
                     title: "模拟坐标".localized,
                     value: String(format: "%.5f, %.5f", coordinate.latitude, coordinate.longitude),

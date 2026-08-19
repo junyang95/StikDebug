@@ -16,6 +16,8 @@ struct HelperSettingsView: View {
     @AppStorage(MovementDefaultsKey.cyclingDevelopment) private var cyclingDevelopment = 5.0
     @AppStorage(AppearancePreference.storageKey) private var appearanceRaw = AppearancePreference.system.rawValue
     @AppStorage("autoConnectEmbeddedVPN") private var autoConnectVPN = true
+    @AppStorage("keepAliveLocation") private var keepAliveLocation = true
+    @AppStorage("keepAliveAudio") private var keepAliveAudio = true
     @AppStorage(SetupGate.completedKey) private var setupCompleted = false
     @AppStorage(SetupGate.forceShowKey) private var forceShowSetup = false
     @State private var showPairingImporter = false
@@ -173,6 +175,20 @@ struct HelperSettingsView: View {
                         }
                     }
                     Text("首次连接时，iOS 会请求添加 VPN 配置。隧道仅在本机映射 10.7.0.1，不连接外部 VPN 服务器。")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+
+                Section("后台运行") {
+                    Toggle("使用低精度定位保活", isOn: $keepAliveLocation)
+                        .onChange(of: keepAliveLocation) { _, _ in
+                            BackgroundLocationManager.shared.refreshPreferences()
+                        }
+                    Toggle("使用静音音频兜底", isOn: $keepAliveAudio)
+                        .onChange(of: keepAliveAudio) { _, _ in
+                            BackgroundAudioManager.shared.refreshPreferences()
+                        }
+                    Text("定位保活能耗较低，建议开启。静音音频仅在系统容易暂停后台任务时作为兜底；关闭后锁屏期间可能更容易中断。")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }

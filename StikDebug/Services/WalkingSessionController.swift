@@ -194,6 +194,7 @@ final class WalkingSessionController: ObservableObject {
     }
 
     func restoreRealLocation() async {
+        FixedLocationSessionController.shared.stop()
         if isActive {
             await stop(reason: "恢复真实定位".localized)
         }
@@ -226,8 +227,8 @@ final class WalkingSessionController: ObservableObject {
 
     private func startTimer() {
         timer?.cancel()
-        let timer = DispatchSource.makeTimerSource(queue: .global(qos: .userInitiated))
-        timer.schedule(deadline: .now() + 1, repeating: 1, leeway: .milliseconds(100))
+        let timer = DispatchSource.makeTimerSource(queue: .global(qos: .utility))
+        timer.schedule(deadline: .now() + 1, repeating: 1, leeway: .milliseconds(250))
         timer.setEventHandler { [weak self] in
             Task { @MainActor in
                 self?.tick()
@@ -235,6 +236,19 @@ final class WalkingSessionController: ObservableObject {
         }
         self.timer = timer
         timer.resume()
+    }
+
+    /// 从后台回到前台时立即验证一次设备通道，不必等下一个定时 tick 才发现掉线。
+    func refreshAfterForeground() {
+        guard phase == .running,
+              !isSendingLocation,
+              let coordinate = currentCoordinate else { return }
+        isSendingLocation = true
+        Task {
+            let code = await sendLocation(coordinate)
+            isSendingLocation = false
+            handleLocationResult(code)
+        }
     }
 
     private func tick() {

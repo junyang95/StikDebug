@@ -71,6 +71,15 @@ final class BackgroundLocationManager: NSObject, CLLocationManagerDelegate {
         }
     }
 
+    func refreshPreferences() {
+        if requiredActivityCount > 0
+            || (activityCount > 0 && UserDefaults.standard.bool(forKey: "keepAliveLocation")) {
+            start()
+        } else {
+            stop()
+        }
+    }
+
     func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
         guard isRunning else { return }
         switch manager.authorizationStatus {

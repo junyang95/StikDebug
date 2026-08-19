@@ -55,6 +55,11 @@ struct MovementControlView: View {
             .navigationTitle("模拟位置")
             .navigationBarTitleDisplayMode(.inline)
             .tint(PikminUI.green)
+            .onChange(of: selectedMode) { _, mode in
+                if mode != .fixedLocation {
+                    FixedLocationSessionController.shared.stop()
+                }
+            }
         }
     }
 

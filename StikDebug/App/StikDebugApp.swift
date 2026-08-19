@@ -63,8 +63,10 @@ struct StikDebugApp: App {
                     await health.refreshToday()
                 }
                 .onChange(of: scenePhase) { _, phase in
+                    FixedLocationSessionController.shared.updateForegroundState(phase == .active)
                     guard phase == .active else { return }
                     Task {
+                        session.refreshAfterForeground()
                         await vpn.load()
                         await permissions.refresh()
                         await preflight.refresh()

@@ -449,13 +449,14 @@ final class LocationSearchCompleter: NSObject, ObservableObject, MKLocalSearchCo
 struct LocationSimulationView: View {
     @EnvironmentObject private var walkingSession: WalkingSessionController
     @EnvironmentObject private var preflight: EnvironmentPreflightService
+    @Environment(\.scenePhase) private var scenePhase
     @Binding var selectedMode: MovementMode
+    @ObservedObject private var fixedSession = FixedLocationSessionController.shared
     @AppStorage(MovementDefaultsKey.profile) private var profileRaw = MovementProfile.walking.rawValue
     @State private var coordinate: CLLocationCoordinate2D?
     @State private var position: MapCameraPosition = .userLocation(fallback: .automatic)
 
     @State private var backgroundTaskID: UIBackgroundTaskIdentifier = .invalid
-    @State private var resendTimer: Timer?
     @State private var isBusy = false
     @State private var isImportingCoordinates = false
     @State private var showAlert = false
@@ -465,7 +466,6 @@ struct LocationSimulationView: View {
     @State private var searchText = ""
     @StateObject private var searchCompleter = LocationSearchCompleter()
     @State private var showCoordinateImporter = false
-    @State private var simulatedCoordinate: CLLocationCoordinate2D?
     @State private var routeGoalKind: SessionGoalKind = .distance
     @State private var routeGoalValue = 5.0
 
@@ -512,6 +512,10 @@ struct LocationSimulationView: View {
 
     private var isRouteRunning: Bool {
         walkingSession.isActive
+    }
+
+    private var simulatedCoordinate: CLLocationCoordinate2D? {
+        fixedSession.coordinate
     }
 
     /// 地图当前是否处于连点画路线的状态。
@@ -767,6 +771,9 @@ struct LocationSimulationView: View {
             }
         }
         .onChange(of: selectedMode) { _, mode in
+            if mode != .fixedLocation, simulatedCoordinate != nil {
+                stopResendLoop()
+            }
             if mode != .route {
                 cancelFreehandRoute()
             }
@@ -775,6 +782,9 @@ struct LocationSimulationView: View {
             } else if mode == .route {
                 searchCompleter.results = []
             }
+        }
+        .onChange(of: scenePhase) { _, phase in
+            fixedSession.updateForegroundState(phase == .active)
         }
         .alert(alertTitle, isPresented: $showAlert) {
             Button("好", role: .cancel) { }
@@ -843,15 +853,14 @@ struct LocationSimulationView: View {
             }
         }
         .onAppear {
+            if coordinate == nil, let fixedCoordinate = fixedSession.coordinate {
+                coordinate = fixedCoordinate
+            }
             loadBookmarks()
             savedRoutes = SavedWalkingRouteStore.load()
             recentLocations = RecentLocationStore.load()
         }
         .onDisappear {
-            stopResendLoop()
-            if backgroundTaskID != .invalid {
-                BackgroundLocationManager.shared.requestStop()
-            }
             endBackgroundTask()
         }
     }
@@ -1120,7 +1129,7 @@ struct LocationSimulationView: View {
 
             if simulatedCoordinate != nil {
                 Label(
-                    String(format: "定点模拟中，位置每 %@ 秒重发一次".localized, Self.fixedResendInterval.formatted()),
+                    String(format: "定点模拟中，位置每 %@ 秒重发一次".localized, fixedSession.resendInterval.formatted()),
                     systemImage: "location.fill"
                 )
                 .font(.caption)
@@ -1477,9 +1486,8 @@ struct LocationSimulationView: View {
             operation: { locationUpdateCode(for: coord) }
         ) {
             beginBackgroundTask()
-            startResendLoop(with: coord)
+            fixedSession.start(coord, isForeground: scenePhase == .active)
             recentLocations = RecentLocationStore.record(coord, name: selectedLocationName)
-            BackgroundLocationManager.shared.requestStart()
             Haptic.success()
         }
     }
@@ -1523,15 +1531,13 @@ struct LocationSimulationView: View {
             operation: { clear_simulated_location(ip, path) }
         ) {
             endBackgroundTask()
-            BackgroundLocationManager.shared.requestStop()
-            BackgroundAudioManager.shared.requestStop()
             Haptic.success()
         }
     }
 
     /// 路线模式下的「恢复真实定位」：先停会话，再走和定点一样的清除流程。
     private func restoreRealLocation() {
-        stopResendLoop()
+        fixedSession.stop()
         Task {
             await walkingSession.restoreRealLocation()
             endBackgroundTask()
@@ -1556,30 +1562,9 @@ struct LocationSimulationView: View {
         backgroundTaskID = .invalid
     }
 
-    // 定点重发间隔：原来 4 秒，MHNow 等实时游戏容易判定「定位过期」。
-    // 改成每秒一次（与行走会话同频），让静止定位持续刷新时间戳。
-    private static let fixedResendInterval: TimeInterval = 1
-
-    private func startResendLoop(with coordinate: CLLocationCoordinate2D) {
-        simulatedCoordinate = coordinate
-        resendTimer?.invalidate()
-        resendTimer = Timer.scheduledTimer(withTimeInterval: Self.fixedResendInterval, repeats: true) { _ in
-            guard let base = simulatedCoordinate else { return }
-            // 每次在原点 ±1.5m 内加随机微抖：真实 GPS 即使静止也在这个量级漂移，
-            // 逐字节完全不变的坐标更像「假信号」。抖动不累积，始终围绕选定点。
-            let jitterEast = Double.random(in: -1.5...1.5)
-            let jitterNorth = Double.random(in: -1.5...1.5)
-            let jittered = MovementMath.offset(base, eastMeters: jitterEast, northMeters: jitterNorth)
-            LocationSimulationCommandQueue.shared.async {
-                _ = locationUpdateCode(for: jittered)
-            }
-        }
-    }
-
     private func stopResendLoop() {
-        resendTimer?.invalidate()
-        resendTimer = nil
-        simulatedCoordinate = nil
+        fixedSession.stop()
+        endBackgroundTask()
     }
 
     private func applySelection(_ coordinate: CLLocationCoordinate2D, name: String? = nil) {

@@ -9,23 +9,23 @@
 /* Begin PBXBuildFile section */
 		AA0000010000000000000001 /* PikminTunnel.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = AA0000020000000000000001 /* PikminTunnel.appex */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		AB1000010000000000000001 /* PikminLiveActivity.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = AB1000030000000000000001 /* PikminLiveActivity.appex */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
-		AB1000020000000000000001 /* PikminSessionAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB10000F0000000000000001 /* PikminSessionAttributes.swift */; };
+		AB1000020000000000000001 /* StikDebug/Models/PikminSessionAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB10000F0000000000000001 /* StikDebug/Models/PikminSessionAttributes.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
-		AB10000A0000000000000001 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = DC6F1D2F2D94EADD0071B2B6 /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = AB1000090000000000000001;
-			remoteInfo = PikminLiveActivity;
-		};
 		AA0000090000000000000001 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = DC6F1D2F2D94EADD0071B2B6 /* Project object */;
 			proxyType = 1;
 			remoteGlobalIDString = AA0000060000000000000001;
 			remoteInfo = PikminTunnel;
+		};
+		AB10000A0000000000000001 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = DC6F1D2F2D94EADD0071B2B6 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = AB1000090000000000000001;
+			remoteInfo = PikminLiveActivity;
 		};
 		DC6F1D492D94EADF0071B2B6 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -61,7 +61,7 @@
 /* Begin PBXFileReference section */
 		AA0000020000000000000001 /* PikminTunnel.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = PikminTunnel.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		AB1000030000000000000001 /* PikminLiveActivity.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = PikminLiveActivity.appex; sourceTree = BUILT_PRODUCTS_DIR; };
-		AB10000F0000000000000001 /* PikminSessionAttributes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StikDebug/Models/PikminSessionAttributes.swift; sourceTree = "<group>"; };
+		AB10000F0000000000000001 /* StikDebug/Models/PikminSessionAttributes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StikDebug/Models/PikminSessionAttributes.swift; sourceTree = "<group>"; };
 		DC139F6D2DE97EA400F63846 /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
 		DC139F6F2DE97EA400F63846 /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
 		DC6F1D372D94EADD0071B2B6 /* StikDebug.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = StikDebug.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -70,13 +70,6 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		AB1000050000000000000001 /* Exceptions for "PikminLiveActivity" folder in "PikminLiveActivity" target */ = {
-			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-			membershipExceptions = (
-				Info.plist,
-			);
-			target = AB1000090000000000000001 /* PikminLiveActivity */;
-		};
 		1775D3612D9644FD00DFA8E0 /* Exceptions for "StikDebug" folder in "StikDebug" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
@@ -91,23 +84,30 @@
 			);
 			target = AA0000060000000000000001 /* PikminTunnel */;
 		};
+		AB1000050000000000000001 /* Exceptions for "PikminLiveActivity" folder in "PikminLiveActivity" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = AB1000090000000000000001 /* PikminLiveActivity */;
+		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		AB1000040000000000000001 /* PikminLiveActivity */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-				AB1000050000000000000001 /* Exceptions for "PikminLiveActivity" folder in "PikminLiveActivity" target */,
-			);
-			path = PikminLiveActivity;
-			sourceTree = "<group>";
-		};
 		AA0000040000000000000001 /* PikminTunnel */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
 				AA0000030000000000000001 /* Exceptions for "PikminTunnel" folder in "PikminTunnel" target */,
 			);
 			path = PikminTunnel;
+			sourceTree = "<group>";
+		};
+		AB1000040000000000000001 /* PikminLiveActivity */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				AB1000050000000000000001 /* Exceptions for "PikminLiveActivity" folder in "PikminLiveActivity" target */,
+			);
+			path = PikminLiveActivity;
 			sourceTree = "<group>";
 		};
 		DC6F1D392D94EADD0071B2B6 /* StikDebug */ = {
@@ -131,14 +131,14 @@
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
-		AB1000060000000000000001 /* Frameworks */ = {
+		AA0000050000000000000001 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		AA0000050000000000000001 /* Frameworks */ = {
+		AB1000060000000000000001 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -175,7 +175,7 @@
 				DC6F1D392D94EADD0071B2B6 /* StikDebug */,
 				AA0000040000000000000001 /* PikminTunnel */,
 				AB1000040000000000000001 /* PikminLiveActivity */,
-				AB10000F0000000000000001 /* PikminSessionAttributes.swift */,
+				AB10000F0000000000000001 /* StikDebug/Models/PikminSessionAttributes.swift */,
 				DC6F1D4B2D94EADF0071B2B6 /* StikDebugTests */,
 				DC6F1D552D94EADF0071B2B6 /* StikDebugUITests */,
 				DC6F1D752D94EB620071B2B6 /* Frameworks */,
@@ -207,28 +207,6 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		AB1000090000000000000001 /* PikminLiveActivity */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = AB10000E0000000000000001 /* Build configuration list for PBXNativeTarget "PikminLiveActivity" */;
-			buildPhases = (
-				AB1000080000000000000001 /* Sources */,
-				AB1000060000000000000001 /* Frameworks */,
-				AB1000070000000000000001 /* Resources */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-			);
-			fileSystemSynchronizedGroups = (
-				AB1000040000000000000001 /* PikminLiveActivity */,
-			);
-			name = PikminLiveActivity;
-			packageProductDependencies = (
-			);
-			productName = PikminLiveActivity;
-			productReference = AB1000030000000000000001 /* PikminLiveActivity.appex */;
-			productType = "com.apple.product-type.app-extension";
-		};
 		AA0000060000000000000001 /* PikminTunnel */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = AA00000D0000000000000001 /* Build configuration list for PBXNativeTarget "PikminTunnel" */;
@@ -249,6 +227,28 @@
 			);
 			productName = PikminTunnel;
 			productReference = AA0000020000000000000001 /* PikminTunnel.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
+		AB1000090000000000000001 /* PikminLiveActivity */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = AB10000E0000000000000001 /* Build configuration list for PBXNativeTarget "PikminLiveActivity" */;
+			buildPhases = (
+				AB1000080000000000000001 /* Sources */,
+				AB1000060000000000000001 /* Frameworks */,
+				AB1000070000000000000001 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				AB1000040000000000000001 /* PikminLiveActivity */,
+			);
+			name = PikminLiveActivity;
+			packageProductDependencies = (
+			);
+			productName = PikminLiveActivity;
+			productReference = AB1000030000000000000001 /* PikminLiveActivity.appex */;
 			productType = "com.apple.product-type.app-extension";
 		};
 		DC6F1D362D94EADD0071B2B6 /* StikDebug */ = {
@@ -332,10 +332,10 @@
 				LastSwiftUpdateCheck = 1620;
 				LastUpgradeCheck = 1620;
 				TargetAttributes = {
-					AB1000090000000000000001 = {
+					AA0000060000000000000001 = {
 						CreatedOnToolsVersion = 16.2;
 					};
-					AA0000060000000000000001 = {
+					AB1000090000000000000001 = {
 						CreatedOnToolsVersion = 16.2;
 					};
 					DC6F1D362D94EADD0071B2B6 = {
@@ -382,14 +382,14 @@
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
-		AB1000070000000000000001 /* Resources */ = {
+		AA0000070000000000000001 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		AA0000070000000000000001 /* Resources */ = {
+		AB1000070000000000000001 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -420,18 +420,18 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
-		AB1000080000000000000001 /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				AB1000020000000000000001 /* PikminSessionAttributes.swift in Sources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		AA0000080000000000000001 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		AB1000080000000000000001 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				AB1000020000000000000001 /* StikDebug/Models/PikminSessionAttributes.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -459,15 +459,15 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
-		AB10000B0000000000000001 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = AB1000090000000000000001 /* PikminLiveActivity */;
-			targetProxy = AB10000A0000000000000001 /* PBXContainerItemProxy */;
-		};
 		AA00000A0000000000000001 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = AA0000060000000000000001 /* PikminTunnel */;
 			targetProxy = AA0000090000000000000001 /* PBXContainerItemProxy */;
+		};
+		AB10000B0000000000000001 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = AB1000090000000000000001 /* PikminLiveActivity */;
+			targetProxy = AB10000A0000000000000001 /* PBXContainerItemProxy */;
 		};
 		DC6F1D4A2D94EADF0071B2B6 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
@@ -482,65 +482,6 @@
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
-		AB10000C0000000000000001 /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				APPLICATION_EXTENSION_API_ONLY = YES;
-				CODE_SIGN_IDENTITY = "Apple Development";
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = W8UCWPZS66;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = PikminLiveActivity/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = "Pikmin Helper Live";
-				IPHONEOS_DEPLOYMENT_TARGET = 17.4;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-					"@executable_path/../../Frameworks",
-				);
-				MARKETING_VERSION = 0.1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.jy.stikdebug.pikmin.liveactivity;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = iphoneos;
-				SKIP_INSTALL = YES;
-				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-			};
-			name = Debug;
-		};
-		AB10000D0000000000000001 /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				APPLICATION_EXTENSION_API_ONLY = YES;
-				CODE_SIGN_IDENTITY = "Apple Development";
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = W8UCWPZS66;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = PikminLiveActivity/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = "Pikmin Helper Live";
-				IPHONEOS_DEPLOYMENT_TARGET = 17.4;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-					"@executable_path/../../Frameworks",
-				);
-				MARKETING_VERSION = 0.1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.jy.stikdebug.pikmin.liveactivity;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = iphoneos;
-				SKIP_INSTALL = YES;
-				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-			};
-			name = Release;
-		};
 		AA00000B0000000000000001 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -590,6 +531,65 @@
 				);
 				MARKETING_VERSION = 0.1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.jy.stikdebug.pikmin.networkextension;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		AB10000C0000000000000001 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = W8UCWPZS66;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = PikminLiveActivity/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "Pikmin Helper Live";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.4;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.jy.stikdebug.pikmin.liveactivity;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		AB10000D0000000000000001 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = W8UCWPZS66;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = PikminLiveActivity/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "Pikmin Helper Live";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.4;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.jy.stikdebug.pikmin.liveactivity;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
 				SKIP_INSTALL = YES;
@@ -958,20 +958,20 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		AB10000E0000000000000001 /* Build configuration list for PBXNativeTarget "PikminLiveActivity" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				AB10000C0000000000000001 /* Debug */,
-				AB10000D0000000000000001 /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
 		AA00000D0000000000000001 /* Build configuration list for PBXNativeTarget "PikminTunnel" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				AA00000B0000000000000001 /* Debug */,
 				AA00000C0000000000000001 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		AB10000E0000000000000001 /* Build configuration list for PBXNativeTarget "PikminLiveActivity" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				AB10000C0000000000000001 /* Debug */,
+				AB10000D0000000000000001 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
