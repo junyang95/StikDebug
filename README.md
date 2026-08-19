@@ -98,6 +98,10 @@ StikDebug enables **JIT** for sideloaded apps on iOS 17.4+ without needing a com
 
 ## Building from Source
 
+> [!IMPORTANT]
+> **Integrating StikDebug or StikJIT into your own project?**  
+> See the [StikJIT Integration Guide](https://github.com/StikDebug/StikJIT/blob/main/INTEGRATION.md) for integration instructions.
+
 ### Requirements
 - macOS (latest recommended)
 - Xcode 16+ (Xcode 26+ preferred for iOS 26+ support)
