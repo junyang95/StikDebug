@@ -518,6 +518,9 @@ struct LocationSimulationView: View {
     @State private var showBookmarks = false
     @State private var showSaveBookmark = false
     @State private var newBookmarkName = ""
+    @State private var recentLocations: [RecentLocation] = []
+    @State private var showRecentLocations = false
+    @State private var selectedLocationName: String?
 
     private var pairingFilePath: String {
         PairingFileStore.prepareURL().path
@@ -748,6 +751,14 @@ struct LocationSimulationView: View {
                 .accessibilityLabel("地点收藏")
 
                 Button {
+                    recentLocations = RecentLocationStore.load()
+                    showRecentLocations = true
+                } label: {
+                    Image(systemName: "clock.arrow.circlepath")
+                }
+                .accessibilityLabel("最近位置")
+
+                Button {
                     showSavedRoutes = true
                 } label: {
                     Image(systemName: "point.topleft.down.curvedto.point.bottomright.up")
@@ -790,11 +801,17 @@ struct LocationSimulationView: View {
         }
         .sheet(isPresented: $showBookmarks) {
             BookmarksView(bookmarks: $bookmarks) { bookmark in
-                applySelection(bookmark.coordinate)
+                applySelection(bookmark.coordinate, name: bookmark.name)
                 showBookmarks = false
             } onDelete: { offsets in
                 bookmarks.remove(atOffsets: offsets)
                 saveBookmarks()
+            }
+        }
+        .sheet(isPresented: $showRecentLocations) {
+            RecentLocationsView(locations: $recentLocations) { recent in
+                tapMode = .pin
+                applySelection(recent.coordinate, name: recent.name)
             }
         }
         .alert("保存路径", isPresented: $showSaveRoute) {
@@ -828,6 +845,7 @@ struct LocationSimulationView: View {
         .onAppear {
             loadBookmarks()
             savedRoutes = SavedWalkingRouteStore.load()
+            recentLocations = RecentLocationStore.load()
         }
         .onDisappear {
             stopResendLoop()
@@ -874,7 +892,7 @@ struct LocationSimulationView: View {
         let request = MKLocalSearch.Request(completion: result)
         MKLocalSearch(request: request).start { response, _ in
             if let item = response?.mapItems.first {
-                applySelection(item.placemark.coordinate)
+                applySelection(item.placemark.coordinate, name: result.title)
             }
         }
     }
@@ -902,6 +920,7 @@ struct LocationSimulationView: View {
         guard !isRouteRunning else { return }
         tapMode = .pin
         self.coordinate = coordinate
+        selectedLocationName = "手动坐标".localized
         position = .region(
             MKCoordinateRegion(
                 center: coordinate,
@@ -961,7 +980,7 @@ struct LocationSimulationView: View {
 
         if coordinates.count == 1 {
             tapMode = .pin
-            applySelection(firstCoordinate)
+            applySelection(firstCoordinate, name: sourceName)
             return
         }
 
@@ -1273,6 +1292,7 @@ struct LocationSimulationView: View {
         ) {
             beginBackgroundTask()
             startResendLoop(with: coord)
+            recentLocations = RecentLocationStore.record(coord, name: selectedLocationName)
             BackgroundLocationManager.shared.requestStart()
             Haptic.success()
         }
@@ -1376,9 +1396,10 @@ struct LocationSimulationView: View {
         simulatedCoordinate = nil
     }
 
-    private func applySelection(_ coordinate: CLLocationCoordinate2D) {
+    private func applySelection(_ coordinate: CLLocationCoordinate2D, name: String? = nil) {
         guard !isRouteRunning else { return }
         self.coordinate = coordinate
+        selectedLocationName = name
     }
 
     private func locationUpdateCode(for coordinate: CLLocationCoordinate2D) -> Int32 {

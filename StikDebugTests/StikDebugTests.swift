@@ -170,6 +170,40 @@ struct PikminHelperTests {
     }
 
     @Test
+    func recentLocationsDeduplicateAndKeepNewestFirst() throws {
+        let suiteName = "RecentLocationStoreTests-\(UUID().uuidString)"
+        let defaults = try #require(UserDefaults(suiteName: suiteName))
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let shanghai = CLLocationCoordinate2D(latitude: 31.2304, longitude: 121.4737)
+        let nearby = MovementMath.offset(shanghai, eastMeters: 8, northMeters: 4)
+        let tokyo = CLLocationCoordinate2D(latitude: 35.6812, longitude: 139.7671)
+
+        _ = RecentLocationStore.record(
+            shanghai,
+            name: "上海",
+            at: Date(timeIntervalSince1970: 100),
+            in: defaults
+        )
+        _ = RecentLocationStore.record(
+            tokyo,
+            name: "东京",
+            at: Date(timeIntervalSince1970: 200),
+            in: defaults
+        )
+        let result = RecentLocationStore.record(
+            nearby,
+            name: nil,
+            at: Date(timeIntervalSince1970: 300),
+            in: defaults
+        )
+
+        #expect(result.count == 2)
+        #expect(result[0].name == "上海")
+        #expect(result[0].lastUsedAt == Date(timeIntervalSince1970: 300))
+        #expect(result[1].name == "东京")
+    }
+
+    @Test
     func importingDocumentSourceStagesBeforeRemovingIt() throws {
         let fixture = try PairingStoreFixture()
         defer { fixture.cleanUp() }

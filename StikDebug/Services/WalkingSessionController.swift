@@ -144,6 +144,10 @@ final class WalkingSessionController: ObservableObject {
         lastTickAt = startedAt
         batchStartedAt = startedAt
         currentCoordinate = config.startCoordinate
+        RecentLocationStore.record(
+            config.startCoordinate,
+            name: config.mode == .route ? "路线起点".localized : "摇杆起点".localized
+        )
         distanceMeters = 0
         estimatedSteps = 0
         healthStepsWritten = 0
