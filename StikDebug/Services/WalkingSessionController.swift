@@ -158,6 +158,14 @@ final class WalkingSessionController: ObservableObject {
         resetSpeedVariation(for: config)
         phase = .running
 
+        Task {
+            await LiveActivityManager.shared.start(
+                config: config,
+                coordinate: config.startCoordinate,
+                phase: .running
+            )
+        }
+
         BackgroundAudioManager.shared.requestStart()
         BackgroundLocationManager.shared.requestStart()
         startTimer()
@@ -167,6 +175,7 @@ final class WalkingSessionController: ObservableObject {
         guard phase == .running else { return }
         phase = .paused
         lastTickAt = Date()
+        updateLiveActivity(force: true)
     }
 
     func resume() {
@@ -175,6 +184,7 @@ final class WalkingSessionController: ObservableObject {
         lastError = nil
         phase = .running
         lastTickAt = Date()
+        updateLiveActivity(force: true)
     }
 
     func stop(reason: String = "用户停止".localized) async {
@@ -264,6 +274,7 @@ final class WalkingSessionController: ObservableObject {
             northMeters: jitterNorth
         )
         currentCoordinate = nextBase
+        updateLiveActivity()
         isSendingLocation = true
 
         Task {
@@ -324,6 +335,10 @@ final class WalkingSessionController: ObservableObject {
     }
 
     private func finish(reason: String, phase finalPhase: WalkingSessionPhase) {
+        let finalSpeed = currentSpeedKilometersPerHour
+        let finalCoordinate = currentCoordinate
+        let finalSteps = estimatedSteps
+        let finalDistance = distanceMeters
         timer?.cancel()
         timer = nil
         reconnectTask?.cancel()
@@ -350,6 +365,15 @@ final class WalkingSessionController: ObservableObject {
         }
 
         phase = finalPhase
+        Task {
+            await LiveActivityManager.shared.end(
+                phase: finalPhase,
+                steps: finalSteps,
+                distanceMeters: finalDistance,
+                speedKilometersPerHour: finalSpeed,
+                coordinate: finalCoordinate
+            )
+        }
         config = nil
         routeCoordinates = []
         routeIsLoop = false
@@ -369,6 +393,7 @@ final class WalkingSessionController: ObservableObject {
         currentSpeedKilometersPerHour = 0
         phase = .failed
         lastError = message
+        updateLiveActivity(force: true)
     }
 
     private func handleLocationResult(_ code: Int32) {
@@ -386,6 +411,7 @@ final class WalkingSessionController: ObservableObject {
             initialErrorCode
         )
         SessionNotificationService.shared.notifyConnectionDropped()
+        updateLiveActivity(force: true)
 
         reconnectTask = Task { [weak self] in
             guard let self else { return }
@@ -416,6 +442,7 @@ final class WalkingSessionController: ObservableObject {
                     self.lastError = nil
                     self.lastTickAt = Date()
                     self.phase = .running
+                    self.updateLiveActivity(force: true)
                     SessionNotificationService.shared.notifyReconnected()
                     LogManager.shared.addInfoLog("位置连接已自动恢复")
                     return
@@ -431,6 +458,7 @@ final class WalkingSessionController: ObservableObject {
                 latestErrorCode
             )
             SessionNotificationService.shared.notifyReconnectFailed()
+            self.updateLiveActivity(force: true)
             LogManager.shared.addErrorLog(self.lastError ?? "位置自动重连失败".localized)
         }
     }
@@ -484,6 +512,24 @@ final class WalkingSessionController: ObservableObject {
             progress: speedVariationAge / speedVariationDuration,
             maximumFraction: config.speedVariationFraction
         )
+    }
+
+    private func updateLiveActivity(force: Bool = false) {
+        guard let coordinate = currentCoordinate else { return }
+        let phase = phase
+        let steps = estimatedSteps
+        let distance = distanceMeters
+        let speed = currentSpeedKilometersPerHour
+        Task {
+            await LiveActivityManager.shared.update(
+                phase: phase,
+                steps: steps,
+                distanceMeters: distance,
+                speedKilometersPerHour: speed,
+                coordinate: coordinate,
+                force: force
+            )
+        }
     }
 
     private func updateJitter(delta: TimeInterval) {
