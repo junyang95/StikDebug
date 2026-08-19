@@ -131,8 +131,42 @@ struct PikminHelperTests {
         )
         let stepsPerKilometer = Int(1_000 / config.strideMeters)
 
-        #expect(abs(config.speedMetersPerSecond - 2.2222) < 0.001)
+        #expect(abs(config.speedMetersPerSecond - 1.3889) < 0.001)
         #expect(stepsPerKilometer == 1_333)
+    }
+
+    @Test
+    func walkingPacesResolvePresetAndCustomSpeeds() {
+        #expect(WalkingPace.matching(speedKilometersPerHour: 3.5) == .stroll)
+        #expect(WalkingPace.matching(speedKilometersPerHour: 5.0) == .natural)
+        #expect(WalkingPace.matching(speedKilometersPerHour: 6.5) == .brisk)
+        #expect(WalkingPace.matching(speedKilometersPerHour: 7.0) == .custom)
+    }
+
+    @Test
+    func naturalSpeedVariationIsSmoothAndBounded() {
+        let start = NaturalSpeedVariation.multiplier(
+            from: -0.06,
+            to: 0.06,
+            progress: 0,
+            maximumFraction: 0.06
+        )
+        let middle = NaturalSpeedVariation.multiplier(
+            from: -0.06,
+            to: 0.06,
+            progress: 0.5,
+            maximumFraction: 0.06
+        )
+        let end = NaturalSpeedVariation.multiplier(
+            from: -0.06,
+            to: 0.06,
+            progress: 1,
+            maximumFraction: 0.06
+        )
+
+        #expect(abs(start - 0.94) < 0.0001)
+        #expect(abs(middle - 1.0) < 0.0001)
+        #expect(abs(end - 1.06) < 0.0001)
     }
 
     @Test

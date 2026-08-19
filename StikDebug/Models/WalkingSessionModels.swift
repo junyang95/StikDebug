@@ -40,8 +40,10 @@ struct WalkingSessionConfig: Codable, Equatable {
     var mode: MovementMode = .joystick
     var goalKind: SessionGoalKind = .steps
     var goalValue: Double = 10_000
-    var speedKilometersPerHour: Double = 8
+    var speedKilometersPerHour: Double = 5
     var strideMeters: Double = 0.75
+    var usesNaturalSpeedVariation = true
+    var speedVariationFraction = 0.06
     var startLatitude: Double
     var startLongitude: Double
 
@@ -51,6 +53,26 @@ struct WalkingSessionConfig: Codable, Equatable {
 
     var speedMetersPerSecond: Double {
         speedKilometersPerHour / 3.6
+    }
+}
+
+enum NaturalSpeedVariation {
+    static func smoothstep(_ progress: Double) -> Double {
+        let value = min(max(progress, 0), 1)
+        return value * value * (3 - 2 * value)
+    }
+
+    static func multiplier(
+        from startOffset: Double,
+        to targetOffset: Double,
+        progress: Double,
+        maximumFraction: Double
+    ) -> Double {
+        let limit = min(max(maximumFraction, 0), 0.2)
+        let start = min(max(startOffset, -limit), limit)
+        let target = min(max(targetOffset, -limit), limit)
+        let eased = smoothstep(progress)
+        return 1 + start + ((target - start) * eased)
     }
 }
 

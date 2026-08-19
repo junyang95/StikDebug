@@ -8,7 +8,7 @@ struct MovementControlView: View {
     @EnvironmentObject private var vpn: EmbeddedVPNService
 
     @AppStorage(MovementDefaultsKey.profile) private var profileRaw = MovementProfile.walking.rawValue
-    @AppStorage(MovementDefaultsKey.walkingSpeed) private var walkingSpeedKPH = 8.0
+    @AppStorage(MovementDefaultsKey.walkingSpeed) private var walkingSpeedKPH = 5.0
     @AppStorage(MovementDefaultsKey.cyclingSpeed) private var cyclingSpeedKPH = 16.0
     @State private var selectedMode: MovementMode = .joystick
     @State private var goalKind: SessionGoalKind = .steps
@@ -196,6 +196,7 @@ struct MovementControlView: View {
             goalValue: normalizedGoal,
             speedKilometersPerHour: movement.speedKPH,
             strideMeters: movement.strideMeters,
+            usesNaturalSpeedVariation: movement.usesNaturalSpeedVariation,
             startLatitude: coordinate.latitude,
             startLongitude: coordinate.longitude
         )

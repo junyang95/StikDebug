@@ -14,6 +14,7 @@ final class WalkingSessionController: ObservableObject {
     @Published private(set) var elapsedSeconds = 0.0
     @Published private(set) var lastError: String?
     @Published private(set) var reconnectAttempt = 0
+    @Published private(set) var currentSpeedKilometersPerHour = 0.0
     @Published var headingDegrees = 0.0
     @Published var cruiseLocked = false
 
@@ -34,6 +35,10 @@ final class WalkingSessionController: ObservableObject {
     private var isSendingLocation = false
     private var healthWriteTask: Task<Void, Never>?
     private var reconnectTask: Task<Void, Never>?
+    private var speedOffsetStart = 0.0
+    private var speedOffsetTarget = 0.0
+    private var speedVariationAge = 0.0
+    private var speedVariationDuration = 10.0
     private var routeCoordinates: [CLLocationCoordinate2D] = []
     private var routeTargetIndex = 1
     private var routeDirection = 1
@@ -54,7 +59,10 @@ final class WalkingSessionController: ObservableObject {
     }
 
     var activeSpeedKilometersPerHour: Double? {
-        config?.speedKilometersPerHour
+        guard let config else { return nil }
+        return currentSpeedKilometersPerHour > 0
+            ? currentSpeedKilometersPerHour
+            : config.speedKilometersPerHour
     }
 
     var progress: Double? {
@@ -143,6 +151,7 @@ final class WalkingSessionController: ObservableObject {
         lastWrittenEstimatedSteps = 0
         pendingFractionalSteps = 0
         resetJitter()
+        resetSpeedVariation(for: config)
         phase = .running
 
         BackgroundAudioManager.shared.requestStart()
@@ -227,7 +236,10 @@ final class WalkingSessionController: ObservableObject {
         lastTickAt = now
         elapsedSeconds += delta
 
-        let traveled = config.speedMetersPerSecond * delta
+        let speedMultiplier = updateSpeedVariation(config: config, delta: delta)
+        let currentSpeedMetersPerSecond = config.speedMetersPerSecond * speedMultiplier
+        currentSpeedKilometersPerHour = currentSpeedMetersPerSecond * 3.6
+        let traveled = currentSpeedMetersPerSecond * delta
         let nextBase: CLLocationCoordinate2D
         if config.mode == .route, routeCoordinates.count > 1 {
             nextBase = advanceAlongRoute(from: baseCoordinate, distance: traveled)
@@ -313,6 +325,7 @@ final class WalkingSessionController: ObservableObject {
         reconnectTask?.cancel()
         reconnectTask = nil
         reconnectAttempt = 0
+        currentSpeedKilometersPerHour = 0
         BackgroundAudioManager.shared.requestStop()
         BackgroundLocationManager.shared.requestStop()
 
@@ -349,6 +362,7 @@ final class WalkingSessionController: ObservableObject {
         reconnectTask?.cancel()
         reconnectTask = nil
         reconnectAttempt = 0
+        currentSpeedKilometersPerHour = 0
         phase = .failed
         lastError = message
     }
@@ -437,6 +451,35 @@ final class WalkingSessionController: ObservableObject {
         jitterTargetEast = 0
         jitterTargetNorth = 0
         jitterTargetAge = 10
+    }
+
+    private func resetSpeedVariation(for config: WalkingSessionConfig) {
+        speedOffsetStart = 0
+        speedOffsetTarget = config.usesNaturalSpeedVariation
+            ? Double.random(in: -config.speedVariationFraction...config.speedVariationFraction)
+            : 0
+        speedVariationAge = 0
+        speedVariationDuration = Double.random(in: 8...16)
+        currentSpeedKilometersPerHour = config.speedKilometersPerHour
+    }
+
+    private func updateSpeedVariation(config: WalkingSessionConfig, delta: TimeInterval) -> Double {
+        guard config.usesNaturalSpeedVariation, config.speedVariationFraction > 0 else { return 1 }
+        speedVariationAge += delta
+        if speedVariationAge >= speedVariationDuration {
+            speedOffsetStart = speedOffsetTarget
+            speedOffsetTarget = Double.random(
+                in: -config.speedVariationFraction...config.speedVariationFraction
+            )
+            speedVariationAge = 0
+            speedVariationDuration = Double.random(in: 8...16)
+        }
+        return NaturalSpeedVariation.multiplier(
+            from: speedOffsetStart,
+            to: speedOffsetTarget,
+            progress: speedVariationAge / speedVariationDuration,
+            maximumFraction: config.speedVariationFraction
+        )
     }
 
     private func updateJitter(delta: TimeInterval) {

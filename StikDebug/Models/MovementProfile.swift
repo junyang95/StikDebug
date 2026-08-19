@@ -60,11 +60,47 @@ enum MovementProfile: String, CaseIterable, Identifiable, Codable {
     }
 }
 
+enum WalkingPace: String, CaseIterable, Identifiable {
+    case stroll
+    case natural
+    case brisk
+    case custom
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .stroll: "散步".localized
+        case .natural: "自然".localized
+        case .brisk: "快走".localized
+        case .custom: "自定".localized
+        }
+    }
+
+    var speedKilometersPerHour: Double? {
+        switch self {
+        case .stroll: 3.5
+        case .natural: 5.0
+        case .brisk: 6.5
+        case .custom: nil
+        }
+    }
+
+    static func matching(speedKilometersPerHour speed: Double) -> WalkingPace {
+        allCases.first {
+            guard let presetSpeed = $0.speedKilometersPerHour else { return false }
+            return abs(presetSpeed - speed) < 0.01
+        } ?? .custom
+    }
+}
+
 /// 移动方式在 UserDefaults 里的键，集中管理避免各处硬编码字符串。
 enum MovementDefaultsKey {
     static let profile = "movementProfile"
     static let walkingSpeed = "walkingSpeedKPH"
     static let walkingStride = "walkingStrideMeters"
+    static let walkingPace = "walkingPace"
+    static let naturalSpeedVariation = "walkingNaturalSpeedVariation"
     static let cyclingSpeed = "cyclingSpeedKPH"
     /// 骑行「展开」：固定齿比下每踏板转前进的距离（米/转）。
     /// 存这个而不是踏频，是因为踏频要跟速度线性相关——
@@ -73,8 +109,10 @@ enum MovementDefaultsKey {
 
     static let defaults: [String: Any] = [
         profile: MovementProfile.walking.rawValue,
-        walkingSpeed: 8.0,
+        walkingSpeed: 5.0,
         walkingStride: 0.75,
+        walkingPace: WalkingPace.natural.rawValue,
+        naturalSpeedVariation: true,
         cyclingSpeed: 16.0,
         cyclingDevelopment: 5.0
     ]
@@ -88,6 +126,7 @@ struct MovementParameters {
     let speedKPH: Double
     /// 每一步 / 每一踏前进的米数（步行=步幅，骑行=展开）。
     let strideMeters: Double
+    let usesNaturalSpeedVariation: Bool
 
     var speedMetersPerSecond: Double { speedKPH / 3.6 }
 
@@ -109,7 +148,8 @@ struct MovementParameters {
             return MovementParameters(
                 profile: .walking,
                 speedKPH: profile.clampSpeed(speed),
-                strideMeters: min(max(stride, 0.2), 3)
+                strideMeters: min(max(stride, 0.2), 3),
+                usesNaturalSpeedVariation: defaults.object(forKey: MovementDefaultsKey.naturalSpeedVariation) as? Bool ?? true
             )
         case .cycling:
             let speed = nonZero(defaults.double(forKey: MovementDefaultsKey.cyclingSpeed), fallback: 16)
@@ -117,7 +157,8 @@ struct MovementParameters {
             return MovementParameters(
                 profile: .cycling,
                 speedKPH: profile.clampSpeed(speed),
-                strideMeters: min(max(development, 1), 12)
+                strideMeters: min(max(development, 1), 12),
+                usesNaturalSpeedVariation: false
             )
         }
     }

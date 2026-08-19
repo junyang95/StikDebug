@@ -8,8 +8,10 @@ struct HelperSettingsView: View {
     @EnvironmentObject private var vpn: EmbeddedVPNService
     @EnvironmentObject private var onDevicePairing: OnDevicePairingService
     @AppStorage(MovementDefaultsKey.profile) private var profileRaw = MovementProfile.walking.rawValue
-    @AppStorage(MovementDefaultsKey.walkingSpeed) private var walkingSpeedKPH = 8.0
+    @AppStorage(MovementDefaultsKey.walkingSpeed) private var walkingSpeedKPH = 5.0
     @AppStorage(MovementDefaultsKey.walkingStride) private var strideMeters = 0.75
+    @AppStorage(MovementDefaultsKey.walkingPace) private var walkingPaceRaw = WalkingPace.natural.rawValue
+    @AppStorage(MovementDefaultsKey.naturalSpeedVariation) private var naturalSpeedVariation = true
     @AppStorage(MovementDefaultsKey.cyclingSpeed) private var cyclingSpeedKPH = 16.0
     @AppStorage(MovementDefaultsKey.cyclingDevelopment) private var cyclingDevelopment = 5.0
     @AppStorage(AppearancePreference.storageKey) private var appearanceRaw = AppearancePreference.system.rawValue
@@ -31,6 +33,22 @@ struct HelperSettingsView: View {
     /// 当前速度下的步频（每分钟步数）。步幅固定时随速度线性变化。
     private var walkingCadence: Double {
         (walkingSpeedKPH / 3.6) / max(strideMeters, 0.1) * 60
+    }
+
+    private var walkingPaceBinding: Binding<WalkingPace> {
+        Binding(
+            get: {
+                let stored = WalkingPace(rawValue: walkingPaceRaw) ?? .natural
+                guard let presetSpeed = stored.speedKilometersPerHour else { return .custom }
+                return abs(presetSpeed - walkingSpeedKPH) < 0.01 ? stored : .custom
+            },
+            set: { pace in
+                walkingPaceRaw = pace.rawValue
+                if let speed = pace.speedKilometersPerHour {
+                    walkingSpeedKPH = speed
+                }
+            }
+        )
     }
 
     /// 当前速度下的骑行踏频（每分钟转数）。展开固定时，踏频 = 速度 ÷ 展开，随速度线性变化。
@@ -69,10 +87,22 @@ struct HelperSettingsView: View {
 
                 if profile == .walking {
                     Section("步行参数") {
+                        Picker("自然档位", selection: walkingPaceBinding) {
+                            ForEach(WalkingPace.allCases) { pace in
+                                Text(pace.title).tag(pace)
+                            }
+                        }
+                        .pickerStyle(.segmented)
                         LabeledContent("速度") {
                             Text("\(walkingSpeedKPH, specifier: "%.1f") km/h")
                         }
                         Slider(value: $walkingSpeedKPH, in: 1...10, step: 0.5)
+                            .onChange(of: walkingSpeedKPH) { _, speed in
+                                walkingPaceRaw = WalkingPace.matching(
+                                    speedKilometersPerHour: speed
+                                ).rawValue
+                            }
+                        Toggle("轻微自然变速", isOn: $naturalSpeedVariation)
                         LabeledContent("步幅") {
                             Text("\(strideMeters, specifier: "%.2f") m")
                         }
@@ -80,7 +110,7 @@ struct HelperSettingsView: View {
                         LabeledContent("步频") {
                             Text("\(walkingCadence, specifier: "%.0f") 步/分")
                         }
-                        Text("步频由速度和步幅换算：速度越快步频越高。")
+                        Text("推荐使用 5.0 km/h 的自然档。开启自然变速后，速度会每 8–16 秒平滑变化，幅度不超过 ±6%，避免机械恒速。")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }

@@ -1215,6 +1215,7 @@ struct LocationSimulationView: View {
             goalValue: normalizedGoal,
             speedKilometersPerHour: movement.speedKPH,
             strideMeters: movement.strideMeters,
+            usesNaturalSpeedVariation: movement.usesNaturalSpeedVariation,
             startLatitude: firstCoordinate.latitude,
             startLongitude: firstCoordinate.longitude
         )
