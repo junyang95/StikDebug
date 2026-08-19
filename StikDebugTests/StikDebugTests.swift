@@ -221,6 +221,23 @@ struct PikminHelperTests {
     }
 
     @Test
+    func gpxExportUsesPlaybackPointsAndEscapesNames() {
+        let xml = GPXRouteDocument.xml(
+            name: "公园 & 河边 <一圈>",
+            coordinates: [
+                CLLocationCoordinate2D(latitude: 31.2304, longitude: 121.4737),
+                CLLocationCoordinate2D(latitude: 31.2314, longitude: 121.4747)
+            ],
+            createdAt: Date(timeIntervalSince1970: 0)
+        )
+
+        #expect(xml.contains("公园 &amp; 河边 &lt;一圈&gt;"))
+        #expect(xml.contains("lat=\"31.2304000\" lon=\"121.4737000\""))
+        #expect(xml.components(separatedBy: "<trkpt ").count - 1 == 2)
+        #expect(GPXRouteDocument.suggestedFilename(for: "路线/A:B") == "路线-A-B")
+    }
+
+    @Test
     func importingDocumentSourceStagesBeforeRemovingIt() throws {
         let fixture = try PairingStoreFixture()
         defer { fixture.cleanUp() }

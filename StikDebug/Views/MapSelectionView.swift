@@ -489,6 +489,9 @@ struct LocationSimulationView: View {
     @State private var newRouteName = ""
     @State private var showCoordinateEntry = false
     @State private var coordinateEntryText = ""
+    @State private var showGPXExporter = false
+    @State private var gpxDocument: GPXRouteDocument?
+    @State private var gpxFilename = "Pikmin-Helper-Route"
 
     private static let routeDurationFormatter: DateComponentsFormatter = {
         let formatter = DateComponentsFormatter()
@@ -816,6 +819,23 @@ struct LocationSimulationView: View {
             allowsMultipleSelection: false
         ) { result in
             importCoordinates(result)
+        }
+        .fileExporter(
+            isPresented: $showGPXExporter,
+            document: gpxDocument,
+            contentType: .gpx,
+            defaultFilename: gpxFilename
+        ) { result in
+            switch result {
+            case .success:
+                Haptic.success()
+            case .failure(let error):
+                let cocoaError = error as NSError
+                guard cocoaError.code != NSUserCancelledError else { return }
+                alertTitle = "导出失败".localized
+                alertMessage = error.localizedDescription
+                showAlert = true
+            }
         }
         .onAppear {
             loadBookmarks()
@@ -1198,6 +1218,12 @@ struct LocationSimulationView: View {
                         .buttonStyle(.bordered)
                         .disabled(waypointPlanner.waypoints.count < 2)
 
+                        Button(action: exportCurrentRoute) {
+                            Label("GPX", systemImage: "square.and.arrow.up")
+                        }
+                        .buttonStyle(.bordered)
+                        .disabled(!waypointPlanner.isReady)
+
                         Button(role: .destructive) {
                             waypointPlanner.clear()
                             Haptic.light()
@@ -1314,6 +1340,17 @@ struct LocationSimulationView: View {
         SavedWalkingRouteStore.save(savedRoutes)
         newRouteName = ""
         Haptic.success()
+    }
+
+    private func exportCurrentRoute() {
+        let coordinates = waypointPlanner.playbackCoordinates
+        guard coordinates.count > 1 else { return }
+        let fallback = String(format: "Pikmin 路线 %@".localized, Date().formatted(date: .abbreviated, time: .omitted))
+        let enteredName = newRouteName.trimmingCharacters(in: .whitespacesAndNewlines)
+        let name = waypointPlanner.importedName ?? (enteredName.isEmpty ? fallback : enteredName)
+        gpxDocument = GPXRouteDocument(name: name, coordinates: coordinates)
+        gpxFilename = GPXRouteDocument.suggestedFilename(for: name)
+        showGPXExporter = true
     }
 
     private func loadRoute(_ route: SavedWalkingRoute) {
