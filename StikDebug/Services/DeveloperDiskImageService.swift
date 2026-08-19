@@ -11,9 +11,9 @@ final class DeveloperDiskImageService {
     private let fileManager: FileManager
     private let session: URLSession
 
-    init(fileManager: FileManager = .default, session: URLSession = .shared) {
+    init(fileManager: FileManager = .default, session: URLSession? = nil) {
         self.fileManager = fileManager
-        self.session = session
+        self.session = session ?? Self.makeEphemeralSession()
     }
 
     func downloadMissingFiles() async throws {
@@ -28,7 +28,8 @@ final class DeveloperDiskImageService {
 
     func downloadFile(from urlString: String, to destinationURL: URL) async throws {
         guard let url = URL(string: urlString),
-              url.scheme?.lowercased() == "https" else {
+              url.scheme?.lowercased() == "https",
+              url.host?.lowercased() == Self.allowedDownloadHost else {
             throw DDIDownloadError.invalidURL(urlString)
         }
 
@@ -52,19 +53,10 @@ final class DeveloperDiskImageService {
     }
 
     func redownload(progressHandler: ((Double, String) -> Void)? = nil) async throws {
-        let totalStages = Double(Self.downloadItems.count + 1)
+        let totalStages = Double(Self.downloadItems.count)
         var completedStages = 0.0
 
-        progressHandler?(0.0, "Removing existing DDI files...")
-        for item in Self.downloadItems {
-            let fileURL = URL.documentsDirectory.appendingPathComponent(item.relativePath)
-            if fileManager.fileExists(atPath: fileURL.path) {
-                try fileManager.removeItem(at: fileURL)
-            }
-        }
-
-        completedStages += 1.0
-        progressHandler?(completedStages / totalStages, "Starting downloads...")
+        progressHandler?(0.0, "Starting downloads...")
 
         for item in Self.downloadItems {
             progressHandler?(completedStages / totalStages, "Downloading \(item.name)...")
@@ -94,6 +86,16 @@ final class DeveloperDiskImageService {
             urlString: "https://static.wow-app.store/Xcode_iOS_DDI_Personalized/Image.dmg.trustcache"
         )
     ]
+
+    static let allowedDownloadHost = "static.wow-app.store"
+
+    private static func makeEphemeralSession() -> URLSession {
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.httpShouldSetCookies = false
+        configuration.urlCache = nil
+        configuration.requestCachePolicy = .reloadIgnoringLocalCacheData
+        return URLSession(configuration: configuration)
+    }
 }
 
 private struct DDIDownloadItem {

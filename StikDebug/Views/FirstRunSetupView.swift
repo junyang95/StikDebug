@@ -158,7 +158,8 @@ struct FirstRunSetupView: View {
 
     private var setupPromise: some View {
         VStack(alignment: .leading, spacing: 14) {
-            setupPromiseRow("本机保存", "配对文件、收藏与记录不会上传", "lock.shield.fill")
+            setupPromiseRow("本机保存", "配对文件、收藏与记录不会由本 App 上传", "lock.shield.fill")
+            setupPromiseRow("无分析跟踪", "地图搜索与路线由 Apple MapKit 按需处理", "hand.raised.fill")
             setupPromiseRow("版本自适应", onDevicePairing.isSupported ? "iOS 27 使用本机配对" : "当前系统使用电脑生成的 pairing file", "iphone.gen3")
             setupPromiseRow("随时可重来", "可在设置中重新打开本向导", "arrow.clockwise")
         }

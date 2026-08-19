@@ -57,7 +57,6 @@ struct StikDebugApp: App {
                        !vpn.status.isConnected {
                         await vpn.connect()
                     }
-                    try? await DeveloperDiskImageService.shared.downloadMissingFiles()
                     await permissions.refresh()
                     await preflight.refresh()
                     await health.refreshToday()

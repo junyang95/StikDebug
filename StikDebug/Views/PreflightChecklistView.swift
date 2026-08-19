@@ -10,6 +10,7 @@ struct PreflightChecklistView: View {
     @State private var ddiProgressText: String?
     @State private var preflightAlert: PreflightAlert?
     @State private var showOnDevicePairing = false
+    @State private var showDDIDownloadConfirmation = false
 
     private let idevicePairMacURL = URL(string: "https://static.wow-app.store/Xcode_iOS_DDI_Personalized/idevice_pair--macos-universal.dmg")!
     private let idevicePairWindowsURL = URL(string: "https://static.wow-app.store/Xcode_iOS_DDI_Personalized/idevice_pair--windows-x86_64.exe")!
@@ -62,6 +63,18 @@ struct PreflightChecklistView: View {
                 .environmentObject(onDevicePairing)
                 .environmentObject(service)
                 .environmentObject(EmbeddedVPNService.shared)
+        }
+        .confirmationDialog(
+            "下载可选 DDI 文件？",
+            isPresented: $showDDIDownloadConfirmation,
+            titleVisibility: .visible
+        ) {
+            Button("从 static.wow-app.store 下载") {
+                downloadDDI()
+            }
+            Button("取消", role: .cancel) { }
+        } message: {
+            Text("定位模拟不需要 DDI。确认后 App 才会连接该第三方静态文件域名；下载内容只保存在本机。")
         }
     }
 
@@ -224,7 +237,7 @@ struct PreflightChecklistView: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                     primaryActionButton(isDownloadingDDI ? "正在下载 DDI…" : "下载/重新下载 DDI 文件", systemImage: "arrow.down.circle") {
-                        downloadDDI()
+                        showDDIDownloadConfirmation = true
                     }
                     .disabled(isDownloadingDDI)
                 }

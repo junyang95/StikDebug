@@ -11,6 +11,17 @@ Pikmin Helper 是基于 StikDebug 定位底层重构的内部学习项目，面�
 - HealthKit 步数读取、写入和来源统计
 - LocalDevVPN、pairing file、CoreDevice 隧道和 DDI 检查清单
 - SwiftData 行走历史
+- ActivityKit 锁屏与灵动岛状态
+- 收藏、最近位置、路线资料库，GPX 导入/导出与地图手绘
+
+## 隐私与网络边界
+
+- 不包含分析、广告、崩溃上报或遥测 SDK，不建立用户账号。
+- pairing file、收藏、最近位置、路线和会话记录仅保存在 App 容器中。
+- 地点搜索与步道/道路规划使用系统 MapKit；使用这些功能时，搜索文字或路线端点由 Apple 地图服务处理。
+- 内置 VPN 只建立到本机/已配对设备的本地通道，不连接外部 VPN 服务器。
+- DDI 是可选开发能力。App 启动时不会自动下载；只有用户确认后才连接 `static.wow-app.store`。
+- GPX 与诊断报告仅在用户主动打开系统导出/分享面板后离开 App。
 
 ## 开发环境
 

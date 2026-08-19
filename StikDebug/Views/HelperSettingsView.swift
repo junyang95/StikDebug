@@ -26,6 +26,7 @@ struct HelperSettingsView: View {
     @State private var isGeneratingDiagnostics = false
     @State private var diagnosticsText: String?
     @State private var showDiagnostics = false
+    @State private var showPrivacyDetails = false
 
     private var profile: MovementProfile {
         get { MovementProfile(rawValue: profileRaw) ?? .walking }
@@ -293,6 +294,17 @@ struct HelperSettingsView: View {
                         .foregroundStyle(.secondary)
                 }
 
+                Section("隐私") {
+                    Button {
+                        showPrivacyDetails = true
+                    } label: {
+                        Label("隐私与网络说明", systemImage: "hand.raised.fill")
+                    }
+                    Text("无分析、广告或遥测。地图搜索/路线使用 Apple MapKit；可选 DDI 仅在你确认后下载。")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+
                 Section {
                     Text("Pikmin Helper 仅供内部学习使用。模拟定位可能违反游戏服务条款。")
                         .font(.footnote)
@@ -329,6 +341,9 @@ struct HelperSettingsView: View {
         }
         .sheet(isPresented: $showOnDevicePairing) {
             OnDevicePairingView()
+        }
+        .sheet(isPresented: $showPrivacyDetails) {
+            PrivacyNetworkView()
         }
     }
 
