@@ -10,7 +10,7 @@ struct MovementControlView: View {
     @AppStorage(MovementDefaultsKey.profile) private var profileRaw = MovementProfile.walking.rawValue
     @AppStorage(MovementDefaultsKey.walkingSpeed) private var walkingSpeedKPH = 5.0
     @AppStorage(MovementDefaultsKey.cyclingSpeed) private var cyclingSpeedKPH = 16.0
-    @State private var selectedMode: MovementMode = .joystick
+    @State private var selectedMode: MovementMode = .fixedLocation
     @State private var goalKind: SessionGoalKind = .steps
     @State private var goalValue = 10_000.0
     @State private var mapPosition: MapCameraPosition = .userLocation(fallback: .automatic)
@@ -26,31 +26,33 @@ struct MovementControlView: View {
 
     var body: some View {
         NavigationStack {
-            VStack(spacing: 0) {
-                Picker("移动模式", selection: $selectedMode) {
-                    Text("摇杆").tag(MovementMode.joystick)
-                    Text("路线与定点").tag(MovementMode.route)
+            ZStack(alignment: .top) {
+                if selectedMode == .joystick {
+                    joystickContent
+                } else {
+                    LocationSimulationView(selectedMode: $selectedMode)
                 }
-                .pickerStyle(.segmented)
-                .padding()
 
-                ZStack(alignment: .top) {
-                    if selectedMode == .joystick {
-                        joystickContent
-                    } else {
-                        LocationSimulationView()
+                VStack(spacing: 8) {
+                    Picker("移动模式", selection: $selectedMode) {
+                        Label("定点", systemImage: "mappin").tag(MovementMode.fixedLocation)
+                        Label("摇杆", systemImage: "move.3d").tag(MovementMode.joystick)
+                        Label("路线", systemImage: "point.topleft.down.to.point.bottomright.curvepath")
+                            .tag(MovementMode.route)
                     }
+                    .pickerStyle(.segmented)
+                    .disabled(session.isActive)
 
                     MovementStatusCapsule(
                         selectedMode: selectedMode,
                         selectedProfile: profile,
                         selectedSpeedKilometersPerHour: displaySpeedKPH
                     )
-                    .padding(.horizontal, 16)
-                    .padding(.top, 8)
                 }
+                .padding(.horizontal, 16)
+                .padding(.top, 8)
             }
-            .navigationTitle("移动")
+            .navigationTitle("模拟位置")
             .navigationBarTitleDisplayMode(.inline)
             .tint(PikminUI.green)
         }

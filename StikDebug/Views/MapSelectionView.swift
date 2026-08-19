@@ -459,24 +459,10 @@ final class LocationSearchCompleter: NSObject, ObservableObject, MKLocalSearchCo
     }
 }
 
-/// 地图点击的两种含义：连点画路线，或单点定位。
-private enum MapTapMode: String, CaseIterable, Identifiable {
-    case waypoints
-    case pin
-
-    var id: String { rawValue }
-
-    var title: String {
-        switch self {
-        case .waypoints: "路线"
-        case .pin: "定点"
-        }
-    }
-}
-
 struct LocationSimulationView: View {
     @EnvironmentObject private var walkingSession: WalkingSessionController
     @EnvironmentObject private var preflight: EnvironmentPreflightService
+    @Binding var selectedMode: MovementMode
     @AppStorage(MovementDefaultsKey.profile) private var profileRaw = MovementProfile.walking.rawValue
     @State private var coordinate: CLLocationCoordinate2D?
     @State private var position: MapCameraPosition = .userLocation(fallback: .automatic)
@@ -496,7 +482,6 @@ struct LocationSimulationView: View {
     @State private var routeGoalKind: SessionGoalKind = .distance
     @State private var routeGoalValue = 5.0
 
-    @State private var tapMode: MapTapMode = .waypoints
     @StateObject private var waypointPlanner = WaypointRoutePlanner()
     @State private var savedRoutes: [SavedWalkingRoute] = []
     @State private var showSavedRoutes = false
@@ -540,7 +525,7 @@ struct LocationSimulationView: View {
 
     /// 地图当前是否处于连点画路线的状态。
     private var hasWaypointContext: Bool {
-        tapMode == .waypoints
+        selectedMode == .route
     }
 
     private var profile: MovementProfile {
@@ -708,6 +693,8 @@ struct LocationSimulationView: View {
                 }
 
             VStack(spacing: 0) {
+                searchBar
+
                 if !searchCompleter.results.isEmpty {
                     searchResultsList
                 }
@@ -720,16 +707,7 @@ struct LocationSimulationView: View {
                             .font(.footnote)
                     }
 
-                    if !walkingSession.isActive {
-                        Picker("地图点击模式", selection: $tapMode) {
-                            ForEach(MapTapMode.allCases) { mode in
-                                Text(mode.title).tag(mode)
-                            }
-                        }
-                        .pickerStyle(.segmented)
-                    }
-
-                    if tapMode == .waypoints {
+                    if selectedMode == .route {
                         waypointControls
                     } else {
                         pinControls
@@ -739,52 +717,48 @@ struct LocationSimulationView: View {
                 .padding(.horizontal, 16)
                 .padding(.bottom, 16)
             }
+            .padding(.top, 122)
         }
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
-            ToolbarItemGroup(placement: .topBarLeading) {
-                Button {
-                    showBookmarks = true
-                } label: {
-                    Image(systemName: "bookmark.fill")
-                }
-                .accessibilityLabel("地点收藏")
-
-                Button {
-                    recentLocations = RecentLocationStore.load()
-                    showRecentLocations = true
-                } label: {
-                    Image(systemName: "clock.arrow.circlepath")
-                }
-                .accessibilityLabel("最近位置")
-
-                Button {
-                    showSavedRoutes = true
-                } label: {
-                    Image(systemName: "point.topleft.down.curvedto.point.bottomright.up")
-                }
-                .disabled(isBusy || isRouteRunning)
-                .accessibilityLabel("已保存的路径")
-
-                Button {
-                    showCoordinateImporter = true
-                } label: {
-                    Image(systemName: "square.and.arrow.down")
-                }
-                .disabled(isBusy || isRouteRunning || isImportingCoordinates)
-                .accessibilityLabel("导入坐标文件")
-            }
             ToolbarItem(placement: .topBarTrailing) {
-                TextField("搜索地点…", text: $searchText)
-                    .padding(.leading, 6)
-                    .autocorrectionDisabled()
-                    .submitLabel(.go)
-                    .onChange(of: searchText) { _, newValue in
-                        searchCompleter.update(query: newValue)
+                Menu {
+                    Button {
+                        recentLocations = RecentLocationStore.load()
+                        showRecentLocations = true
+                    } label: {
+                        Label("最近位置", systemImage: "clock.arrow.circlepath")
                     }
-                    .onSubmit {
-                        applyCoordinatesFromSearchText()
+                    Button {
+                        showBookmarks = true
+                    } label: {
+                        Label("地点收藏", systemImage: "bookmark.fill")
                     }
+                    Button {
+                        showSavedRoutes = true
+                    } label: {
+                        Label("已保存的路线", systemImage: "point.topleft.down.curvedto.point.bottomright.up")
+                    }
+                    .disabled(isBusy || isRouteRunning)
+                    Divider()
+                    Button {
+                        showCoordinateImporter = true
+                    } label: {
+                        Label("导入坐标或轨迹", systemImage: "square.and.arrow.down")
+                    }
+                    .disabled(isBusy || isRouteRunning || isImportingCoordinates)
+                } label: {
+                    Image(systemName: "ellipsis.circle")
+                        .font(.body.weight(.semibold))
+                }
+                .accessibilityLabel("位置与路线菜单")
+            }
+        }
+        .onChange(of: selectedMode) { _, mode in
+            if mode == .fixedLocation {
+                searchCompleter.update(query: searchText)
+            } else if mode == .route {
+                searchCompleter.results = []
             }
         }
         .alert(alertTitle, isPresented: $showAlert) {
@@ -801,6 +775,7 @@ struct LocationSimulationView: View {
         }
         .sheet(isPresented: $showBookmarks) {
             BookmarksView(bookmarks: $bookmarks) { bookmark in
+                selectedMode = .fixedLocation
                 applySelection(bookmark.coordinate, name: bookmark.name)
                 showBookmarks = false
             } onDelete: { offsets in
@@ -810,7 +785,7 @@ struct LocationSimulationView: View {
         }
         .sheet(isPresented: $showRecentLocations) {
             RecentLocationsView(locations: $recentLocations) { recent in
-                tapMode = .pin
+                selectedMode = .fixedLocation
                 applySelection(recent.coordinate, name: recent.name)
             }
         }
@@ -856,6 +831,55 @@ struct LocationSimulationView: View {
         }
     }
 
+    private var searchBar: some View {
+        HStack(spacing: 9) {
+            Image(systemName: "magnifyingglass")
+                .foregroundStyle(.secondary)
+            TextField("搜索地点或输入经纬度", text: $searchText)
+                .autocorrectionDisabled()
+                .submitLabel(.go)
+                .onChange(of: searchText) { _, newValue in
+                    searchCompleter.update(query: newValue)
+                }
+                .onSubmit {
+                    applyCoordinatesFromSearchText()
+                }
+
+            if !searchText.isEmpty {
+                Button {
+                    searchText = ""
+                    searchCompleter.update(query: "")
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .foregroundStyle(.secondary)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("清除搜索")
+            }
+
+            Button {
+                coordinateEntryText = coordinate.map {
+                    String(format: "%.6f, %.6f", $0.latitude, $0.longitude)
+                } ?? ""
+                showCoordinateEntry = true
+            } label: {
+                Image(systemName: "numbers.rectangle")
+                    .foregroundStyle(PikminUI.deepGreen)
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("输入经纬度")
+        }
+        .padding(.horizontal, 14)
+        .frame(height: 46)
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .stroke(.white.opacity(0.22), lineWidth: 0.5)
+        }
+        .shadow(color: .black.opacity(0.1), radius: 12, y: 6)
+        .padding(.horizontal, 16)
+    }
+
     // MARK: - Bookmarks
 
     private func loadBookmarks() {
@@ -892,7 +916,19 @@ struct LocationSimulationView: View {
         let request = MKLocalSearch.Request(completion: result)
         MKLocalSearch(request: request).start { response, _ in
             if let item = response?.mapItems.first {
-                applySelection(item.placemark.coordinate, name: result.title)
+                if selectedMode == .route {
+                    waypointPlanner.append(item.placemark.coordinate)
+                    position = .region(
+                        MKCoordinateRegion(
+                            center: item.placemark.coordinate,
+                            latitudinalMeters: 1_000,
+                            longitudinalMeters: 1_000
+                        )
+                    )
+                    Haptic.light()
+                } else {
+                    applySelection(item.placemark.coordinate, name: result.title)
+                }
             }
         }
     }
@@ -918,7 +954,7 @@ struct LocationSimulationView: View {
     /// 应用手动输入的经纬度：切到定点、落点、移动地图，并可选直接传送。
     private func applyEnteredCoordinate(_ coordinate: CLLocationCoordinate2D, teleport: Bool) {
         guard !isRouteRunning else { return }
-        tapMode = .pin
+        selectedMode = .fixedLocation
         self.coordinate = coordinate
         selectedLocationName = "手动坐标".localized
         position = .region(
@@ -979,7 +1015,7 @@ struct LocationSimulationView: View {
         }
 
         if coordinates.count == 1 {
-            tapMode = .pin
+            selectedMode = .fixedLocation
             applySelection(firstCoordinate, name: sourceName)
             return
         }
@@ -990,13 +1026,13 @@ struct LocationSimulationView: View {
             targetDistance: RouteSimulationDefaults.pathSamplingDistance
         )
         guard waypointPlanner.loadImportedPath(displayCoordinates, name: sourceName) else {
-            tapMode = .pin
+            selectedMode = .fixedLocation
             applySelection(firstCoordinate)
             return
         }
 
         coordinate = nil
-        tapMode = .waypoints
+        selectedMode = .route
         if let rect = waypointPlanner.boundingMapRect {
             position = .rect(rect)
         }
@@ -1267,7 +1303,7 @@ struct LocationSimulationView: View {
 
     private func loadRoute(_ route: SavedWalkingRoute) {
         guard !walkingSession.isActive else { return }
-        tapMode = .waypoints
+        selectedMode = .route
         waypointPlanner.replaceAll(with: route.coordinates, isLoop: route.isLoop)
         if let rect = waypointPlanner.waypointsBoundingMapRect {
             position = .rect(rect)
