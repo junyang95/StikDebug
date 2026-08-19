@@ -637,7 +637,7 @@ struct LocationSimulationView: View {
                         ForEach(waypointPlanner.legPolylines) { leg in
                             MapPolyline(leg.polyline)
                                 .stroke(
-                                    leg.isStraightLine ? .orange.opacity(0.8) : .blue.opacity(0.8),
+                                    routeColor(for: leg),
                                     style: StrokeStyle(
                                         lineWidth: 5,
                                         lineCap: .round,
@@ -1116,6 +1116,20 @@ struct LocationSimulationView: View {
 
     private var waypointControls: some View {
         VStack(spacing: 10) {
+            if !walkingSession.isActive, !waypointPlanner.isImported {
+                Picker("路线规划", selection: $waypointPlanner.planningStyle) {
+                    ForEach(RoutePlanningStyle.allCases) { style in
+                        Text(style.title).tag(style)
+                    }
+                }
+                .pickerStyle(.segmented)
+
+                Text(waypointPlanner.planningStyle.detail)
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+            }
+
             Text(waypointStatusText)
                 .font(.footnote)
                 .foregroundStyle(.secondary)
@@ -1293,7 +1307,8 @@ struct LocationSimulationView: View {
         let route = SavedWalkingRoute(
             name: trimmed.isEmpty ? String(format: "路径 %d".localized, savedRoutes.count + 1) : trimmed,
             coordinates: coordinates,
-            isLoop: waypointPlanner.isLoop
+            isLoop: waypointPlanner.isLoop,
+            planningStyle: waypointPlanner.planningStyle
         )
         savedRoutes.append(route)
         SavedWalkingRouteStore.save(savedRoutes)
@@ -1304,7 +1319,11 @@ struct LocationSimulationView: View {
     private func loadRoute(_ route: SavedWalkingRoute) {
         guard !walkingSession.isActive else { return }
         selectedMode = .route
-        waypointPlanner.replaceAll(with: route.coordinates, isLoop: route.isLoop)
+        waypointPlanner.replaceAll(
+            with: route.coordinates,
+            isLoop: route.isLoop,
+            planningStyle: route.planningStyle
+        )
         if let rect = waypointPlanner.waypointsBoundingMapRect {
             position = .rect(rect)
         }
@@ -1440,6 +1459,16 @@ struct LocationSimulationView: View {
 
     private func locationUpdateCode(for coordinate: CLLocationCoordinate2D) -> Int32 {
         simulate_location(deviceIP, coordinate.latitude, coordinate.longitude, pairingFilePath)
+    }
+
+    private func routeColor(for leg: RouteLegPolyline) -> Color {
+        switch leg.status {
+        case .straightLine: .orange.opacity(0.82)
+        case .road: PikminUI.green.opacity(0.86)
+        case .walking: .blue.opacity(0.82)
+        case .imported: .purple.opacity(0.82)
+        case .planning: .gray.opacity(0.6)
+        }
     }
 }
 

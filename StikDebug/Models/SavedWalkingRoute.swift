@@ -22,12 +22,15 @@ struct SavedWalkingRoute: Identifiable, Codable, Equatable {
     var points: [Point]
     var isLoop: Bool
     var createdAt: Date
+    /// Optional 保持兼容旧版本已经保存、没有该字段的 JSON。
+    var planningStyleRawValue: String?
 
     init(
         id: UUID = UUID(),
         name: String,
         coordinates: [CLLocationCoordinate2D],
         isLoop: Bool,
+        planningStyle: RoutePlanningStyle = .footpaths,
         createdAt: Date = Date()
     ) {
         self.id = id
@@ -35,10 +38,15 @@ struct SavedWalkingRoute: Identifiable, Codable, Equatable {
         points = coordinates.map(Point.init)
         self.isLoop = isLoop
         self.createdAt = createdAt
+        planningStyleRawValue = planningStyle.rawValue
     }
 
     var coordinates: [CLLocationCoordinate2D] {
         points.map(\.coordinate)
+    }
+
+    var planningStyle: RoutePlanningStyle {
+        RoutePlanningStyle(rawValue: planningStyleRawValue ?? "") ?? .footpaths
     }
 }
 

@@ -204,6 +204,23 @@ struct PikminHelperTests {
     }
 
     @Test
+    func routePlanningStylesKeepWalkingAsDefault() {
+        #expect(RoutePlanningStyle.footpaths.transportType == .walking)
+        #expect(RoutePlanningStyle.roads.transportType == .automobile)
+
+        let route = SavedWalkingRoute(
+            name: "道路路线",
+            coordinates: [
+                CLLocationCoordinate2D(latitude: 31.2304, longitude: 121.4737),
+                CLLocationCoordinate2D(latitude: 31.2314, longitude: 121.4747)
+            ],
+            isLoop: false,
+            planningStyle: .roads
+        )
+        #expect(route.planningStyle == .roads)
+    }
+
+    @Test
     func importingDocumentSourceStagesBeforeRemovingIt() throws {
         let fixture = try PairingStoreFixture()
         defer { fixture.cleanUp() }

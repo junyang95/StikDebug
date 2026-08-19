@@ -12,11 +12,41 @@ struct RouteWaypoint: Identifiable, Equatable {
     }
 }
 
+enum RoutePlanningStyle: String, CaseIterable, Identifiable, Codable {
+    case footpaths
+    case roads
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .footpaths: "步道优先".localized
+        case .roads: "道路优先".localized
+        }
+    }
+
+    var detail: String {
+        switch self {
+        case .footpaths: "使用 MapKit 步行路线，优先人行道和步道。".localized
+        case .roads: "使用 MapKit 道路几何贴路；只改变路径，不会把速度切成驾车。".localized
+        }
+    }
+
+    var transportType: MKDirectionsTransportType {
+        switch self {
+        case .footpaths: .walking
+        case .roads: .automobile
+        }
+    }
+}
+
 enum RouteLegStatus: Equatable {
     /// 正在向 MapKit 请求步行路线。
     case planning
     /// MapKit 返回了真实步行路线。
     case walking
+    /// MapKit 返回了沿道路的路线几何；不代表 App 进入驾车模式。
+    case road
     /// 没有可用步行路线（跨水域、离线、海外地区等），退回两点直线。
     case straightLine
     /// 来自导入文件的轨迹，本身就是完整路径，不经过路线规划。
@@ -34,6 +64,7 @@ struct RouteLegPolyline: Identifiable {
     let id: UUID
     let polyline: MKPolyline
     let isStraightLine: Bool
+    let status: RouteLegStatus
 }
 
 /// 把「在地图上点几个点」变成一条可以直接交给 `WalkingSessionController` 的连续路径。
@@ -43,6 +74,12 @@ struct RouteLegPolyline: Identifiable {
 final class WaypointRoutePlanner: ObservableObject {
     @Published private(set) var waypoints: [RouteWaypoint] = []
     @Published private(set) var legs: [RouteLeg] = []
+    @Published var planningStyle: RoutePlanningStyle = .footpaths {
+        didSet {
+            guard planningStyle != oldValue else { return }
+            replanForCurrentStyle()
+        }
+    }
 
     /// 打开后补一段「终点回起点」，行走时绕圈而不是原路折返。
     @Published var isLoop = false {
@@ -128,7 +165,8 @@ final class WaypointRoutePlanner: ObservableObject {
             return RouteLegPolyline(
                 id: leg.id,
                 polyline: polyline,
-                isStraightLine: leg.status == .straightLine
+                isStraightLine: leg.status == .straightLine,
+                status: leg.status
             )
         }
     }
@@ -214,8 +252,15 @@ final class WaypointRoutePlanner: ObservableObject {
     }
 
     /// 载入已保存的路径：整条重建并重新规划。
-    func replaceAll(with coordinates: [CLLocationCoordinate2D], isLoop shouldLoop: Bool) {
+    func replaceAll(
+        with coordinates: [CLLocationCoordinate2D],
+        isLoop shouldLoop: Bool,
+        planningStyle newPlanningStyle: RoutePlanningStyle? = nil
+    ) {
         clear()
+        if let newPlanningStyle {
+            planningStyle = newPlanningStyle
+        }
         for coordinate in coordinates {
             guard CLLocationCoordinate2DIsValid(coordinate) else { continue }
             let previous = waypoints.last
@@ -261,7 +306,8 @@ final class WaypointRoutePlanner: ObservableObject {
         let request = MKDirections.Request()
         request.source = MKMapItem(placemark: MKPlacemark(coordinate: start))
         request.destination = MKMapItem(placemark: MKPlacemark(coordinate: end))
-        request.transportType = .walking
+        let requestedStyle = planningStyle
+        request.transportType = requestedStyle.transportType
         request.requestsAlternateRoutes = false
 
         planningTasks[id] = Task { [weak self] in
@@ -281,7 +327,7 @@ final class WaypointRoutePlanner: ObservableObject {
                     id: id,
                     coordinates: coordinates,
                     distance: route.distance,
-                    status: .walking
+                    status: requestedStyle == .footpaths ? .walking : .road
                 )
             } catch is CancellationError {
                 return
@@ -312,6 +358,19 @@ final class WaypointRoutePlanner: ObservableObject {
         } else if closingLeg?.id == leg.id {
             closingLeg = leg
         }
+    }
+
+    private func replanForCurrentStyle() {
+        guard !isImported, waypoints.count > 1 else { return }
+        for task in planningTasks.values { task.cancel() }
+        planningTasks = [:]
+        closingLeg = nil
+        legs = zip(waypoints, waypoints.dropFirst()).map { start, end in
+            let leg = RouteLeg(id: UUID(), coordinates: [], distance: 0, status: .planning)
+            planLeg(id: leg.id, from: start.coordinate, to: end.coordinate)
+            return leg
+        }
+        refreshClosingLeg()
     }
 
     private func isSameCoordinate(
