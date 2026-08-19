@@ -25,7 +25,7 @@ private struct CoordinateSnapshot: Equatable {
 }
 
 
-private enum RouteSimulationDefaults {
+enum RouteSimulationDefaults {
     static let pathSamplingDistance: CLLocationDistance = 10
     static let minimumSpeedMetersPerSecond: CLLocationSpeed = 1.0
 }
@@ -492,6 +492,8 @@ struct LocationSimulationView: View {
     @State private var showGPXExporter = false
     @State private var gpxDocument: GPXRouteDocument?
     @State private var gpxFilename = "Pikmin-Helper-Route"
+    @State private var isDrawingRoute = false
+    @State private var freehandCoordinates: [CLLocationCoordinate2D] = []
 
     private static let routeDurationFormatter: DateComponentsFormatter = {
         let formatter = DateComponentsFormatter()
@@ -621,6 +623,14 @@ struct LocationSimulationView: View {
         .scrollDisabled(true)
     }
 
+    private var freehandPolyline: MKPolyline? {
+        guard freehandCoordinates.count > 1 else { return nil }
+        return freehandCoordinates.withUnsafeBufferPointer { buffer in
+            guard let baseAddress = buffer.baseAddress else { return nil }
+            return MKPolyline(coordinates: baseAddress, count: buffer.count)
+        }
+    }
+
     // 搜索结果做成和底部操作卡一致的不透明浮层，而不是半透明材质。
     @ViewBuilder
     private var searchResultsList: some View {
@@ -648,6 +658,13 @@ struct LocationSimulationView: View {
                                     )
                                 )
                         }
+                        if let freehandPolyline {
+                            MapPolyline(freehandPolyline)
+                                .stroke(
+                                    .orange,
+                                    style: StrokeStyle(lineWidth: 6, lineCap: .round, lineJoin: .round)
+                                )
+                        }
                         ForEach(Array(waypointPlanner.waypoints.enumerated()), id: \.element.id) { index, waypoint in
                             Annotation("", coordinate: waypoint.coordinate) {
                                 WaypointBadge(
@@ -669,6 +686,7 @@ struct LocationSimulationView: View {
                 // 平面地图，避免 3D 真实地形渲染在长时间会话中持续吃 GPU/CPU 发热。
                 .mapStyle(.standard(elevation: .flat))
                 .onTapGesture { point in
+                    guard !isDrawingRoute else { return }
                     guard let loc = proxy.convert(point, from: .local) else { return }
                     if hasWaypointContext {
                         guard !walkingSession.isActive else { return }
@@ -681,6 +699,19 @@ struct LocationSimulationView: View {
                 .mapControls {
                     MapCompass()
                 }
+                .highPriorityGesture(
+                    DragGesture(minimumDistance: 0, coordinateSpace: .local)
+                        .onChanged { value in
+                            guard isDrawingRoute,
+                                  let coordinate = proxy.convert(value.location, from: .local) else { return }
+                            _ = FreehandPathBuilder.append(coordinate, to: &freehandCoordinates)
+                        }
+                        .onEnded { _ in
+                            guard isDrawingRoute else { return }
+                            finishFreehandRoute()
+                        },
+                    isEnabled: isDrawingRoute
+                )
             }
                 .ignoresSafeArea()
                 .onChange(of: coordinate.map(CoordinateSnapshot.init)) { _, new in
@@ -696,9 +727,13 @@ struct LocationSimulationView: View {
                 }
 
             VStack(spacing: 0) {
-                searchBar
+                if isDrawingRoute {
+                    drawingBanner
+                } else {
+                    searchBar
+                }
 
-                if !searchCompleter.results.isEmpty {
+                if !isDrawingRoute, !searchCompleter.results.isEmpty {
                     searchResultsList
                 }
 
@@ -758,6 +793,9 @@ struct LocationSimulationView: View {
             }
         }
         .onChange(of: selectedMode) { _, mode in
+            if mode != .route {
+                cancelFreehandRoute()
+            }
             if mode == .fixedLocation {
                 searchCompleter.update(query: searchText)
             } else if mode == .route {
@@ -896,6 +934,28 @@ struct LocationSimulationView: View {
             RoundedRectangle(cornerRadius: 16, style: .continuous)
                 .stroke(.white.opacity(0.22), lineWidth: 0.5)
         }
+        .shadow(color: .black.opacity(0.1), radius: 12, y: 6)
+        .padding(.horizontal, 16)
+    }
+
+    private var drawingBanner: some View {
+        HStack(spacing: 10) {
+            Image(systemName: "pencil.and.outline")
+                .foregroundStyle(.orange)
+            VStack(alignment: .leading, spacing: 1) {
+                Text("正在手绘路线")
+                    .font(.subheadline.weight(.semibold))
+                Text("按住地图拖动，松手完成")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            Spacer()
+            Button("取消", role: .cancel, action: cancelFreehandRoute)
+                .font(.subheadline.weight(.semibold))
+        }
+        .padding(.horizontal, 14)
+        .frame(height: 52)
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
         .shadow(color: .black.opacity(0.1), radius: 12, y: 6)
         .padding(.horizontal, 16)
     }
@@ -1150,6 +1210,17 @@ struct LocationSimulationView: View {
                     .multilineTextAlignment(.center)
             }
 
+            if isDrawingRoute {
+                Label(
+                    freehandCoordinates.isEmpty
+                        ? "从路线起点开始拖动".localized
+                        : String(format: "已采集 %d 个轨迹点".localized, freehandCoordinates.count),
+                    systemImage: "hand.draw.fill"
+                )
+                .font(.footnote.weight(.medium))
+                .foregroundStyle(.orange)
+            }
+
             Text(waypointStatusText)
                 .font(.footnote)
                 .foregroundStyle(.secondary)
@@ -1166,13 +1237,24 @@ struct LocationSimulationView: View {
 
             if !walkingSession.isActive {
                 if waypointPlanner.isEmpty {
-                    Button {
-                        showSavedRoutes = true
-                    } label: {
-                        Label("载入已保存的路径", systemImage: "list.bullet.rectangle")
+                    HStack {
+                        Button {
+                            beginFreehandRoute()
+                        } label: {
+                            Label("手绘路线", systemImage: "hand.draw")
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .tint(.orange)
+                        .disabled(isDrawingRoute)
+
+                        Button {
+                            showSavedRoutes = true
+                        } label: {
+                            Label("载入路线", systemImage: "list.bullet.rectangle")
+                        }
+                        .buttonStyle(.bordered)
+                        .disabled(savedRoutes.isEmpty || isDrawingRoute)
                     }
-                    .buttonStyle(.bordered)
-                    .disabled(savedRoutes.isEmpty)
                 } else {
                     Toggle(isOn: $waypointPlanner.isLoop) {
                         Text(waypointPlanner.canLoop ? "闭环：终点连回起点，循环绕圈" : "闭环：至少需要 3 个点")
@@ -1351,6 +1433,38 @@ struct LocationSimulationView: View {
         gpxDocument = GPXRouteDocument(name: name, coordinates: coordinates)
         gpxFilename = GPXRouteDocument.suggestedFilename(for: name)
         showGPXExporter = true
+    }
+
+    private func beginFreehandRoute() {
+        guard !walkingSession.isActive else { return }
+        waypointPlanner.clear()
+        freehandCoordinates = []
+        searchText = ""
+        searchCompleter.update(query: "")
+        isDrawingRoute = true
+        Haptic.light()
+    }
+
+    private func finishFreehandRoute() {
+        let coordinates = FreehandPathBuilder.finalized(freehandCoordinates)
+        guard coordinates.count > 1 else {
+            cancelFreehandRoute()
+            return
+        }
+        _ = waypointPlanner.loadImportedPath(coordinates, name: "手绘路线".localized)
+        freehandCoordinates = []
+        isDrawingRoute = false
+        if let rect = waypointPlanner.boundingMapRect {
+            position = .rect(rect)
+        }
+        Haptic.success()
+    }
+
+    private func cancelFreehandRoute() {
+        guard isDrawingRoute || !freehandCoordinates.isEmpty else { return }
+        isDrawingRoute = false
+        freehandCoordinates = []
+        Haptic.light()
     }
 
     private func loadRoute(_ route: SavedWalkingRoute) {

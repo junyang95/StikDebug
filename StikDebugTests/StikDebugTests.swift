@@ -238,6 +238,22 @@ struct PikminHelperTests {
     }
 
     @Test
+    func freehandPathDropsDensePointsAndFinalizesAPlayableRoute() {
+        let start = CLLocationCoordinate2D(latitude: 31.2304, longitude: 121.4737)
+        let tooClose = MovementMath.offset(start, eastMeters: 1, northMeters: 0)
+        let farEnough = MovementMath.offset(start, eastMeters: 12, northMeters: 0)
+        var points: [CLLocationCoordinate2D] = []
+
+        #expect(FreehandPathBuilder.append(start, to: &points))
+        #expect(!FreehandPathBuilder.append(tooClose, to: &points))
+        #expect(FreehandPathBuilder.append(farEnough, to: &points))
+
+        let finalized = FreehandPathBuilder.finalized(points)
+        #expect(points.count == 2)
+        #expect(finalized.count >= 2)
+    }
+
+    @Test
     func importingDocumentSourceStagesBeforeRemovingIt() throws {
         let fixture = try PairingStoreFixture()
         defer { fixture.cleanUp() }
