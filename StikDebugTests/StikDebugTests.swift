@@ -254,6 +254,25 @@ struct PikminHelperTests {
     }
 
     @Test
+    func exactSavedRoutesPreserveEveryTrackPoint() {
+        let coordinates = (0..<20).map { index in
+            CLLocationCoordinate2D(
+                latitude: 31.2304 + Double(index) * 0.0001,
+                longitude: 121.4737 + Double(index) * 0.0001
+            )
+        }
+        let route = SavedWalkingRoute(
+            name: "手绘路线",
+            coordinates: coordinates,
+            isLoop: false,
+            preservesExactPath: true
+        )
+
+        #expect(route.preservesExactPath)
+        #expect(route.coordinates.count == coordinates.count)
+    }
+
+    @Test
     func importingDocumentSourceStagesBeforeRemovingIt() throws {
         let fixture = try PairingStoreFixture()
         defer { fixture.cleanUp() }

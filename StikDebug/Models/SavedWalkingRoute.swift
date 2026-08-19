@@ -24,6 +24,8 @@ struct SavedWalkingRoute: Identifiable, Codable, Equatable {
     var createdAt: Date
     /// Optional 保持兼容旧版本已经保存、没有该字段的 JSON。
     var planningStyleRawValue: String?
+    /// 导入/手绘轨迹要原样保存全部几何点；旧版路线没有该字段，按途经点重新规划。
+    var preservesExactPathValue: Bool?
 
     init(
         id: UUID = UUID(),
@@ -31,6 +33,7 @@ struct SavedWalkingRoute: Identifiable, Codable, Equatable {
         coordinates: [CLLocationCoordinate2D],
         isLoop: Bool,
         planningStyle: RoutePlanningStyle = .footpaths,
+        preservesExactPath: Bool = false,
         createdAt: Date = Date()
     ) {
         self.id = id
@@ -39,6 +42,7 @@ struct SavedWalkingRoute: Identifiable, Codable, Equatable {
         self.isLoop = isLoop
         self.createdAt = createdAt
         planningStyleRawValue = planningStyle.rawValue
+        preservesExactPathValue = preservesExactPath
     }
 
     var coordinates: [CLLocationCoordinate2D] {
@@ -47,6 +51,10 @@ struct SavedWalkingRoute: Identifiable, Codable, Equatable {
 
     var planningStyle: RoutePlanningStyle {
         RoutePlanningStyle(rawValue: planningStyleRawValue ?? "") ?? .footpaths
+    }
+
+    var preservesExactPath: Bool {
+        preservesExactPathValue ?? false
     }
 }
 

@@ -414,19 +414,6 @@ private enum CoordinateImportParser {
     }
 }
 
-// MARK: - Bookmark Model
-
-struct LocationBookmark: Identifiable, Codable {
-    var id: UUID = UUID()
-    var name: String
-    var latitude: Double
-    var longitude: Double
-
-    var coordinate: CLLocationCoordinate2D {
-        CLLocationCoordinate2D(latitude: latitude, longitude: longitude)
-    }
-}
-
 // MARK: - Search Completer
 
 @MainActor
@@ -484,7 +471,6 @@ struct LocationSimulationView: View {
 
     @StateObject private var waypointPlanner = WaypointRoutePlanner()
     @State private var savedRoutes: [SavedWalkingRoute] = []
-    @State private var showSavedRoutes = false
     @State private var showSaveRoute = false
     @State private var newRouteName = ""
     @State private var showCoordinateEntry = false
@@ -505,11 +491,11 @@ struct LocationSimulationView: View {
 
     // Bookmarks
     @State private var bookmarks: [LocationBookmark] = []
-    @State private var showBookmarks = false
     @State private var showSaveBookmark = false
     @State private var newBookmarkName = ""
     @State private var recentLocations: [RecentLocation] = []
-    @State private var showRecentLocations = false
+    @State private var showLocationLibrary = false
+    @State private var librarySection: LocationLibrarySection = .recents
     @State private var selectedLocationName: String?
 
     private var pairingFilePath: String {
@@ -762,22 +748,10 @@ struct LocationSimulationView: View {
             ToolbarItem(placement: .topBarTrailing) {
                 Menu {
                     Button {
-                        recentLocations = RecentLocationStore.load()
-                        showRecentLocations = true
+                        openLibrary(.recents)
                     } label: {
-                        Label("最近位置", systemImage: "clock.arrow.circlepath")
+                        Label("位置资料库", systemImage: "books.vertical.fill")
                     }
-                    Button {
-                        showBookmarks = true
-                    } label: {
-                        Label("地点收藏", systemImage: "bookmark.fill")
-                    }
-                    Button {
-                        showSavedRoutes = true
-                    } label: {
-                        Label("已保存的路线", systemImage: "point.topleft.down.curvedto.point.bottomright.up")
-                    }
-                    .disabled(isBusy || isRouteRunning)
                     Divider()
                     Button {
                         showCoordinateImporter = true
@@ -814,20 +788,22 @@ struct LocationSimulationView: View {
         } message: {
             Text("给这个位置起个名字，方便下次直接选用。")
         }
-        .sheet(isPresented: $showBookmarks) {
-            BookmarksView(bookmarks: $bookmarks) { bookmark in
+        .sheet(isPresented: $showLocationLibrary) {
+            LocationLibraryView(
+                selectedSection: $librarySection,
+                bookmarks: $bookmarks,
+                recents: $recentLocations,
+                routes: $savedRoutes
+            ) { bookmark in
+                guard !walkingSession.isActive else { return }
                 selectedMode = .fixedLocation
                 applySelection(bookmark.coordinate, name: bookmark.name)
-                showBookmarks = false
-            } onDelete: { offsets in
-                bookmarks.remove(atOffsets: offsets)
-                saveBookmarks()
-            }
-        }
-        .sheet(isPresented: $showRecentLocations) {
-            RecentLocationsView(locations: $recentLocations) { recent in
+            } onSelectRecent: { recent in
+                guard !walkingSession.isActive else { return }
                 selectedMode = .fixedLocation
                 applySelection(recent.coordinate, name: recent.name)
+            } onSelectRoute: { route in
+                loadRoute(route)
             }
         }
         .alert("保存路径", isPresented: $showSaveRoute) {
@@ -840,15 +816,6 @@ struct LocationSimulationView: View {
         .sheet(isPresented: $showCoordinateEntry) {
             CoordinateEntrySheet(initialText: coordinateEntryText) { coordinate, shouldTeleport in
                 applyEnteredCoordinate(coordinate, teleport: shouldTeleport)
-            }
-        }
-        .sheet(isPresented: $showSavedRoutes) {
-            SavedRoutesView(routes: $savedRoutes) { route in
-                loadRoute(route)
-                showSavedRoutes = false
-            } onDelete: { offsets in
-                savedRoutes.remove(atOffsets: offsets)
-                SavedWalkingRouteStore.save(savedRoutes)
             }
         }
         .fileImporter(
@@ -963,15 +930,11 @@ struct LocationSimulationView: View {
     // MARK: - Bookmarks
 
     private func loadBookmarks() {
-        guard let data = UserDefaults.standard.data(forKey: "locationBookmarks"),
-              let decoded = try? JSONDecoder().decode([LocationBookmark].self, from: data) else { return }
-        bookmarks = decoded
+        bookmarks = LocationBookmarkStore.load()
     }
 
     private func saveBookmarks() {
-        if let data = try? JSONEncoder().encode(bookmarks) {
-            UserDefaults.standard.set(data, forKey: "locationBookmarks")
-        }
+        LocationBookmarkStore.save(bookmarks)
     }
 
     private func addBookmark() {
@@ -1248,7 +1211,7 @@ struct LocationSimulationView: View {
                         .disabled(isDrawingRoute)
 
                         Button {
-                            showSavedRoutes = true
+                            openLibrary(.routes)
                         } label: {
                             Label("载入路线", systemImage: "list.bullet.rectangle")
                         }
@@ -1409,14 +1372,18 @@ struct LocationSimulationView: View {
     // MARK: - 已保存的路径
 
     private func saveCurrentRoute() {
-        let coordinates = waypointPlanner.waypoints.map(\.coordinate)
+        let preservesExactPath = waypointPlanner.isImported
+        let coordinates = preservesExactPath
+            ? waypointPlanner.sourceCoordinates
+            : waypointPlanner.waypoints.map(\.coordinate)
         guard coordinates.count >= 2 else { return }
         let trimmed = newRouteName.trimmingCharacters(in: .whitespacesAndNewlines)
         let route = SavedWalkingRoute(
             name: trimmed.isEmpty ? String(format: "路径 %d".localized, savedRoutes.count + 1) : trimmed,
             coordinates: coordinates,
             isLoop: waypointPlanner.isLoop,
-            planningStyle: waypointPlanner.planningStyle
+            planningStyle: waypointPlanner.planningStyle,
+            preservesExactPath: preservesExactPath
         )
         savedRoutes.append(route)
         SavedWalkingRouteStore.save(savedRoutes)
@@ -1470,15 +1437,28 @@ struct LocationSimulationView: View {
     private func loadRoute(_ route: SavedWalkingRoute) {
         guard !walkingSession.isActive else { return }
         selectedMode = .route
-        waypointPlanner.replaceAll(
-            with: route.coordinates,
-            isLoop: route.isLoop,
-            planningStyle: route.planningStyle
-        )
+        if route.preservesExactPath {
+            _ = waypointPlanner.loadImportedPath(route.coordinates, name: route.name)
+            waypointPlanner.isLoop = route.isLoop
+        } else {
+            waypointPlanner.replaceAll(
+                with: route.coordinates,
+                isLoop: route.isLoop,
+                planningStyle: route.planningStyle
+            )
+        }
         if let rect = waypointPlanner.waypointsBoundingMapRect {
             position = .rect(rect)
         }
         Haptic.success()
+    }
+
+    private func openLibrary(_ section: LocationLibrarySection) {
+        librarySection = section
+        bookmarks = LocationBookmarkStore.load()
+        recentLocations = RecentLocationStore.load()
+        savedRoutes = SavedWalkingRouteStore.load()
+        showLocationLibrary = true
     }
 
     private func simulate() {
@@ -1717,58 +1697,6 @@ private struct CoordinateEntrySheet: View {
     }
 }
 
-private struct SavedRoutesView: View {
-    @Environment(\.dismiss) private var dismiss
-    @Binding var routes: [SavedWalkingRoute]
-    let onSelect: (SavedWalkingRoute) -> Void
-    let onDelete: (IndexSet) -> Void
-
-    var body: some View {
-        NavigationStack {
-            Group {
-                if routes.isEmpty {
-                    ContentUnavailableView(
-                        "还没有保存的路径",
-                        systemImage: "map",
-                        description: Text("在地图上点几个点连成路径后，点「保存」即可留到下次直接用。")
-                    )
-                } else {
-                    List {
-                        ForEach(routes) { route in
-                            Button {
-                                onSelect(route)
-                            } label: {
-                                VStack(alignment: .leading, spacing: 4) {
-                                    Text(route.name)
-                                        .font(.body)
-                                    HStack(spacing: 6) {
-                                        Text(String(format: "%d 个点".localized, route.points.count))
-                                        if route.isLoop {
-                                            Label("闭环", systemImage: "arrow.triangle.capsulepath")
-                                        }
-                                        Text(route.createdAt, format: .dateTime.year().month().day())
-                                    }
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                                }
-                            }
-                            .tint(.primary)
-                        }
-                        .onDelete(perform: onDelete)
-                    }
-                }
-            }
-            .navigationTitle("已保存的路径")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button("完成") { dismiss() }
-                }
-            }
-        }
-    }
-}
-
 /// 地图上的编号途经点，起点和终点用颜色区分。
 private struct WaypointBadge: View {
     let number: Int
@@ -1791,50 +1719,5 @@ private struct WaypointBadge: View {
             .overlay(Circle().stroke(.white, lineWidth: 2))
             .shadow(radius: 3)
             .accessibilityLabel(String(format: "途经点 %d".localized, number))
-    }
-}
-
-
-struct BookmarksView: View {
-    @Binding var bookmarks: [LocationBookmark]
-    let onSelect: (LocationBookmark) -> Void
-    let onDelete: (IndexSet) -> Void
-
-    var body: some View {
-        NavigationStack {
-            Group {
-                if bookmarks.isEmpty {
-                    ContentUnavailableView(
-                        "还没有收藏地点",
-                        systemImage: "bookmark.slash",
-                        description: Text("切换到「定点」，在地图上选好位置后点书签图标即可收藏。")
-                    )
-                } else {
-                    List {
-                        ForEach(bookmarks) { bookmark in
-                            Button {
-                                onSelect(bookmark)
-                            } label: {
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text(bookmark.name)
-                                        .foregroundStyle(.primary)
-                                    Text(String(format: "%.6f, %.6f", bookmark.latitude, bookmark.longitude))
-                                        .font(.caption.monospaced())
-                                        .foregroundStyle(.secondary)
-                                }
-                            }
-                        }
-                        .onDelete(perform: onDelete)
-                    }
-                }
-            }
-            .navigationTitle("地点收藏")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                if !bookmarks.isEmpty {
-                    EditButton()
-                }
-            }
-        }
     }
 }

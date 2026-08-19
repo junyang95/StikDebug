@@ -144,8 +144,18 @@ final class WaypointRoutePlanner: ObservableObject {
 
     /// 展平后的行走坐标，去掉分段接缝处的重复点。
     var playbackCoordinates: [CLLocationCoordinate2D] {
+        flattenedCoordinates(from: allLegs)
+    }
+
+    /// 不含闭环补线的原始主体路径，保存精确轨迹时使用；载入后再按 isLoop 重建闭环，
+    /// 避免把旧闭环存进主体后又额外补一次。
+    var sourceCoordinates: [CLLocationCoordinate2D] {
+        flattenedCoordinates(from: legs)
+    }
+
+    private func flattenedCoordinates(from routeLegs: [RouteLeg]) -> [CLLocationCoordinate2D] {
         var result: [CLLocationCoordinate2D] = []
-        for leg in allLegs {
+        for leg in routeLegs {
             for coordinate in leg.coordinates {
                 if let last = result.last, isSameCoordinate(last, coordinate) { continue }
                 result.append(coordinate)
@@ -221,6 +231,7 @@ final class WaypointRoutePlanner: ObservableObject {
         legs = []
         closingLeg = nil
         importedName = nil
+        if isLoop { isLoop = false }
     }
 
     /// 载入 GPX/KML/JSON 导入的轨迹。文件本身就是完整路径，整条直接采用，
