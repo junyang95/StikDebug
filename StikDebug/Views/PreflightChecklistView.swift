@@ -3,11 +3,13 @@ import UIKit
 
 struct PreflightChecklistView: View {
     @ObservedObject var service: EnvironmentPreflightService
+    @EnvironmentObject private var onDevicePairing: OnDevicePairingService
     var compact = false
     @Environment(\.openURL) private var openURL
     @State private var isDownloadingDDI = false
     @State private var ddiProgressText: String?
     @State private var preflightAlert: PreflightAlert?
+    @State private var showOnDevicePairing = false
 
     private let idevicePairMacURL = URL(string: "https://static.wow-app.store/Xcode_iOS_DDI_Personalized/idevice_pair--macos-universal.dmg")!
     private let idevicePairWindowsURL = URL(string: "https://static.wow-app.store/Xcode_iOS_DDI_Personalized/idevice_pair--windows-x86_64.exe")!
@@ -54,6 +56,12 @@ struct PreflightChecklistView: View {
                 message: Text(alert.message),
                 dismissButton: .default(Text("知道了"))
             )
+        }
+        .sheet(isPresented: $showOnDevicePairing) {
+            OnDevicePairingView()
+                .environmentObject(onDevicePairing)
+                .environmentObject(service)
+                .environmentObject(EmbeddedVPNService.shared)
         }
     }
 
@@ -198,15 +206,13 @@ struct PreflightChecklistView: View {
                 waitingCard("等待内置 VPN 路由")
             } else if !isReady(.pairing) {
                 waitingCard("等待 pairing file")
-            } else if service.ddiFilesMissing {
-                waitingCard("先下载 DDI 文件")
             } else {
                 actionCard {
-                    Text("下一步：用 pairing file 和内置 VPN 路由建立 CoreDevice/RSD 通道；定位模拟和 DDI 挂载依赖它。")
+                    Text("下一步：用 pairing file 和内置 VPN 路由建立 CoreDevice/RSD 定位通道。DDI 不是定位前置条件。")
                         .font(.caption)
                         .foregroundStyle(.secondary)
-                    primaryActionButton("建立 CoreDevice/RSD 通道", systemImage: "point.3.connected.trianglepath.dotted") {
-                        service.connectAndMount()
+                    primaryActionButton("建立定位通道", systemImage: "point.3.connected.trianglepath.dotted") {
+                        service.connectDevice()
                     }
                 }
             }
@@ -214,7 +220,7 @@ struct PreflightChecklistView: View {
         case .ddi:
             if service.ddiFilesMissing {
                 actionCard {
-                    Text("下一步：下载 BuildManifest、Image.dmg 和 trustcache。")
+                    Text("可选：仅额外开发服务需要 BuildManifest、Image.dmg 和 trustcache；定位模拟可直接继续。")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                     primaryActionButton(isDownloadingDDI ? "正在下载 DDI…" : "下载/重新下载 DDI 文件", systemImage: "arrow.down.circle") {
@@ -226,11 +232,11 @@ struct PreflightChecklistView: View {
                 waitingCard("DDI 文件已准备，等待 CoreDevice/RSD 通道后挂载")
             } else {
                 actionCard {
-                    Text("下一步：把 DDI 挂载到设备，供定位模拟服务使用。")
+                    Text("可选：把 DDI 挂载到设备，供额外开发服务使用。")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                     primaryActionButton("挂载 DDI", systemImage: "externaldrive.badge.checkmark") {
-                        service.connectAndMount()
+                        service.connectDevice()
                     }
                 }
             }
@@ -239,7 +245,20 @@ struct PreflightChecklistView: View {
 
     private var pairingHelp: some View {
         actionCard {
-            Text("需要在电脑上运行 idevice_pair：连接 iPhone → 选择 StikDebug → 导入 pairing file → 回到本 App 点“检查”。")
+            HStack(spacing: 8) {
+                Image(systemName: onDevicePairing.isSupported ? "iphone.and.arrow.forward" : "desktopcomputer")
+                    .foregroundStyle(PikminUI.green)
+                Text(onDevicePairing.isSupported ? "iOS 27 可直接在本机完成配对，无需连接电脑。" : "当前系统请使用电脑生成 pairing file。")
+                    .font(.caption.weight(.medium))
+            }
+
+            if onDevicePairing.isSupported {
+                primaryActionButton("打开 1–7 步本机配对", systemImage: "iphone.and.arrow.forward") {
+                    showOnDevicePairing = true
+                }
+            }
+
+            Text("电脑备用方案：运行 idevice_pair，连接 iPhone 后生成文件，再回到本 App 设置中导入。")
                 .font(.caption)
                 .foregroundStyle(.secondary)
 

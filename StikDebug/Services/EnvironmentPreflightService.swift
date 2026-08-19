@@ -17,7 +17,7 @@ enum PreflightKind: String, CaseIterable, Identifiable {
         case .vpnRoute: "内置 VPN 路由".localized
         case .pairing: "设备配对文件".localized
         case .coreDeviceTunnel: "CoreDevice 隧道".localized
-        case .ddi: "Developer Disk Image"
+        case .ddi: "Developer Disk Image（可选）".localized
         }
     }
 
@@ -81,9 +81,9 @@ final class EnvironmentPreflightService: ObservableObject {
     var blockingItems: [PreflightItem] {
         items.filter { item in
             switch item.kind {
-            case .wifi:
+            case .wifi, .ddi:
                 return false
-            case .vpnRoute, .pairing, .coreDeviceTunnel, .ddi:
+            case .vpnRoute, .pairing, .coreDeviceTunnel:
                 return !item.status.isReady
             }
         }
@@ -142,7 +142,10 @@ final class EnvironmentPreflightService: ObservableObject {
         if missingDDIFiles.isEmpty {
             set(.warning("DDI 文件可用，等待 CoreDevice/RSD 后挂载".localized), for: .ddi)
         } else {
-            set(.failed(String(format: "缺少 DDI 文件：%@".localized, missingDDIFiles.joined(separator: ", "))), for: .ddi)
+            set(
+                .warning("未安装 DDI；不影响定位模拟，仅额外开发服务需要。".localized),
+                for: .ddi
+            )
         }
 
         let routeReachable = await Self.probeLocalDevRoute()
@@ -170,12 +173,6 @@ final class EnvironmentPreflightService: ObservableObject {
             return
         }
 
-        guard missingDDIFiles.isEmpty else {
-            set(.failed("DDI 文件缺失，先下载 DDI".localized), for: .coreDeviceTunnel)
-            finishRefresh()
-            return
-        }
-
         let tunnelResult = await Task.detached(priority: .userInitiated) {
             () -> Result<Void, Error> in
             do {
@@ -192,7 +189,11 @@ final class EnvironmentPreflightService: ObservableObject {
         case .failure(let error):
             LogManager.shared.addErrorLog("CoreDevice/RSD 隧道建立失败：\(error.localizedDescription)")
             set(.failed(error.localizedDescription), for: .coreDeviceTunnel)
-            set(.failed("CoreDevice 隧道不可用".localized), for: .ddi)
+            finishRefresh()
+            return
+        }
+
+        guard missingDDIFiles.isEmpty else {
             finishRefresh()
             return
         }
@@ -235,7 +236,7 @@ final class EnvironmentPreflightService: ObservableObject {
         await refresh()
     }
 
-    func connectAndMount() {
+    func connectDevice() {
         startTunnelInBackground(showErrorUI: true)
         Task {
             for _ in 0..<24 {
@@ -244,6 +245,11 @@ final class EnvironmentPreflightService: ObservableObject {
                 if canStartSession { break }
             }
         }
+    }
+
+    /// Kept for older call sites; mounting remains best-effort when DDI exists.
+    func connectAndMount() {
+        connectDevice()
     }
 
     private func updateWiFiStatus(_ path: NWPath) {

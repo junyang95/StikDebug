@@ -11,6 +11,7 @@ final class BackgroundLocationManager: NSObject, CLLocationManagerDelegate {
     private let locationManager = CLLocationManager()
     private var isRunning = false
     private var activityCount = 0
+    private var requiredActivityCount = 0
 
     private override init() {
         super.init()
@@ -49,7 +50,23 @@ final class BackgroundLocationManager: NSObject, CLLocationManagerDelegate {
 
     func requestStop() {
         activityCount = max(activityCount - 1, 0)
-        if activityCount == 0 {
+        if activityCount == 0, requiredActivityCount == 0 {
+            stop()
+        }
+    }
+
+    /// Pairing is initiated in this app and completed in Settings. Keep the
+    /// process eligible for background execution during that required hop.
+    func requestRequiredStart() {
+        requiredActivityCount += 1
+        if requiredActivityCount == 1 {
+            start()
+        }
+    }
+
+    func requestRequiredStop() {
+        requiredActivityCount = max(requiredActivityCount - 1, 0)
+        if requiredActivityCount == 0, activityCount == 0 {
             stop()
         }
     }

@@ -1,144 +1,168 @@
 {
-  "sourceLanguage": "zh-Hans",
-  "strings": {
-    "NSHealthShareUsageDescription": {
-      "extractionState": "manual",
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Pikmin Helper 读取步数，用于展示每日进度和会话统计。"
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Pikmin Helper 讀取步數，用於顯示每日進度與工作階段統計。"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Pikmin Helper reads your step count to show daily progress and session stats."
+  "sourceLanguage" : "zh-Hans",
+  "strings" : {
+    "CFBundleDisplayName" : {
+      "comment" : "Bundle display name",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Pikmin Helper"
           }
         }
       }
     },
-    "NSHealthUpdateUsageDescription": {
-      "extractionState": "manual",
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Pikmin Helper 按模拟行走距离写入会话步数。"
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Pikmin Helper 依模擬行走距離寫入工作階段步數。"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Pikmin Helper writes session steps based on the simulated walking distance."
+    "CFBundleName" : {
+      "comment" : "Bundle name",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "StikDebug"
           }
         }
       }
     },
-    "NSLocalNetworkUsageDescription": {
-      "extractionState": "manual",
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Pikmin Helper 需要访问本地网络，以连接 LocalDevVPN 提供的设备隧道。"
+    "NSHealthShareUsageDescription" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pikmin Helper reads your step count to show daily progress and session stats."
           }
         },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Pikmin Helper 需要存取本機網路，以連接 LocalDevVPN 提供的裝置通道。"
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pikmin Helper 读取步数，用于展示每日进度和会话统计。"
           }
         },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Pikmin Helper needs local network access to reach the device tunnel provided by LocalDevVPN."
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pikmin Helper 讀取步數，用於顯示每日進度與工作階段統計。"
           }
         }
       }
     },
-    "NSLocationAlwaysAndWhenInUseUsageDescription": {
-      "extractionState": "manual",
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Pikmin Helper 使用低精度后台定位维持行走会话。"
+    "NSHealthUpdateUsageDescription" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pikmin Helper writes session steps based on the simulated walking distance."
           }
         },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Pikmin Helper 使用低精度背景定位維持行走工作階段。"
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pikmin Helper 按模拟行走距离写入会话步数。"
           }
         },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Pikmin Helper uses low-accuracy background location to keep walking sessions alive."
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pikmin Helper 依模擬行走距離寫入工作階段步數。"
           }
         }
       }
     },
-    "NSLocationWhenInUseUsageDescription": {
-      "extractionState": "manual",
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Pikmin Helper 使用定位维持行走会话。"
+    "NSLocalNetworkUsageDescription" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pikmin Helper needs local network access to publish on-device pairing and reach the device tunnel."
           }
         },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Pikmin Helper 使用定位維持行走工作階段。"
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pikmin Helper 需要访问本地网络，以发布本机配对服务并连接设备隧道。"
           }
         },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Pikmin Helper uses location to keep walking sessions running."
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pikmin Helper 需要存取本機網路，以發佈本機配對服務並連接裝置通道。"
           }
         }
       }
     },
-    "NSMotionUsageDescription": {
-      "extractionState": "manual",
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Pikmin Helper 使用运动信息辅助展示行走数据。"
+    "NSLocationAlwaysAndWhenInUseUsageDescription" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pikmin Helper uses low-accuracy background location to keep walking sessions alive."
           }
         },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Pikmin Helper 使用運動資訊輔助顯示行走資料。"
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pikmin Helper 使用低精度后台定位维持行走会话。"
           }
         },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Pikmin Helper uses motion data to help present your walking stats."
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pikmin Helper 使用低精度背景定位維持行走工作階段。"
+          }
+        }
+      }
+    },
+    "NSLocationWhenInUseUsageDescription" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pikmin Helper uses location to keep walking sessions running."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pikmin Helper 使用定位维持行走会话。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pikmin Helper 使用定位維持行走工作階段。"
+          }
+        }
+      }
+    },
+    "NSMotionUsageDescription" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pikmin Helper uses motion data to help present your walking stats."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pikmin Helper 使用运动信息辅助展示行走数据。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pikmin Helper 使用運動資訊輔助顯示行走資料。"
           }
         }
       }
     }
   },
-  "version": "1.0"
+  "version" : "1.0"
 }

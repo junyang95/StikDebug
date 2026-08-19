@@ -6,6 +6,7 @@ struct HelperSettingsView: View {
     @EnvironmentObject private var permissions: PermissionChecklistService
     @EnvironmentObject private var health: HealthStepService
     @EnvironmentObject private var vpn: EmbeddedVPNService
+    @EnvironmentObject private var onDevicePairing: OnDevicePairingService
     @AppStorage(MovementDefaultsKey.profile) private var profileRaw = MovementProfile.walking.rawValue
     @AppStorage(MovementDefaultsKey.walkingSpeed) private var walkingSpeedKPH = 8.0
     @AppStorage(MovementDefaultsKey.walkingStride) private var strideMeters = 0.75
@@ -14,6 +15,7 @@ struct HelperSettingsView: View {
     @AppStorage(AppearancePreference.storageKey) private var appearanceRaw = AppearancePreference.system.rawValue
     @AppStorage("autoConnectEmbeddedVPN") private var autoConnectVPN = true
     @State private var showPairingImporter = false
+    @State private var showOnDevicePairing = false
     @State private var importMessage: String?
     @State private var isGeneratingDiagnostics = false
     @State private var diagnosticsText: String?
@@ -143,12 +145,53 @@ struct HelperSettingsView: View {
                         .foregroundStyle(.secondary)
                 }
 
-                Section("设备连接") {
-                    Button("导入 pairing file") { showPairingImporter = true }
+                Section {
+                    HStack(spacing: 12) {
+                        Image(systemName: pairingStatusSymbol)
+                            .font(.title3.weight(.semibold))
+                            .foregroundStyle(pairingStatusColor)
+                            .frame(width: 36, height: 36)
+                            .background(pairingStatusColor.opacity(0.12), in: Circle())
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("设备信任")
+                                .font(.subheadline.weight(.semibold))
+                            Text(pairingStatusTitle)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                        Spacer()
+                    }
+
+                    if onDevicePairing.isSupported {
+                        Button {
+                            showOnDevicePairing = true
+                        } label: {
+                            Label("iOS 27 本机配对（1–7 步）", systemImage: "iphone.and.arrow.forward")
+                                .fontWeight(.semibold)
+                                .frame(maxWidth: .infinity)
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .tint(PikminUI.green)
+                        .listRowBackground(Color.clear)
+                    }
+
+                    Button {
+                        showPairingImporter = true
+                    } label: {
+                        Label(onDevicePairing.isSupported ? "导入电脑生成的文件（备用）" : "导入 pairing file", systemImage: "square.and.arrow.down")
+                    }
                     if let importMessage {
                         Text(importMessage).font(.caption).foregroundStyle(.secondary)
                     }
-                    Button("连接并挂载 DDI") { preflight.connectAndMount() }
+                    Button {
+                        preflight.connectDevice()
+                    } label: {
+                        Label("连接设备并检查定位通道", systemImage: "point.3.connected.trianglepath.dotted")
+                    }
+                } header: {
+                    Text("设备连接")
+                } footer: {
+                    Text("本机配对需要 iOS 27 或更高版本；旧系统仍可用电脑生成文件。DDI 为可选能力，不再阻塞定位模拟。")
                 }
 
                 Section("健康") {
@@ -195,6 +238,10 @@ struct HelperSettingsView: View {
                         .foregroundStyle(.secondary)
                     Link("内置隧道基于 LocalDevVPN / StosVPN（SideStore Team）", destination: URL(string: "https://github.com/StephenDev0/LocalDevVPN")!)
                         .font(.footnote)
+                    Link("iOS 27 本机配对参考 Locus（MIT）", destination: URL(string: "https://github.com/ChrisMack32/Locus")!)
+                        .font(.footnote)
+                    Link("设备通信基于 idevice（MIT）", destination: URL(string: "https://github.com/jkcoxson/idevice")!)
+                        .font(.footnote)
                 }
             }
             .scrollContentBackground(.hidden)
@@ -219,6 +266,38 @@ struct HelperSettingsView: View {
         .sheet(isPresented: $showDiagnostics) {
             DiagnosticsReportView(text: diagnosticsText ?? "")
         }
+        .sheet(isPresented: $showOnDevicePairing) {
+            OnDevicePairingView()
+        }
+    }
+
+    private var pairingItem: PreflightItem? {
+        preflight.items.first { $0.kind == .pairing }
+    }
+
+    private var pairingStatusTitle: String {
+        if onDevicePairing.isBusy { return "正在等待本机配对".localized }
+        if onDevicePairing.phase == .succeeded { return "本机配对已完成".localized }
+        if case .failed(let message) = onDevicePairing.phase { return message }
+        return pairingItem?.status.message ?? "尚未检查".localized
+    }
+
+    private var pairingStatusSymbol: String {
+        if onDevicePairing.isBusy { return "dot.radiowaves.left.and.right" }
+        if case .failed = onDevicePairing.phase { return "exclamationmark.triangle.fill" }
+        if onDevicePairing.phase == .succeeded || pairingItem?.status.isReady == true {
+            return "checkmark.shield.fill"
+        }
+        return "shield.lefthalf.filled"
+    }
+
+    private var pairingStatusColor: Color {
+        if onDevicePairing.isBusy { return .orange }
+        if case .failed = onDevicePairing.phase { return .red }
+        if onDevicePairing.phase == .succeeded || pairingItem?.status.isReady == true {
+            return PikminUI.green
+        }
+        return .secondary
     }
 
     private func generateDiagnostics() {

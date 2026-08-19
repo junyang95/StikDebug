@@ -5214,6 +5214,39 @@ struct IdeviceFfiError *rp_pairing_file_write(struct RpPairingFileHandle *handle
  */
 void rp_pairing_file_free(struct RpPairingFileHandle *handle);
 
+/** iOS 27 device-initiated pairing callbacks used by Pikmin Helper's shim. */
+typedef void (*PairableHostListeningCallback)(uint16_t port,
+                                              const char *service_identifier,
+                                              const char *name,
+                                              const char *model,
+                                              const char *auth_tag,
+                                              const char *ver,
+                                              const char *min_ver,
+                                              void *context);
+typedef void (*PairableHostConnectedCallback)(void *context);
+
+/**
+ * Isolated pairable-host entry points. They are intentionally prefixed so the
+ * original full idevice archive and Locus's pairing subset can coexist.
+ */
+struct IdeviceFfiError *pikmin_pairable_host_accept(
+    const char *name,
+    const char *model,
+    uint16_t port,
+    void (*pin_callback)(const char *pin, void *context),
+    void *pin_context,
+    PairableHostListeningCallback listening_callback,
+    void *listening_context,
+    PairableHostConnectedCallback connected_callback,
+    void *connected_context,
+    uint8_t *out_host_alt_irk,
+    struct RpPairingFileHandle **out_pairing_file);
+void pikmin_pairing_error_free(struct IdeviceFfiError *error);
+struct IdeviceFfiError *pikmin_pairing_file_write(
+    struct RpPairingFileHandle *handle,
+    const char *path);
+void pikmin_pairing_file_free(struct RpPairingFileHandle *handle);
+
 /**
  * Creates a new RSD handshake from a ReadWrite connection
  *

@@ -9,6 +9,7 @@ struct StikDebugApp: App {
     @StateObject private var permissions = PermissionChecklistService.shared
     @StateObject private var health = HealthStepService.shared
     @StateObject private var vpn = EmbeddedVPNService.shared
+    @StateObject private var onDevicePairing = OnDevicePairingService.shared
     @StateObject private var localization = LocalizationManager.shared
     private let isTesting: Bool
     private let modelContainer: ModelContainer
@@ -31,6 +32,7 @@ struct StikDebugApp: App {
                 .environmentObject(permissions)
                 .environmentObject(health)
                 .environmentObject(vpn)
+                .environmentObject(onDevicePairing)
                 .environmentObject(localization)
                 .environment(\.locale, localization.locale)
                 // 重建整棵树，让已经渲染出来的文案按新语言重新查表。

@@ -1,0 +1,4 @@
+_pikmin_pairable_host_accept
+_pikmin_pairing_error_free
+_pikmin_pairing_file_write
+_pikmin_pairing_file_free

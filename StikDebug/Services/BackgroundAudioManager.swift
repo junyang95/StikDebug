@@ -13,6 +13,7 @@ final class BackgroundAudioManager {
     private var isRunning = false
     private var persistentEnabled = false
     private var activityCount = 0
+    private var requiredActivityCount = 0
     private var healthCheckTimer: Timer?
 
     private init() {
@@ -50,8 +51,22 @@ final class BackgroundAudioManager {
         refreshRunningState()
     }
 
+    /// Critical short-lived work such as iOS 27 pairing must survive the hop
+    /// into Settings regardless of the user's optional keep-alive preference.
+    func requestRequiredStart() {
+        requiredActivityCount += 1
+        refreshRunningState()
+    }
+
+    func requestRequiredStop() {
+        requiredActivityCount = max(requiredActivityCount - 1, 0)
+        refreshRunningState()
+    }
+
     private func refreshRunningState() {
-        let shouldRun = persistentEnabled || (activityCount > 0 && UserDefaults.standard.bool(forKey: "keepAliveAudio"))
+        let shouldRun = persistentEnabled
+            || requiredActivityCount > 0
+            || (activityCount > 0 && UserDefaults.standard.bool(forKey: "keepAliveAudio"))
         guard shouldRun != isRunning else {
             if shouldRun {
                 recoverIfNeeded()

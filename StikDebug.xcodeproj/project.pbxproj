@@ -592,12 +592,12 @@
 					"$(PROJECT_DIR)/StikDebug/idevice",
 				);
 				INFOPLIST_FILE = StikDebug/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = StikDebug;
+				INFOPLIST_KEY_CFBundleDisplayName = "Pikmin Helper";
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_LSSupportsOpeningDocumentsInPlace = YES;
 				INFOPLIST_KEY_NSHealthShareUsageDescription = "Pikmin Helper 读取步数，用于展示每日进度和会话统计。";
 				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "Pikmin Helper 按模拟行走距离写入会话步数。";
-				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "Pikmin Helper 需要访问本地网络，以连接 LocalDevVPN 提供的设备隧道。";
+				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "Pikmin Helper 需要访问本地网络，以发布本机配对服务并连接设备隧道。";
 				INFOPLIST_KEY_NSLocationAlwaysAndWhenInUseUsageDescription = "Pikmin Helper 使用低精度后台定位维持行走会话。";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Pikmin Helper 使用定位维持行走会话。";
 				INFOPLIST_KEY_NSMotionUsageDescription = "Pikmin Helper 使用运动信息辅助展示行走数据。";
@@ -659,12 +659,12 @@
 					"$(PROJECT_DIR)/StikDebug/idevice",
 				);
 				INFOPLIST_FILE = StikDebug/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = StikDebug;
+				INFOPLIST_KEY_CFBundleDisplayName = "Pikmin Helper";
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_LSSupportsOpeningDocumentsInPlace = YES;
 				INFOPLIST_KEY_NSHealthShareUsageDescription = "Pikmin Helper 读取步数，用于展示每日进度和会话统计。";
 				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "Pikmin Helper 按模拟行走距离写入会话步数。";
-				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "Pikmin Helper 需要访问本地网络，以连接 LocalDevVPN 提供的设备隧道。";
+				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "Pikmin Helper 需要访问本地网络，以发布本机配对服务并连接设备隧道。";
 				INFOPLIST_KEY_NSLocationAlwaysAndWhenInUseUsageDescription = "Pikmin Helper 使用低精度后台定位维持行走会话。";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Pikmin Helper 使用定位维持行走会话。";
 				INFOPLIST_KEY_NSMotionUsageDescription = "Pikmin Helper 使用运动信息辅助展示行走数据。";
