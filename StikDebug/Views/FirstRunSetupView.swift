@@ -16,22 +16,16 @@ struct FirstRunSetupView: View {
     @State private var pairingImportMessage: String?
     @State private var isConnectingVPN = false
 
+    private let idevicePairMacURL = URL(string: "https://static.wow-app.store/Xcode_iOS_DDI_Personalized/idevice_pair--macos-universal.dmg")!
+    private let idevicePairWindowsURL = URL(string: "https://static.wow-app.store/Xcode_iOS_DDI_Personalized/idevice_pair--windows-x86_64.exe")!
+    private let windowsITunesURL = URL(string: "https://support.apple.com/zh-cn/118290")!
+
     private enum Step: Int, CaseIterable {
         case welcome
         case permissions
         case pairing
         case vpn
         case readiness
-
-        var title: String {
-            switch self {
-            case .welcome: "欢迎"
-            case .permissions: "权限"
-            case .pairing: "配对"
-            case .vpn: "本地隧道"
-            case .readiness: "准备完成"
-            }
-        }
     }
 
     private var pairingFileExists: Bool {
@@ -228,10 +222,20 @@ struct FirstRunSetupView: View {
                 }
                 .buttonStyle(.bordered)
             } else {
-                VStack(alignment: .leading, spacing: 12) {
-                    numberedStep(1, "在 Mac 或 Windows 上运行 idevice_pair")
-                    numberedStep(2, "连接这台 iPhone 并生成 pairing file")
-                    numberedStep(3, "通过 AirDrop、文件 App 或共享导入")
+                VStack(alignment: .leading, spacing: 16) {
+                    numberedStep(1, "使用 USB 数据线将这台 iPhone 连接到电脑")
+
+                    numberedStep(2, "在电脑上下载并运行 idevice_pair")
+                    Text("点击对应版本，将下载链接复制或发送到电脑。")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .padding(.leading, 36)
+                    platformDownloadButtons
+
+                    windowsDriverNote
+
+                    numberedStep(3, "在 idevice_pair 中选择这台 iPhone，生成 pairing file")
+                    numberedStep(4, "将文件发送到 iPhone，再使用下方按钮导入")
                 }
                 .padding(18)
                 .background(PikminUI.cardBackground, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
@@ -254,6 +258,51 @@ struct FirstRunSetupView: View {
                     .foregroundStyle(pairingFileExists ? PikminUI.green : .red)
             }
         }
+    }
+
+    private var platformDownloadButtons: some View {
+        HStack(spacing: 10) {
+            ShareLink(item: idevicePairMacURL) {
+                Label("Mac 版", systemImage: "macbook")
+                    .font(.subheadline.weight(.semibold))
+                    .frame(maxWidth: .infinity)
+                    .frame(minHeight: 42)
+            }
+            .buttonStyle(.bordered)
+
+            ShareLink(item: idevicePairWindowsURL) {
+                Label("Windows 版", systemImage: "desktopcomputer")
+                    .font(.subheadline.weight(.semibold))
+                    .frame(maxWidth: .infinity)
+                    .frame(minHeight: 42)
+            }
+            .buttonStyle(.bordered)
+        }
+        .padding(.leading, 36)
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel("idevice_pair 下载")
+    }
+
+    private var windowsDriverNote: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Label("Windows 电脑还需要安装 iTunes", systemImage: "exclamationmark.triangle.fill")
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(.orange)
+
+            Text("iTunes 会安装识别 iPhone 所需的 Apple Mobile Device 驱动。请先安装并打开一次，再运行 idevice_pair。")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+
+            Link(destination: windowsITunesURL) {
+                Label("查看 Apple 官方下载说明", systemImage: "arrow.up.right.square")
+                    .font(.caption.weight(.semibold))
+            }
+        }
+        .padding(12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.orange.opacity(0.09), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .padding(.leading, 36)
     }
 
     private var vpnPage: some View {
@@ -364,30 +413,40 @@ struct FirstRunSetupView: View {
     }
 
     private var actionBar: some View {
-        VStack(spacing: 8) {
+        VStack(spacing: 0) {
             HStack(spacing: 12) {
                 if step != .welcome {
-                    Button("返回") { moveBackward() }
-                        .buttonStyle(.bordered)
-                        .frame(minWidth: 88)
+                    Button { moveBackward() } label: {
+                        Label("返回", systemImage: "chevron.backward")
+                            .fontWeight(.semibold)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 48)
+                    }
+                    .buttonStyle(.bordered)
                 }
 
-                Button(primaryActionTitle) { performPrimaryAction() }
-                    .buttonStyle(.borderedProminent)
-                    .tint(PikminUI.green)
-                    .frame(maxWidth: .infinity)
-                    .disabled(primaryActionDisabled)
+                Button { performPrimaryAction() } label: {
+                    Text(primaryActionTitle)
+                        .fontWeight(.semibold)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 48)
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(PikminUI.green)
+                .disabled(primaryActionDisabled)
             }
             .controlSize(.large)
-
-            Text(step.title)
-                .font(.caption2)
-                .foregroundStyle(.secondary)
         }
+        .frame(maxWidth: 560)
         .padding(.horizontal, 20)
         .padding(.top, 12)
-        .padding(.bottom, 8)
-        .background(.regularMaterial)
+        .padding(.bottom, 10)
+        .frame(maxWidth: .infinity)
+        .background {
+            Rectangle()
+                .fill(.regularMaterial)
+                .ignoresSafeArea(edges: .bottom)
+        }
     }
 
     private var primaryActionTitle: String {

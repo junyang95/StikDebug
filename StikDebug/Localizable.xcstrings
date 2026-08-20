@@ -7126,6 +7126,213 @@
           }
         }
       }
+    },
+    "使用 USB 数据线将这台 iPhone 连接到电脑" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Connect this iPhone to your computer with a USB cable"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "使用 USB 数据线将这台 iPhone 连接到电脑"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "使用 USB 傳輸線將這台 iPhone 連接到電腦"
+          }
+        }
+      }
+    },
+    "在 idevice_pair 中选择这台 iPhone，生成 pairing file" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Select this iPhone in idevice_pair and generate a pairing file"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "在 idevice_pair 中选择这台 iPhone，生成 pairing file"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "在 idevice_pair 中選擇這台 iPhone，產生 pairing file"
+          }
+        }
+      }
+    },
+    "在电脑上下载并运行 idevice_pair" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Download and run idevice_pair on the computer"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "在电脑上下载并运行 idevice_pair"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "在電腦上下載並執行 idevice_pair"
+          }
+        }
+      }
+    },
+    "将文件发送到 iPhone，再使用下方按钮导入" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Send the file to your iPhone, then import it with the button below"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "将文件发送到 iPhone，再使用下方按钮导入"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "將檔案傳送到 iPhone，再使用下方按鈕匯入"
+          }
+        }
+      }
+    },
+    "点击对应版本，将下载链接复制或发送到电脑。" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose your platform, then copy or send the download link to your computer."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "点击对应版本，将下载链接复制或发送到电脑。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "點擊對應版本，將下載連結複製或傳送到電腦。"
+          }
+        }
+      }
+    },
+    "查看 Apple 官方下载说明" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "View Apple's official download guide"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "查看 Apple 官方下载说明"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "查看 Apple 官方下載說明"
+          }
+        }
+      }
+    },
+    "Windows 电脑还需要安装 iTunes" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Windows also requires iTunes"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Windows 电脑还需要安装 iTunes"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Windows 電腦還需要安裝 iTunes"
+          }
+        }
+      }
+    },
+    "iTunes 会安装识别 iPhone 所需的 Apple Mobile Device 驱动。请先安装并打开一次，再运行 idevice_pair。" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "iTunes installs the Apple Mobile Device driver needed to recognize your iPhone. Install and open it once before running idevice_pair."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "iTunes 会安装识别 iPhone 所需的 Apple Mobile Device 驱动。请先安装并打开一次，再运行 idevice_pair。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "iTunes 會安裝辨識 iPhone 所需的 Apple Mobile Device 驅動程式。請先安裝並開啟一次，再執行 idevice_pair。"
+          }
+        }
+      }
+    },
+    "idevice_pair 下载" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "idevice_pair downloads"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "idevice_pair 下载"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "idevice_pair 下載"
+          }
+        }
+      }
     }
   },
   "version" : "1.0"
