@@ -5214,7 +5214,7 @@ struct IdeviceFfiError *rp_pairing_file_write(struct RpPairingFileHandle *handle
  */
 void rp_pairing_file_free(struct RpPairingFileHandle *handle);
 
-/** iOS 27 device-initiated pairing callbacks used by Pikmin Helper's shim. */
+/** iOS 27 device-initiated pairing callbacks used by StikDebug's shim. */
 typedef void (*PairableHostListeningCallback)(uint16_t port,
                                               const char *service_identifier,
                                               const char *name,

@@ -108,7 +108,7 @@ final class OnDevicePairingService: ObservableObject {
         phase = .deviceConnected
         Self.postNotification(
             identifier: "pikmin.pairing.connected",
-            title: "Pikmin Helper 已连接".localized,
+            title: "StikDebug 已连接".localized,
             body: "正在生成本机配对码…".localized
         )
     }
@@ -132,7 +132,7 @@ final class OnDevicePairingService: ObservableObject {
         Self.postNotification(
             identifier: "pikmin.pairing.succeeded",
             title: "本机配对完成".localized,
-            body: "配对文件已安装。回到 Pikmin Helper 连接本地隧道。".localized
+            body: "配对文件已安装。回到 StikDebug 连接本地隧道。".localized
         )
         Task { await EnvironmentPreflightService.shared.refresh() }
     }
@@ -174,7 +174,7 @@ final class OnDevicePairingService: ObservableObject {
 
     private static func postPINNotification(_ pin: String) {
         let content = UNMutableNotificationContent()
-        content.title = "Pikmin Helper 配对码".localized
+        content.title = "StikDebug 配对码".localized
         content.body = pin
         content.sound = .default
         content.interruptionLevel = .timeSensitive
@@ -198,7 +198,7 @@ final class OnDevicePairingService: ObservableObject {
     nonisolated private static func runBlockingAccept(box: OnDevicePairingCallbackBox) {
         var pairingFile: OpaquePointer?
         var alternateIRK = [UInt8](repeating: 0, count: 16)
-        let error = "Pikmin Helper".withCString { name in
+        let error = "StikDebug".withCString { name in
             "Mac17,7".withCString { model in
                 pikmin_pairable_host_accept(
                     name,
@@ -290,7 +290,7 @@ private func onDevicePairingListeningCallback(
     let values = (
         port,
         serviceIdentifier.map { String(cString: $0) } ?? "",
-        name.map { String(cString: $0) } ?? "Pikmin Helper",
+        name.map { String(cString: $0) } ?? "StikDebug",
         model.map { String(cString: $0) } ?? "Mac17,7",
         authTag.map { String(cString: $0) } ?? "",
         version.map { String(cString: $0) } ?? "26",

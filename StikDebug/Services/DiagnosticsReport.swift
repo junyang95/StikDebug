@@ -32,7 +32,7 @@ enum DiagnosticsReport {
         func section(_ title: String) { lines.append(""); lines.append("== \(title) ==") }
         func row(_ key: String, _ value: String) { lines.append("\(key): \(value)") }
 
-        lines.append("Pikmin Helper 诊断日志")
+        lines.append("StikDebug 诊断日志")
         lines.append(ISO8601DateFormatter().string(from: Date()))
 
         // MARK: App / 设备

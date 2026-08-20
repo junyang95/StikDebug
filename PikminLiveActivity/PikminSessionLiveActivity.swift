@@ -43,7 +43,7 @@ struct PikminSessionLiveActivity: Widget {
     ) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Label("Pikmin Helper", systemImage: "location.fill.viewfinder")
+                Label("StikDebug", systemImage: "location.fill.viewfinder")
                     .font(.headline)
                     .foregroundStyle(.green)
                 Spacer()

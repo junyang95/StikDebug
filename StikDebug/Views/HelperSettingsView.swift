@@ -306,7 +306,7 @@ struct HelperSettingsView: View {
                 }
 
                 Section {
-                    Text("Pikmin Helper 仅供内部学习使用。模拟定位可能违反游戏服务条款。")
+                    Text("StikDebug 仅供内部学习使用。模拟定位可能违反游戏服务条款。")
                         .font(.footnote)
                         .foregroundStyle(.secondary)
                     Link("内置隧道基于 LocalDevVPN / StosVPN（SideStore Team）", destination: URL(string: "https://github.com/StephenDev0/LocalDevVPN")!)

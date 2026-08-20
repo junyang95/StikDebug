@@ -27,4 +27,4 @@ test -f "$APP_PATH/PrivacyInfo.xcprivacy"
 test -d "$APP_PATH/PlugIns/PikminTunnel.appex"
 test -d "$APP_PATH/PlugIns/PikminLiveActivity.appex"
 
-echo "Pikmin Helper verification passed: $APP_PATH"
+echo "StikDebug verification passed: $APP_PATH"

@@ -750,48 +750,48 @@
         }
       }
     },
-    "Pikmin Helper 仅供内部学习使用。模拟定位可能违反游戏服务条款。" : {
+    "StikDebug 仅供内部学习使用。模拟定位可能违反游戏服务条款。" : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Pikmin Helper is for internal study use only. Simulating location may violate the game's terms of service."
+            "value" : "StikDebug is for internal study use only. Simulating location may violate the game's terms of service."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Pikmin Helper 仅供内部学习使用。模拟定位可能违反游戏服务条款。"
+            "value" : "StikDebug 仅供内部学习使用。模拟定位可能违反游戏服务条款。"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Pikmin Helper 僅供內部學習使用。模擬定位可能違反遊戲服務條款。"
+            "value" : "StikDebug 僅供內部學習使用。模擬定位可能違反遊戲服務條款。"
           }
         }
       }
     },
-    "Pikmin Helper 本地隧道" : {
+    "StikDebug 本地隧道" : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Pikmin Helper local tunnel"
+            "value" : "StikDebug local tunnel"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Pikmin Helper 本地隧道"
+            "value" : "StikDebug 本地隧道"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Pikmin Helper 本機通道"
+            "value" : "StikDebug 本機通道"
           }
         }
       }
@@ -3238,7 +3238,7 @@
     "建立定位通道" : {
 
     },
-    "开始后需要短暂切换到系统设置；Pikmin Helper 会在后台等待连接。" : {
+    "开始后需要短暂切换到系统设置；StikDebug 会在后台等待连接。" : {
 
     },
     "开始步行" : {
@@ -7334,19 +7334,19 @@
         }
       }
     },
-    "Pikmin Helper · Windows 下载清单" : {
+    "StikDebug · Windows 下载清单" : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Pikmin Helper · Windows download checklist"
+            "value" : "StikDebug · Windows download checklist"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Pikmin Helper · Windows 下載清單"
+            "value" : "StikDebug · Windows 下載清單"
           }
         }
       }
@@ -7453,19 +7453,19 @@
         }
       }
     },
-    "Pikmin Helper · Mac 配对工具" : {
+    "StikDebug · Mac 配对工具" : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Pikmin Helper · Mac pairing tool"
+            "value" : "StikDebug · Mac pairing tool"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Pikmin Helper · Mac 配對工具"
+            "value" : "StikDebug · Mac 配對工具"
           }
         }
       }

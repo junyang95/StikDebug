@@ -20,7 +20,7 @@ final class SessionNotificationService {
     func notifyConnectionDropped() {
         guard UIApplication.shared.applicationState != .active else { return }
         post(
-            title: "Pikmin Helper 连接中断".localized,
+            title: "StikDebug 连接中断".localized,
             body: "正在后台尝试重新连接设备，位置模拟暂时停止。".localized,
             sound: nil
         )
@@ -30,7 +30,7 @@ final class SessionNotificationService {
         guard UIApplication.shared.applicationState != .active else { return }
         post(
             title: "位置模拟已暂停".localized,
-            body: "多次重连仍未恢复。请打开 Pikmin Helper 检查 VPN 和设备通道。".localized,
+            body: "多次重连仍未恢复。请打开 StikDebug 检查 VPN 和设备通道。".localized,
             sound: .default
         )
     }

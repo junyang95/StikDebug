@@ -8,7 +8,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "new",
-            "value" : "Pikmin Helper"
+            "value" : "StikDebug"
           }
         }
       }
@@ -31,19 +31,19 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Pikmin Helper reads your step count to show daily progress and session stats."
+            "value" : "StikDebug reads your step count to show daily progress and session stats."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Pikmin Helper 读取步数，用于展示每日进度和会话统计。"
+            "value" : "StikDebug 读取步数，用于展示每日进度和会话统计。"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Pikmin Helper 讀取步數，用於顯示每日進度與工作階段統計。"
+            "value" : "StikDebug 讀取步數，用於顯示每日進度與工作階段統計。"
           }
         }
       }
@@ -54,19 +54,19 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Pikmin Helper writes session steps based on the simulated walking distance."
+            "value" : "StikDebug writes session steps based on the simulated walking distance."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Pikmin Helper 按模拟行走距离写入会话步数。"
+            "value" : "StikDebug 按模拟行走距离写入会话步数。"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Pikmin Helper 依模擬行走距離寫入工作階段步數。"
+            "value" : "StikDebug 依模擬行走距離寫入工作階段步數。"
           }
         }
       }
@@ -77,19 +77,19 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Pikmin Helper needs local network access to publish on-device pairing and reach the device tunnel."
+            "value" : "StikDebug needs local network access to publish on-device pairing and reach the device tunnel."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Pikmin Helper 需要访问本地网络，以发布本机配对服务并连接设备隧道。"
+            "value" : "StikDebug 需要访问本地网络，以发布本机配对服务并连接设备隧道。"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Pikmin Helper 需要存取本機網路，以發佈本機配對服務並連接裝置通道。"
+            "value" : "StikDebug 需要存取本機網路，以發佈本機配對服務並連接裝置通道。"
           }
         }
       }
@@ -100,19 +100,19 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Pikmin Helper uses low-accuracy background location to keep walking sessions alive."
+            "value" : "StikDebug uses low-accuracy background location to keep walking sessions alive."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Pikmin Helper 使用低精度后台定位维持行走会话。"
+            "value" : "StikDebug 使用低精度后台定位维持行走会话。"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Pikmin Helper 使用低精度背景定位維持行走工作階段。"
+            "value" : "StikDebug 使用低精度背景定位維持行走工作階段。"
           }
         }
       }
@@ -123,19 +123,19 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Pikmin Helper uses location to keep walking sessions running."
+            "value" : "StikDebug uses location to keep walking sessions running."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Pikmin Helper 使用定位维持行走会话。"
+            "value" : "StikDebug 使用定位维持行走会话。"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Pikmin Helper 使用定位維持行走工作階段。"
+            "value" : "StikDebug 使用定位維持行走工作階段。"
           }
         }
       }
@@ -146,19 +146,19 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Pikmin Helper uses motion data to help present your walking stats."
+            "value" : "StikDebug uses motion data to help present your walking stats."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Pikmin Helper 使用运动信息辅助展示行走数据。"
+            "value" : "StikDebug 使用运动信息辅助展示行走数据。"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Pikmin Helper 使用運動資訊輔助顯示行走資料。"
+            "value" : "StikDebug 使用運動資訊輔助顯示行走資料。"
           }
         }
       }

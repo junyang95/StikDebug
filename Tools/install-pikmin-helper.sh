@@ -26,4 +26,4 @@ xcodebuild \
 APP_PATH="$DERIVED_DATA/Build/Products/Debug-iphoneos/StikDebug.app"
 xcrun devicectl device install app --device "$DEVICE_ID" "$APP_PATH"
 
-echo "Installed Pikmin Helper on $DEVICE_ID"
+echo "Installed StikDebug on $DEVICE_ID"

@@ -22,7 +22,7 @@ struct FirstRunSetupView: View {
 
     private var windowsDownloadChecklist: String {
         """
-        \("Pikmin Helper · Windows 下载清单".localized)
+        \("StikDebug · Windows 下载清单".localized)
 
         \("请在 Windows 电脑按顺序打开：".localized)
         1. iTunes
@@ -100,7 +100,7 @@ struct FirstRunSetupView: View {
     private var progressHeader: some View {
         VStack(spacing: 10) {
             HStack {
-                Text("Pikmin Helper")
+                Text("StikDebug")
                     .font(.subheadline.weight(.semibold))
                 Spacer()
                 Text("\(step.rawValue + 1) / \(Step.allCases.count)")
@@ -281,7 +281,7 @@ struct FirstRunSetupView: View {
         VStack(spacing: 10) {
             ShareLink(
                 item: idevicePairMacURL,
-                subject: Text("Pikmin Helper · Mac 配对工具"),
+                subject: Text("StikDebug · Mac 配对工具"),
                 message: Text("请在 Mac 上打开此链接，下载并运行 idevice_pair。")
             ) {
                 computerTransferLabel(
@@ -294,7 +294,7 @@ struct FirstRunSetupView: View {
 
             ShareLink(
                 item: windowsDownloadChecklist,
-                subject: Text("Pikmin Helper · Windows 下载清单")
+                subject: Text("StikDebug · Windows 下载清单")
             ) {
                 computerTransferLabel(
                     title: "发送到 Windows",
@@ -348,7 +348,7 @@ struct FirstRunSetupView: View {
                 ready: vpn.status.isConnected,
                 title: vpn.status.isConnected ? "本地隧道已连接" : vpn.status.title,
                 detail: vpn.status.isConnected
-                    ? "Pikmin Helper 已可以尝试访问设备定位服务。"
+                    ? "StikDebug 已可以尝试访问设备定位服务。"
                     : "首次连接时，iOS 会请求你允许添加 VPN 配置。"
             )
 

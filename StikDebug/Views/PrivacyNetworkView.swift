@@ -14,7 +14,7 @@ struct PrivacyNetworkView: View {
                 )
                 disclosure(
                     title: "只在设备保存",
-                    detail: "pairing file、收藏、最近位置、路线和会话记录保存在本 App 容器中，不由 Pikmin Helper 上传。",
+                    detail: "pairing file、收藏、最近位置、路线和会话记录保存在本 App 容器中，不由 StikDebug 上传。",
                     symbol: "iphone.gen3.lock",
                     tint: .blue
                 )

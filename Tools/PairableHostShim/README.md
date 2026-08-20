@@ -1,6 +1,6 @@
 # Pairable-host shim
 
-Pikmin Helper's original `libidevice_ffi.a` includes services that are not
+StikDebug's original `libidevice_ffi.a` includes services that are not
 present in Locus's smaller archive. Replacing it would remove DDI, debug,
 process, profile, SpringBoard, and syslog symbols.
 

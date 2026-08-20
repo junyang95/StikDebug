@@ -107,7 +107,7 @@ final class EmbeddedVPNService: ObservableObject {
         }
 
         let manager = NETunnelProviderManager()
-        manager.localizedDescription = "Pikmin Helper 本地隧道".localized
+        manager.localizedDescription = "StikDebug 本地隧道".localized
         let tunnelProtocol = NETunnelProviderProtocol()
         tunnelProtocol.providerBundleIdentifier = providerBundleIdentifier
         tunnelProtocol.serverAddress = "仅限设备本地开发连接".localized

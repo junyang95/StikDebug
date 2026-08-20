@@ -103,7 +103,7 @@ struct OnDevicePairingView: View {
             VStack(alignment: .leading, spacing: 4) {
                 Text("1 步到 7 步")
                     .font(.headline)
-                Text("开始后需要短暂切换到系统设置；Pikmin Helper 会在后台等待连接。")
+                Text("开始后需要短暂切换到系统设置；StikDebug 会在后台等待连接。")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -200,8 +200,8 @@ struct OnDevicePairingView: View {
             ("打开“设置”", nil),
             ("进入“隐私与安全”", nil),
             ("打开“开发者模式”", nil),
-            ("选择“与主机配对” → Pikmin Helper", "按系统提示输入本机解锁密码。"),
-            ("输入通知中的 6 位配对码", "完成后回到 Pikmin Helper，连接本地隧道。")
+            ("选择“与主机配对” → StikDebug", "按系统提示输入本机解锁密码。"),
+            ("输入通知中的 6 位配对码", "完成后回到 StikDebug，连接本地隧道。")
         ]
     }
 

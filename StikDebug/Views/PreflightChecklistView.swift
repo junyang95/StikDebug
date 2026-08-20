@@ -18,7 +18,7 @@ struct PreflightChecklistView: View {
 
     private var windowsDownloadChecklist: String {
         """
-        \("Pikmin Helper · Windows 下载清单".localized)
+        \("StikDebug · Windows 下载清单".localized)
 
         \("请在 Windows 电脑按顺序打开：".localized)
         1. iTunes
@@ -295,7 +295,7 @@ struct PreflightChecklistView: View {
 
             ShareLink(
                 item: idevicePairMacURL,
-                subject: Text("Pikmin Helper · Mac 配对工具"),
+                subject: Text("StikDebug · Mac 配对工具"),
                 message: Text("请在 Mac 上打开此链接，下载并运行 idevice_pair。")
             ) {
                 Label("发送到 Mac", systemImage: "macbook.and.iphone")
@@ -307,7 +307,7 @@ struct PreflightChecklistView: View {
 
             ShareLink(
                 item: windowsDownloadChecklist,
-                subject: Text("Pikmin Helper · Windows 下载清单")
+                subject: Text("StikDebug · Windows 下载清单")
             ) {
                 Label("发送到 Windows", systemImage: "desktopcomputer")
                     .font(.caption.weight(.semibold))

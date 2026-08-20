@@ -5,7 +5,7 @@
 	<key>NSSupportsLiveActivities</key>
 	<true/>
 	<key>CFBundleDisplayName</key>
-	<string>Pikmin Helper</string>
+	<string>StikDebug</string>
 	<key>NSBonjourServices</key>
 	<array>
 		<string>_remotepairing._tcp</string>

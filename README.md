@@ -1,6 +1,6 @@
-# Pikmin Helper
+# StikDebug
 
-Pikmin Helper 是基于 StikDebug 定位底层重构的内部学习项目，面向 iOS/iPadOS 17.4 及以上系统。
+StikDebug 是基于 StikDebug 定位底层重构的内部学习项目，面向 iOS/iPadOS 17.4 及以上系统。
 
 ## 当前功能
 
