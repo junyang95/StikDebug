@@ -7333,6 +7333,261 @@
           }
         }
       }
+    },
+    "Pikmin Helper · Windows 下载清单" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pikmin Helper · Windows download checklist"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pikmin Helper · Windows 下載清單"
+          }
+        }
+      }
+    },
+    "请在 Windows 电脑按顺序打开：" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open these links in order on your Windows PC:"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "請在 Windows 電腦依序開啟："
+          }
+        }
+      }
+    },
+    "把电脑下载链接发送出去" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Send the computer download links"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "將電腦下載連結傳送出去"
+          }
+        }
+      }
+    },
+    "这里不会在 iPhone 下载文件。点击后用 AirDrop、微信、邮件或“复制”把链接交给电脑。" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nothing will be downloaded to this iPhone. Use AirDrop, WeChat, Mail, or Copy to send the links to your computer."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "這裡不會在 iPhone 下載檔案。點擊後使用 AirDrop、微信、郵件或「複製」把連結交給電腦。"
+          }
+        }
+      }
+    },
+    "Windows 会一次发送两个链接：先安装 iTunes，再运行 idevice_pair。" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Windows sends both links at once: install iTunes first, then run idevice_pair."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Windows 會一次傳送兩個連結：先安裝 iTunes，再執行 idevice_pair。"
+          }
+        }
+      }
+    },
+    "在电脑打开收到的链接并完成下载" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open the received links on your computer and finish the downloads"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "在電腦開啟收到的連結並完成下載"
+          }
+        }
+      }
+    },
+    "运行 idevice_pair 生成 pairing file，再传回这台 iPhone" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Run idevice_pair to generate a pairing file, then send it back to this iPhone"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "執行 idevice_pair 產生 pairing file，再傳回這台 iPhone"
+          }
+        }
+      }
+    },
+    "Pikmin Helper · Mac 配对工具" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pikmin Helper · Mac pairing tool"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pikmin Helper · Mac 配對工具"
+          }
+        }
+      }
+    },
+    "请在 Mac 上打开此链接，下载并运行 idevice_pair。" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open this link on your Mac to download and run idevice_pair."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "請在 Mac 上開啟此連結，下載並執行 idevice_pair。"
+          }
+        }
+      }
+    },
+    "发送到 Mac" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Send to Mac"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "傳送到 Mac"
+          }
+        }
+      }
+    },
+    "idevice_pair Mac 版" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "idevice_pair for Mac"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "idevice_pair Mac 版"
+          }
+        }
+      }
+    },
+    "发送到 Windows" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Send to Windows"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "傳送到 Windows"
+          }
+        }
+      }
+    },
+    "iTunes + idevice_pair（按顺序）" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "iTunes + idevice_pair (in order)"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "iTunes + idevice_pair（依序）"
+          }
+        }
+      }
+    },
+    "将配对工具下载链接发送到电脑" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Send pairing tool download links to computer"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "將配對工具下載連結傳送到電腦"
+          }
+        }
+      }
+    },
+    "电脑方案：用数据线连接 iPhone，把对应下载链接发送到电脑；Windows 会同时收到 iTunes 和 idevice_pair。" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Computer setup: connect the iPhone by cable and send the download links to the computer. Windows receives both iTunes and idevice_pair."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "電腦方案：用傳輸線連接 iPhone，把對應下載連結傳送到電腦；Windows 會同時收到 iTunes 和 idevice_pair。"
+          }
+        }
+      }
     }
   },
   "version" : "1.0"

@@ -14,6 +14,20 @@ struct PreflightChecklistView: View {
 
     private let idevicePairMacURL = URL(string: "https://static.wow-app.store/Xcode_iOS_DDI_Personalized/idevice_pair--macos-universal.dmg")!
     private let idevicePairWindowsURL = URL(string: "https://static.wow-app.store/Xcode_iOS_DDI_Personalized/idevice_pair--windows-x86_64.exe")!
+    private let windowsITunesURL = URL(string: "https://www.apple.com/itunes/download/win64")!
+
+    private var windowsDownloadChecklist: String {
+        """
+        \("Pikmin Helper · Windows 下载清单".localized)
+
+        \("请在 Windows 电脑按顺序打开：".localized)
+        1. iTunes
+        \(windowsITunesURL.absoluteString)
+
+        2. idevice_pair
+        \(idevicePairWindowsURL.absoluteString)
+        """
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: compact ? 8 : 12) {
@@ -271,53 +285,36 @@ struct PreflightChecklistView: View {
                 }
             }
 
-            Text("电脑备用方案：运行 idevice_pair，连接 iPhone 后生成文件，再回到本 App 设置中导入。")
+            Text("电脑方案：用数据线连接 iPhone，把对应下载链接发送到电脑；Windows 会同时收到 iTunes 和 idevice_pair。")
                 .font(.caption)
                 .foregroundStyle(.secondary)
 
-            Grid(horizontalSpacing: 8, verticalSpacing: 8) {
-                GridRow {
-                    Link(destination: idevicePairMacURL) {
-                        Label("Mac 版", systemImage: "macbook")
-                            .font(.caption.weight(.semibold))
-                            .frame(maxWidth: .infinity)
-                    }
-                    .buttonStyle(.bordered)
-                    .controlSize(.small)
+            Text("这里不会在 iPhone 下载文件。点击后用 AirDrop、微信、邮件或“复制”把链接交给电脑。")
+                .font(.caption)
+                .foregroundStyle(.secondary)
 
-                    Link(destination: idevicePairWindowsURL) {
-                        Label("Windows 版", systemImage: "desktopcomputer")
-                            .font(.caption.weight(.semibold))
-                            .frame(maxWidth: .infinity)
-                    }
-                    .buttonStyle(.bordered)
-                    .controlSize(.small)
-                }
-
-                GridRow {
-                    ShareLink(item: idevicePairMacURL) {
-                        Label("分享链接", systemImage: "square.and.arrow.up")
-                            .font(.caption.weight(.semibold))
-                            .frame(maxWidth: .infinity)
-                    }
-                    .buttonStyle(.bordered)
-                    .controlSize(.small)
-
-                    Button {
-                        UIPasteboard.general.string = """
-                        Mac: \(idevicePairMacURL.absoluteString)
-                        Windows: \(idevicePairWindowsURL.absoluteString)
-                        """
-                        preflightAlert = .init(title: "已复制".localized, message: "已复制 Mac 和 Windows 的 idevice_pair 下载链接。请在电脑浏览器中打开对应链接。".localized)
-                    } label: {
-                        Label("复制链接", systemImage: "doc.on.doc")
-                            .font(.caption.weight(.semibold))
-                            .frame(maxWidth: .infinity)
-                    }
-                    .buttonStyle(.bordered)
-                    .controlSize(.small)
-                }
+            ShareLink(
+                item: idevicePairMacURL,
+                subject: Text("Pikmin Helper · Mac 配对工具"),
+                message: Text("请在 Mac 上打开此链接，下载并运行 idevice_pair。")
+            ) {
+                Label("发送到 Mac", systemImage: "macbook.and.iphone")
+                    .font(.caption.weight(.semibold))
+                    .frame(maxWidth: .infinity)
             }
+            .buttonStyle(.bordered)
+            .controlSize(.small)
+
+            ShareLink(
+                item: windowsDownloadChecklist,
+                subject: Text("Pikmin Helper · Windows 下载清单")
+            ) {
+                Label("发送到 Windows", systemImage: "desktopcomputer")
+                    .font(.caption.weight(.semibold))
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.bordered)
+            .controlSize(.small)
         }
     }
 

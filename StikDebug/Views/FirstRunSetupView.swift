@@ -18,7 +18,20 @@ struct FirstRunSetupView: View {
 
     private let idevicePairMacURL = URL(string: "https://static.wow-app.store/Xcode_iOS_DDI_Personalized/idevice_pair--macos-universal.dmg")!
     private let idevicePairWindowsURL = URL(string: "https://static.wow-app.store/Xcode_iOS_DDI_Personalized/idevice_pair--windows-x86_64.exe")!
-    private let windowsITunesURL = URL(string: "https://support.apple.com/zh-cn/118290")!
+    private let windowsITunesURL = URL(string: "https://www.apple.com/itunes/download/win64")!
+
+    private var windowsDownloadChecklist: String {
+        """
+        \("Pikmin Helper · Windows 下载清单".localized)
+
+        \("请在 Windows 电脑按顺序打开：".localized)
+        1. iTunes
+        \(windowsITunesURL.absoluteString)
+
+        2. idevice_pair
+        \(idevicePairWindowsURL.absoluteString)
+        """
+    }
 
     private enum Step: Int, CaseIterable {
         case welcome
@@ -225,17 +238,21 @@ struct FirstRunSetupView: View {
                 VStack(alignment: .leading, spacing: 16) {
                     numberedStep(1, "使用 USB 数据线将这台 iPhone 连接到电脑")
 
-                    numberedStep(2, "在电脑上下载并运行 idevice_pair")
-                    Text("点击对应版本，将下载链接复制或发送到电脑。")
+                    numberedStep(2, "把电脑下载链接发送出去")
+                    Text("这里不会在 iPhone 下载文件。点击后用 AirDrop、微信、邮件或“复制”把链接交给电脑。")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .padding(.leading, 36)
-                    platformDownloadButtons
+                    computerTransferButtons
 
-                    windowsDriverNote
+                    Label("Windows 会一次发送两个链接：先安装 iTunes，再运行 idevice_pair。", systemImage: "exclamationmark.triangle.fill")
+                        .font(.caption)
+                        .foregroundStyle(.orange)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .padding(.leading, 36)
 
-                    numberedStep(3, "在 idevice_pair 中选择这台 iPhone，生成 pairing file")
-                    numberedStep(4, "将文件发送到 iPhone，再使用下方按钮导入")
+                    numberedStep(3, "在电脑打开收到的链接并完成下载")
+                    numberedStep(4, "运行 idevice_pair 生成 pairing file，再传回这台 iPhone")
                 }
                 .padding(18)
                 .background(PikminUI.cardBackground, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
@@ -260,49 +277,63 @@ struct FirstRunSetupView: View {
         }
     }
 
-    private var platformDownloadButtons: some View {
-        HStack(spacing: 10) {
-            ShareLink(item: idevicePairMacURL) {
-                Label("Mac 版", systemImage: "macbook")
-                    .font(.subheadline.weight(.semibold))
-                    .frame(maxWidth: .infinity)
-                    .frame(minHeight: 42)
+    private var computerTransferButtons: some View {
+        VStack(spacing: 10) {
+            ShareLink(
+                item: idevicePairMacURL,
+                subject: Text("Pikmin Helper · Mac 配对工具"),
+                message: Text("请在 Mac 上打开此链接，下载并运行 idevice_pair。")
+            ) {
+                computerTransferLabel(
+                    title: "发送到 Mac",
+                    detail: "idevice_pair Mac 版",
+                    systemImage: "macbook"
+                )
             }
             .buttonStyle(.bordered)
 
-            ShareLink(item: idevicePairWindowsURL) {
-                Label("Windows 版", systemImage: "desktopcomputer")
-                    .font(.subheadline.weight(.semibold))
-                    .frame(maxWidth: .infinity)
-                    .frame(minHeight: 42)
+            ShareLink(
+                item: windowsDownloadChecklist,
+                subject: Text("Pikmin Helper · Windows 下载清单")
+            ) {
+                computerTransferLabel(
+                    title: "发送到 Windows",
+                    detail: "iTunes + idevice_pair（按顺序）",
+                    systemImage: "desktopcomputer"
+                )
             }
             .buttonStyle(.bordered)
         }
         .padding(.leading, 36)
         .accessibilityElement(children: .contain)
-        .accessibilityLabel("idevice_pair 下载")
+        .accessibilityLabel("将配对工具下载链接发送到电脑")
     }
 
-    private var windowsDriverNote: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Label("Windows 电脑还需要安装 iTunes", systemImage: "exclamationmark.triangle.fill")
-                .font(.subheadline.weight(.semibold))
-                .foregroundStyle(.orange)
+    private func computerTransferLabel(
+        title: LocalizedStringKey,
+        detail: LocalizedStringKey,
+        systemImage: String
+    ) -> some View {
+        HStack(spacing: 12) {
+            Image(systemName: systemImage)
+                .font(.title3.weight(.semibold))
+                .frame(width: 28)
 
-            Text("iTunes 会安装识别 iPhone 所需的 Apple Mobile Device 驱动。请先安装并打开一次，再运行 idevice_pair。")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
-
-            Link(destination: windowsITunesURL) {
-                Label("查看 Apple 官方下载说明", systemImage: "arrow.up.right.square")
-                    .font(.caption.weight(.semibold))
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(.subheadline.weight(.semibold))
+                Text(detail)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
+
+            Spacer(minLength: 8)
+
+            Image(systemName: "square.and.arrow.up")
+                .font(.subheadline.weight(.semibold))
         }
-        .padding(12)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.orange.opacity(0.09), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-        .padding(.leading, 36)
+        .frame(maxWidth: .infinity, minHeight: 52, alignment: .leading)
+        .contentShape(Rectangle())
     }
 
     private var vpnPage: some View {
