@@ -32,7 +32,9 @@ final class MountingProgress: ObservableObject {
     }
 
     func pubMount() {
-        mount()
+        DispatchQueue.global(qos: .utility).async { [weak self] in
+            self?.mount()
+        }
     }
 
     private func mount() {
@@ -62,7 +64,7 @@ final class MountingProgress: ObservableObject {
                 if let mountError {
                     showAlert(title: "DDI Mount Failed", message: mountError, showOk: true, showTryAgain: true) { shouldTryAgain in
                         if shouldTryAgain {
-                            self.mount()
+                            self.pubMount()
                         }
                     }
                 } else {
