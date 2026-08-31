@@ -165,6 +165,47 @@ struct MovementStatusCapsule: View {
         session.activeSpeedKilometersPerHour ?? selectedSpeedKilometersPerHour
     }
 
+    private var usesPikminIcon: Bool {
+        if session.lastError != nil,
+           session.phase == .failed || session.phase == .paused {
+            return false
+        }
+
+        switch session.phase {
+        case .preparing, .running, .reconnecting, .paused, .completed:
+            return true
+        case .failed:
+            return false
+        case .idle:
+            if fixedSession.coordinate != nil { return true }
+            switch vpn.status {
+            case .failed, .disconnected:
+                return false
+            case .loading, .connecting, .disconnecting, .connected:
+                return true
+            }
+        }
+    }
+
+    private var animatesPikmin: Bool {
+        switch session.phase {
+        case .preparing, .running, .reconnecting:
+            return true
+        case .idle:
+            if fixedSession.coordinate != nil { return true }
+            switch vpn.status {
+            case .loading, .connecting, .disconnecting:
+                return true
+            case .connected:
+                return preflight.isRefreshing
+            case .failed, .disconnected:
+                return false
+            }
+        case .paused, .completed, .failed:
+            return false
+        }
+    }
+
     var body: some View {
         VStack(spacing: 0) {
             Button {
@@ -209,7 +250,13 @@ struct MovementStatusCapsule: View {
                     .fill(presentation.tint.opacity(0.16))
                     .frame(width: 34, height: 34)
 
-                if presentation.isProgressing {
+                if usesPikminIcon {
+                    PikminBounceIcon(
+                        isAnimating: animatesPikmin,
+                        size: 29,
+                        amplitude: 2.2
+                    )
+                } else if presentation.isProgressing {
                     ProgressView()
                         .controlSize(.small)
                         .tint(presentation.tint)
@@ -328,5 +375,32 @@ struct MovementStatusCapsule: View {
             }
             Spacer(minLength: 0)
         }
+    }
+}
+
+private struct PikminBounceIcon: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    let isAnimating: Bool
+    let size: CGFloat
+    let amplitude: CGFloat
+
+    var body: some View {
+        TimelineView(.animation(
+            minimumInterval: 1 / 15,
+            paused: reduceMotion || !isAnimating
+        )) { timeline in
+            let elapsed = timeline.date.timeIntervalSinceReferenceDate
+            let wave = abs(sin(elapsed * .pi * 2 / 0.72))
+            let lift = reduceMotion || !isAnimating ? 0 : wave * amplitude
+
+            Image("PikminSprout")
+                .resizable()
+                .scaledToFit()
+                .frame(width: size, height: size)
+                .offset(y: -lift)
+        }
+        .frame(width: size, height: size)
+        .accessibilityHidden(true)
     }
 }

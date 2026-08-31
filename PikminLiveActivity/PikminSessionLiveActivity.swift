@@ -11,7 +11,14 @@ struct PikminSessionLiveActivity: Widget {
         } dynamicIsland: { context in
             DynamicIsland {
                 DynamicIslandExpandedRegion(.leading) {
-                    Label(context.state.phase, systemImage: phaseSymbol(context.state.phase))
+                    HStack(spacing: 5) {
+                        LivePikminBounce(
+                            phase: context.state.phase,
+                            size: 27,
+                            amplitude: 2.4
+                        )
+                        Text(context.state.phase)
+                    }
                         .font(.caption.weight(.semibold))
                         .foregroundStyle(.green)
                 }
@@ -24,14 +31,20 @@ struct PikminSessionLiveActivity: Widget {
                     metrics(context.state)
                 }
             } compactLeading: {
-                Image(systemName: phaseSymbol(context.state.phase))
-                    .foregroundStyle(.green)
+                LivePikminBounce(
+                    phase: context.state.phase,
+                    size: 22,
+                    amplitude: 1.8
+                )
             } compactTrailing: {
                 Text("\(context.state.steps)")
                     .font(.caption2.monospacedDigit())
             } minimal: {
-                Image(systemName: "location.fill")
-                    .foregroundStyle(.green)
+                LivePikminBounce(
+                    phase: context.state.phase,
+                    size: 21,
+                    amplitude: 1.6
+                )
             }
             .widgetURL(URL(string: "pikminhelper://session"))
             .keylineTint(.green)
@@ -43,7 +56,12 @@ struct PikminSessionLiveActivity: Widget {
     ) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Label("StikDebug", systemImage: "location.fill.viewfinder")
+                LivePikminBounce(
+                    phase: context.state.phase,
+                    size: 30,
+                    amplitude: 0
+                )
+                Text("StikDebug")
                     .font(.headline)
                     .foregroundStyle(.green)
                 Spacer()
@@ -90,12 +108,38 @@ struct PikminSessionLiveActivity: Widget {
         }
     }
 
-    private func phaseSymbol(_ phase: String) -> String {
-        if phase.contains("暂停") { return "pause.circle.fill" }
-        if phase.contains("重连") || phase.contains("中断") {
-            return "exclamationmark.triangle.fill"
+}
+
+private struct LivePikminBounce: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    let phase: String
+    let size: CGFloat
+    let amplitude: CGFloat
+
+    private var isAnimating: Bool {
+        let inactiveMarkers = ["暂停", "完成", "中断", "paused", "completed", "failed"]
+        return amplitude > 0 && !inactiveMarkers.contains { marker in
+            phase.localizedCaseInsensitiveContains(marker)
         }
-        if phase.contains("完成") { return "checkmark.circle.fill" }
-        return "location.fill"
+    }
+
+    var body: some View {
+        TimelineView(.animation(
+            minimumInterval: 1 / 15,
+            paused: reduceMotion || !isAnimating
+        )) { timeline in
+            let elapsed = timeline.date.timeIntervalSinceReferenceDate
+            let wave = abs(sin(elapsed * .pi * 2 / 0.72))
+            let lift = reduceMotion || !isAnimating ? 0 : wave * amplitude
+
+            Image("PikminSprout")
+                .resizable()
+                .scaledToFit()
+                .frame(width: size, height: size)
+                .offset(y: -lift)
+        }
+        .frame(width: size, height: size)
+        .accessibilityHidden(true)
     }
 }
