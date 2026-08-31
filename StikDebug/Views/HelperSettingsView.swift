@@ -18,8 +18,6 @@ struct HelperSettingsView: View {
     @AppStorage("autoConnectEmbeddedVPN") private var autoConnectVPN = true
     @AppStorage("keepAliveLocation") private var keepAliveLocation = true
     @AppStorage("keepAliveAudio") private var keepAliveAudio = true
-    @AppStorage(SetupGate.completedKey) private var setupCompleted = false
-    @AppStorage(SetupGate.forceShowKey) private var forceShowSetup = false
     @State private var showPairingImporter = false
     @State private var showOnDevicePairing = false
     @State private var importMessage: String?
@@ -240,7 +238,9 @@ struct HelperSettingsView: View {
                 } header: {
                     Text("设备连接")
                 } footer: {
-                    Text("本机配对需要 iOS 27 或更高版本；旧系统仍可用电脑生成文件。DDI 为可选能力，不再阻塞定位模拟。")
+                    Text(onDevicePairing.isSupported
+                         ? "iOS 27 可直接在本机完成配对，无需连接电脑。"
+                         : "需要在电脑上运行 idevice_pair：连接 iPhone → 选择 StikDebug → 导入 pairing file → 回到本 App 点“检查”。")
                 }
 
                 Section("健康") {
@@ -261,19 +261,6 @@ struct HelperSettingsView: View {
                     PreflightChecklistView(service: preflight)
                         .listRowInsets(EdgeInsets())
                         .listRowBackground(Color.clear)
-                }
-
-                Section("设置向导") {
-                    Button {
-                        SetupGate.restart()
-                        setupCompleted = false
-                        forceShowSetup = true
-                    } label: {
-                        Label("重新运行首次设置", systemImage: "arrow.clockwise.circle")
-                    }
-                    Text("重新打开欢迎、权限、配对、内置 VPN 和环境检查流程；不会删除现有 pairing file 或历史记录。")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
                 }
 
                 Section("问题反馈") {
