@@ -24,6 +24,15 @@ struct MovementStatusCapsule: View {
     @State private var isExpanded = false
 
     private var presentation: MovementStatusPresentation {
+        if vpn.isExperimentEnabled {
+            return MovementStatusPresentation(
+                title: "本机透传实验".localized,
+                detail: "不修改定位；请在设置中停止测试后再开始模拟。".localized,
+                symbol: "network",
+                tint: .blue,
+                isProgressing: vpn.isTransitioning
+            )
+        }
         if let error = session.lastError,
            session.phase == .failed || session.phase == .paused {
             return MovementStatusPresentation(

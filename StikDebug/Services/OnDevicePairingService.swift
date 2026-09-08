@@ -49,6 +49,10 @@ final class OnDevicePairingService: ObservableObject {
     }
 
     func start() {
+        guard !DeveloperConnectionGate.isBlocked else {
+            phase = .failed("请先停止本机 WLOC 连接测试。".localized)
+            return
+        }
         guard isSupported else {
             phase = .failed("本机配对需要 iOS 27 或更高版本。".localized)
             return

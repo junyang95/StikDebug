@@ -449,6 +449,7 @@ final class LocationSearchCompleter: NSObject, ObservableObject, MKLocalSearchCo
 struct LocationSimulationView: View {
     @EnvironmentObject private var walkingSession: WalkingSessionController
     @EnvironmentObject private var preflight: EnvironmentPreflightService
+    @EnvironmentObject private var vpn: EmbeddedVPNService
     @Environment(\.scenePhase) private var scenePhase
     @Binding var selectedMode: MovementMode
     @ObservedObject private var fixedSession = FixedLocationSessionController.shared
@@ -1108,11 +1109,11 @@ struct LocationSimulationView: View {
                 Button("恢复真实定位", action: clear)
                     .buttonStyle(.bordered)
                     .tint(.red)
-                    .disabled(!pairingExists || isBusy)
+                    .disabled(!pairingExists || isBusy || vpn.isExperimentEnabled || vpn.isTransitioning)
 
                 Button("传送到此处", action: simulate)
                     .buttonStyle(.borderedProminent)
-                    .disabled(!pairingExists || isBusy)
+                    .disabled(!pairingExists || isBusy || vpn.isExperimentEnabled || vpn.isTransitioning)
 
                 Button {
                     showSaveBookmark = true
@@ -1498,6 +1499,12 @@ struct LocationSimulationView: View {
         operation: @escaping () -> Int32,
         onSuccess: @escaping () -> Void
     ) {
+        guard !DeveloperConnectionGate.isBlocked else {
+            alertTitle = "实验正在运行".localized
+            alertMessage = "请先在设置中停止本机 WLOC 连接测试。".localized
+            showAlert = true
+            return
+        }
         isBusy = true
         LocationSimulationCommandQueue.shared.async {
             let code = operation()

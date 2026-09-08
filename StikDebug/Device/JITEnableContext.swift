@@ -182,6 +182,10 @@ final class JITEnableContext {
     }
 
     func startTunnel() throws {
+        guard DeveloperConnectionGate.beginDeveloperOperation() else {
+            throw makeError("请先停止本机 WLOC 连接测试。")
+        }
+        defer { DeveloperConnectionGate.endDeveloperOperation() }
         tunnelLock.lock()
         if tunnelConnecting {
             let waitSemaphore = tunnelSemaphore

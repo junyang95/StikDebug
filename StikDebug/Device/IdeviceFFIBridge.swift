@@ -829,6 +829,12 @@ private func establishLocationSimulation(deviceIP: String, pairingFile: String) 
 }
 
 func simulate_location(_ deviceIP: String, _ latitude: Double, _ longitude: Double, _ pairingFile: String) -> Int32 {
+    DeveloperConnectionGate.performLocationCommand(clear: false) {
+        simulateLocationUnchecked(deviceIP, latitude, longitude, pairingFile)
+    }
+}
+
+private func simulateLocationUnchecked(_ deviceIP: String, _ latitude: Double, _ longitude: Double, _ pairingFile: String) -> Int32 {
     if let locationSimulation = LocationSimulationState.locationSimulation {
         if let ffiError = location_simulation_set(locationSimulation, latitude, longitude) {
             idevice_error_free(ffiError)
@@ -862,6 +868,12 @@ func simulate_location(_ deviceIP: String, _ latitude: Double, _ longitude: Doub
 /// 本地句柄不存在时会先重新建立通道再清除，否则 App 重启后设备会一直卡在
 /// 上一次模拟的位置上，用户无论点多少次「恢复真实定位」都回不去。
 func clear_simulated_location(_ deviceIP: String, _ pairingFile: String) -> Int32 {
+    DeveloperConnectionGate.performLocationCommand(clear: true) {
+        clearSimulatedLocationUnchecked(deviceIP, pairingFile)
+    }
+}
+
+private func clearSimulatedLocationUnchecked(_ deviceIP: String, _ pairingFile: String) -> Int32 {
     if LocationSimulationState.locationSimulation == nil {
         let connectStatus = establishLocationSimulation(deviceIP: deviceIP, pairingFile: pairingFile)
         guard connectStatus == LocationSimulationStatus.ok else {

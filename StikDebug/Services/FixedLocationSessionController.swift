@@ -18,6 +18,7 @@ final class FixedLocationSessionController: ObservableObject {
     }
 
     func start(_ coordinate: CLLocationCoordinate2D, isForeground: Bool) {
+        guard !DeveloperConnectionGate.isBlocked else { return }
         guard CLLocationCoordinate2DIsValid(coordinate) else { return }
         self.coordinate = coordinate
         self.isForeground = isForeground

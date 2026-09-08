@@ -21,6 +21,7 @@ final class TunnelManager: ObservableObject {
     }
 
     func start(showErrorUI: Bool = true) {
+        guard !DeveloperConnectionGate.isBlocked else { return }
         guard Thread.isMainThread else {
             DispatchQueue.main.async {
                 self.start(showErrorUI: showErrorUI)
@@ -57,6 +58,7 @@ final class TunnelManager: ObservableObject {
 
     private func finishStart(_ result: Result<Void, NSError>, showErrorUI: Bool) {
         isStarting = false
+        guard !DeveloperConnectionGate.isBlocked else { return }
 
         switch result {
         case .success:
@@ -70,6 +72,7 @@ final class TunnelManager: ObservableObject {
     }
 
     private func mountDeveloperDiskImageIfNeeded() {
+        guard !DeveloperConnectionGate.isBlocked else { return }
         let trustcachePath = URL.documentsDirectory.appendingPathComponent("DDI/Image.dmg.trustcache").path
         guard FileManager.default.fileExists(atPath: trustcachePath),
               !MountingProgress.shared.coolisMounted,

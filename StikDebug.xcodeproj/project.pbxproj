@@ -94,6 +94,11 @@
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
+		AC2000040000000000000001 /* WLOCProbeCore */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = WLOCProbeCore;
+			sourceTree = "<group>";
+		};
 		AA0000040000000000000001 /* PikminTunnel */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
@@ -174,6 +179,7 @@
 			children = (
 				DC6F1D392D94EADD0071B2B6 /* StikDebug */,
 				AA0000040000000000000001 /* PikminTunnel */,
+				AC2000040000000000000001 /* WLOCProbeCore */,
 				AB1000040000000000000001 /* PikminLiveActivity */,
 				AB10000F0000000000000001 /* StikDebug/Models/PikminSessionAttributes.swift */,
 				DC6F1D4B2D94EADF0071B2B6 /* StikDebugTests */,
@@ -221,6 +227,7 @@
 			);
 			fileSystemSynchronizedGroups = (
 				AA0000040000000000000001 /* PikminTunnel */,
+				AC2000040000000000000001 /* WLOCProbeCore */,
 			);
 			name = PikminTunnel;
 			packageProductDependencies = (
@@ -268,6 +275,7 @@
 			);
 			fileSystemSynchronizedGroups = (
 				DC6F1D392D94EADD0071B2B6 /* StikDebug */,
+				AC2000040000000000000001 /* WLOCProbeCore */,
 			);
 			name = StikDebug;
 			packageProductDependencies = (

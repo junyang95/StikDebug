@@ -90,7 +90,7 @@ final class EnvironmentPreflightService: ObservableObject {
     }
 
     var canStartSession: Bool {
-        blockingItems.isEmpty
+        !DeveloperConnectionGate.isBlocked && blockingItems.isEmpty
     }
 
     private init() {
@@ -120,7 +120,7 @@ final class EnvironmentPreflightService: ObservableObject {
     }
 
     func refresh() async {
-        guard !isRefreshing else { return }
+        guard !DeveloperConnectionGate.isBlocked, !isRefreshing else { return }
         isRefreshing = true
         for kind in PreflightKind.allCases {
             set(.checking, for: kind)
@@ -136,6 +136,7 @@ final class EnvironmentPreflightService: ObservableObject {
             Self.validatePairingFile()
         }.value
         set(pairingResult, for: .pairing)
+        guard !DeveloperConnectionGate.isBlocked else { finishRefresh(); return }
 
         let missingDDIFiles = Self.missingDDIFiles()
         ddiFilesMissing = !missingDDIFiles.isEmpty
@@ -149,6 +150,7 @@ final class EnvironmentPreflightService: ObservableObject {
         }
 
         let routeReachable = await Self.probeLocalDevRoute()
+        guard !DeveloperConnectionGate.isBlocked else { finishRefresh(); return }
         let vpnConnected = EmbeddedVPNService.shared.status.isConnected
         LogManager.shared.addLog(
             message: "内置 VPN 路由探测 \(DeviceConnectionContext.targetIPAddress):49152 → \(routeReachable ? "可达" : "不可达")（VPN \(vpnConnected ? "已连接" : "未连接")）",
@@ -193,6 +195,7 @@ final class EnvironmentPreflightService: ObservableObject {
             return
         }
 
+        guard !DeveloperConnectionGate.isBlocked else { finishRefresh(); return }
         guard missingDDIFiles.isEmpty else {
             finishRefresh()
             return
@@ -237,6 +240,7 @@ final class EnvironmentPreflightService: ObservableObject {
     }
 
     func connectDevice() {
+        guard !DeveloperConnectionGate.isBlocked else { return }
         startTunnelInBackground(showErrorUI: true)
         Task {
             for _ in 0..<24 {

@@ -157,6 +157,7 @@ struct HelperSettingsView: View {
                 }
 
                 Section("内置本地隧道") {
+                    LabeledContent("连接用途", value: vpn.modeTitle)
                     LabeledContent("VPN 状态", value: vpn.status.title)
                     Toggle("启动 App 时自动连接", isOn: $autoConnectVPN)
                     if vpn.status.isConnected {
@@ -177,6 +178,19 @@ struct HelperSettingsView: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
+
+                #if DEBUG
+                Section("实验功能") {
+                    NavigationLink {
+                        WLOCProbeView()
+                    } label: {
+                        Label("本机 WLOC 连接测试", systemImage: "testtube.2")
+                    }
+                    .accessibilityIdentifier("settings.wlocProbe")
+                    Text("仅验证本机 HTTPS 透传，不修改定位。")
+                        .font(.caption).foregroundStyle(.secondary)
+                }
+                #endif
 
                 Section("后台运行") {
                     Toggle("使用低精度定位保活", isOn: $keepAliveLocation)
