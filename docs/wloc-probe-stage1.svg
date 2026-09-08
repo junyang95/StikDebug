@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="819" viewBox="0 0 1600 819">
+  <defs><marker id="arrow" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto-start-reverse"><path d="M0 0L9 4.5L0 9Z" fill="#326c94"/></marker></defs>
+  <rect width="1600" height="819" fill="#f5fafd"/>
+  <rect width="1600" height="115" fill="#0b2f4e"/>
+  <g font-family="Helvetica Neue,Arial,sans-serif" fill="#0b2f4e">
+    <text x="58" y="53" font-size="35" fill="white">StikDebug WLOC Stage 1</text>
+    <text x="58" y="93" font-size="25" fill="#d0e4f2">Domain-scoped HTTPS CONNECT passthrough   |   No TLS termination</text>
+    <g fill="white" stroke="#0b2f4e" stroke-width="2">
+      <rect x="60" y="205" width="295" height="180" rx="8"/>
+      <rect x="450" y="205" width="290" height="180" rx="8"/>
+      <rect x="835" y="205" width="315" height="180" rx="8"/>
+      <rect x="1245" y="205" width="295" height="180" rx="8"/>
+    </g>
+    <g font-size="31">
+      <text x="85" y="253">HTTPS client</text>
+      <text x="475" y="253">iOS proxy settings</text>
+      <text x="860" y="253">Loopback listener</text>
+      <text x="1270" y="253">Allowed upstream</text>
+    </g>
+    <g font-size="27" fill="#52697d">
+      <text x="85" y="301">App / system</text><text x="85" y="345">TLS validation</text>
+      <text x="475" y="301">Four match domains</text><text x="475" y="345">Existing routes kept</text>
+      <text x="860" y="301">127.0.0.1 : dynamic</text><text x="860" y="345">Exact host : 443 only</text>
+      <text x="1270" y="301">Direct TCP 443</text><text x="1270" y="345">Opaque TLS bytes</text>
+    </g>
+    <g stroke="#326c94" stroke-width="4" fill="none" marker-end="url(#arrow)">
+      <path d="M355 295H444"/><path d="M740 295H829"/><path d="M1150 295H1239" marker-start="url(#arrow)"/>
+    </g>
+    <g fill="#e5f1f9" stroke="#b7d1e4" stroke-width="2">
+      <rect x="60" y="500" width="480" height="170" rx="8"/>
+      <rect x="835" y="500" width="705" height="170" rx="8"/>
+    </g>
+    <text x="86" y="552" font-size="31">Settings and mode guard</text>
+    <text x="86" y="595" font-size="27" fill="#52697d">Start / stop / self-test / reset</text>
+    <text x="86" y="636" font-size="27" fill="#52697d">Old simulation blocked while probing</text>
+    <text x="860" y="552" font-size="31">In-memory connection metadata</text>
+    <text x="860" y="595" font-size="27" fill="#52697d">Mode, listener, counts, bytes, times and errors</text>
+    <text x="860" y="636" font-size="27" fill="#52697d">No payloads, credentials or coordinates stored</text>
+    <path d="M992 385V490" fill="none" stroke="#326c94" stroke-width="4" marker-end="url(#arrow)"/>
+    <path d="M552 585H823" fill="none" stroke="#326c94" stroke-width="3" stroke-dasharray="9 6" marker-start="url(#arrow)" marker-end="url(#arrow)"/>
+    <text x="575" y="550" font-size="25" fill="#52697d">Provider message</text>
+    <text x="603" y="627" font-size="25" fill="#52697d">status / reset</text>
+    <rect y="741" width="1600" height="78" fill="#dceaf5"/>
+    <text x="58" y="790" font-size="27" fill="#52697d">Experimental signing build only. iOS 26 proxy selection and background operation await device validation.</text>
+  </g>
+</svg>

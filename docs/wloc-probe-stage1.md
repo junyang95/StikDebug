@@ -4,6 +4,8 @@
 
 用户此前在 iOS 26 使用 Shadowrocket 与 cyberhandyman 模块取得金盆，是既有成功基线，不是本轮验证结果。本轮仅替换连接层，不重复验证游戏效果，不修改坐标。
 
+配套 [System Design 文档](wloc-probe-stage1-system-design.docx) 保留指定模板的页面设置、样式、表格、编号与页眉页脚结构；六页已逐页渲染检查。架构图源文件为 [SVG](wloc-probe-stage1.svg)。
+
 ## 实现边界
 
 - Debug 入口：设置 → 实验功能 → 本机 WLOC 连接测试。Release 不展示此入口，实验默认关闭。
