@@ -52,3 +52,12 @@ python3 -B Tools/wloc-debug.py --bundle-id app.eclipse296.lake3160 status \
 - Debug 与 Release 真机目标无签名构建均成功。Release 主程序和网络扩展二进制均未检出 `STIK_WLOC_DEBUG_V1` / `WLOCUSBDebugBridge` 标识。
 - Release 构建保留依赖静态库的原有链接/缺少调试对象文件警告，未修改 FFI 库。
 - 已验证 Mac 可通过 USB 读取准确 Bundle ID 的 App 数据容器；指令收发、安装和设备日志尚待验证。
+
+### 签名与安装交接
+
+- Section 1 commit：`8f8ee41`；Section 2 commit：`6352c79`。
+- `6352c79` 已使用用户原有 P12 + zsign 签名，App ID 仍为 `app.eclipse296.lake3160`；网络扩展与 Live Activity 的 Bundle ID 后缀均保持正确。没有改动源项目身份或其它已安装 StikDebug。
+- IPA：`/Users/junyang/IdeaProjects/wloc-reasearch/artifacts/StikDebug-WLOC-USB-6352c79-zsign.ipa`。
+- SHA-256：`83ca7b3564058843ed02269c9356c61f78ddc410477e72a4464c2a5cbfa37705`；ZIP 完整性检查通过。Debug App 与 tunnel 的 `.debug.dylib` 含诊断标识；最终 Release App 包未检出诊断标识。
+- USB 读取旧版偏好时，`wlocProbeRestoreConnection` 仍存在，表示实验尚待停止/恢复。为避免在实验运行期间替换扩展，**本次尚未覆盖安装**，已请用户先停止测试。
+- 下一步：停止后更新安装；先发 `status` 验证双向回执，再由用户开启实验，Mac 执行清零/自测并读取扩展流。后台与地图触发验证仍不能跳过；本节未宣称已捕获系统 WLOC 请求。
