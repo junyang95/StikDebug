@@ -1,6 +1,6 @@
 # 本机 WLOC 连接测试 第一阶段
 
-2026-09-09：代码已完成，17 项自动测试通过；今日重新确认 Debug 无签名编译通过，并用用户提供的 P12、描述文件和 zsign 成功安装到 iOS 26.6.1 真机。首次启动被锁屏拒绝，等待解锁。出网、系统地图触发、后台与旧功能回归尚未执行。本记录不代表本机 WLOC 方案已经在真机成立。
+2026-09-09：代码已完成，17 项自动测试通过；今日重新确认 Debug 无签名编译通过，并用用户提供的 P12、描述文件和 zsign 成功安装到 iOS 26.6.1 真机。用户解锁后主 App 启动成功。扩展启动、出网、系统地图触发、后台与旧功能回归尚未执行。本记录不代表本机 WLOC 方案已经在真机成立。
 
 用户此前在 iOS 26 使用 Shadowrocket 与 cyberhandyman 模块取得金盆，是既有成功基线，不是本轮验证结果。本轮仅替换连接层，不重复验证游戏效果，不修改坐标。
 
@@ -68,7 +68,7 @@ xcodebuild -project StikDebug.xcodeproj -scheme StikDebug \
 | iPhone 目标 App、PikminTunnel 与测试目标编译 | 通过，无签名；不等于测试已在设备执行 |
 | `git diff --check` 与 Xcode 工程 plist 校验 | 通过 |
 | App 原生界面真机视觉检查 | 待验证 |
-| iOS 26 自测、外部应用触发、后台 5 分钟、停止与旧模拟回归 | 待验证，设备已连接并安装，首次启动受锁屏阻挡 |
+| iOS 26 自测、外部应用触发、后台 5 分钟、停止与旧模拟回归 | 待验证，设备已连接，安装和主 App 启动成功 |
 
 编译仍有原有静态库警告：`libpairable_host.a` 的对象文件面向 iOS 18.0，工程最低链接目标为 iOS 17.4。本轮未调整无关部署版本，也未声称覆盖 iOS 17.4 运行兼容性。
 
@@ -79,7 +79,7 @@ xcodebuild -project StikDebug.xcodeproj -scheme StikDebug \
 - 使用用户提供的 zsign v1.0.4、P12 与同目录 mobileprovision；未添加新证书到钥匙串，未生成 CA。
 - 独立打包副本的 Bundle ID 改为 `app.eclipse296.lake3160`，两个扩展随之更新并保留；源码工程标识保持不变。签名细节与固定 App ID 的实测边界见 [签名记录](signing.md)。
 - 10:36（Asia/Shanghai）：`devicectl` 确认安装成功，更新目标 Bundle ID 的已有 StikDebug；没有卸载或修改另外两份 StikDebug。
-- 10:37：启动请求返回 `Locked`，需用户解锁。尚不能确认 App 启动、扩展加载、自测和其他真机验证结果。
+- 10:37：首次启动请求返回 `Locked`。10:39 用户解锁后，再次启动返回成功，目标 Bundle ID 为 `app.eclipse296.lake3160`。扩展加载、自测和其他真机验证仍待执行。
 - Mac 严格签名校验与设备安装结果存在差异：前者返回 invalid signature，后者成功。此项仍需保留为签名工具兼容性限制，不写成全部校验通过。
 - 没有自动开启实验或其他 VPN，没有变更坐标，也没有替换旧定点功能。
 

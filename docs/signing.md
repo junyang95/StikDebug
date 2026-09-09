@@ -44,8 +44,9 @@ Bundle ID 保持约定的 `.networkextension` 后缀；App 运行时从主 Bundl
   App，也没有改动其他 Bundle ID 的 StikDebug。
 - Mac 的 `codesign --verify --deep --strict` 仍返回 invalid signature；正常
   系统权限下可以读取签名 entitlements。保留这个校验差异，不能称为完整
-  签名校验通过。iPhone 接受安装是已确认事实；运行和 VPN 扩展启动需另测。
-- 首次启动请求被锁屏拒绝（`Locked`），不是安装失败；待用户解锁后继续。
+  签名校验通过。iPhone 接受安装和主 App 启动已确认；VPN 扩展启动需另测。
+- 首次启动请求被锁屏拒绝（`Locked`）；用户解锁后，10:39 再次通过
+  `devicectl` 启动 `app.eclipse296.lake3160` 成功。尚未自动开启实验。
 
 本次签名链未包含 HTTPS 解密 CA，也没有开启 VPN 或 WLOC 改写。
 网络和后续真机状态见 [第一阶段验证记录](wloc-probe-stage1.md)。
