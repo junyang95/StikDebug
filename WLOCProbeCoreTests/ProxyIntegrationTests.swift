@@ -19,7 +19,8 @@ final class ProxyIntegrationTests: XCTestCase {
         let client = try await connect(port)
         defer { client.cancel() }
         let payload = Data((0..<262_144).map { UInt8($0 % 256) })
-        let connectHeader = Data("CONNECT gs-loc.apple.com:443 HTTP/1.1\r\n\r\n".utf8)
+        // Real CFNetwork format: CONNECT uses :443 while Host omits the default port.
+        let connectHeader = Data("CONNECT gs-loc.apple.com:443 HTTP/1.1\r\nHost: gs-loc.apple.com\r\n\r\n".utf8)
         client.send(content: connectHeader + payload, completion: .contentProcessed { _ in })
         let response = await read(client, count: successHeader.count + payload.count)
         XCTAssertEqual(response, successHeader + payload)

@@ -63,8 +63,14 @@ struct ConnectRequestParser {
             if name == "transfer-encoding" || (name == "content-length" && value != "0") {
                 throw ConnectRequestError.malformed
             }
-            if name == "host" && value.lowercased() != authority {
-                throw ConnectRequestError.malformed
+            if name == "host" {
+                // CFNetwork sends CONNECT host:443 with Host: host (without the port).
+                // The request-target above remains authoritative and must be an exact
+                // allowlisted host:443. Accept only that same host, with or without :443.
+                let hostHeader = value.lowercased()
+                guard hostHeader == host || hostHeader == authority else {
+                    throw ConnectRequestError.malformed
+                }
             }
         }
         let payload = Data(buffer[range.upperBound...])

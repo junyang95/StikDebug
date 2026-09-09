@@ -29,10 +29,27 @@ final class ConnectParserTests: XCTestCase {
         }
     }
 
+    func testCFNetworkHostWithoutDefaultPortIsAccepted() throws {
+        for host in WLOCProbePolicy.hosts {
+            for hostHeader in [host, host.uppercased(), "\(host):443"] {
+                var parser = ConnectRequestParser()
+                let header = Data("CONNECT \(host):443 HTTP/1.1\r\nHost: \(hostHeader)\r\n\r\n".utf8)
+                let request = try XCTUnwrap(parser.append(header))
+                XCTAssertEqual(request.host, host)
+                XCTAssertTrue(request.initialPayload.isEmpty)
+            }
+        }
+    }
+
     func testRejectsAmbiguousHeadersAndOtherMethods() {
         for request in [
             "GET https://gs-loc.apple.com/ HTTP/1.1\r\n\r\n",
             "CONNECT gs-loc.apple.com:443 HTTP/1.1\r\nHost: other.test:443\r\n\r\n",
+            "CONNECT gs-loc.apple.com:443 HTTP/1.1\r\nHost: gs-loc-cn.apple.com\r\n\r\n",
+            "CONNECT gs-loc.apple.com:443 HTTP/1.1\r\nHost: gs-loc.apple.com:80\r\n\r\n",
+            "CONNECT gs-loc.apple.com:443 HTTP/1.1\r\nHost: gs-loc.apple.com.evil.test\r\n\r\n",
+            "CONNECT gs-loc.apple.com:443 HTTP/1.1\r\nHost: gs-loc.apple.com.\r\n\r\n",
+            "CONNECT gs-loc.apple.com:443 HTTP/1.1\r\nHost: user@gs-loc.apple.com\r\n\r\n",
             "CONNECT gs-loc.apple.com:443 HTTP/1.1\r\nTransfer-Encoding: chunked\r\n\r\n",
             "CONNECT gs-loc.apple.com:443 HTTP/1.1\r\nContent-Length: 1\r\n\r\nx",
             "CONNECT gs-loc.apple.com:443 HTTP/1.1\r\n Bad: folded\r\n\r\n",
