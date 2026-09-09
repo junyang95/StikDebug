@@ -13,6 +13,9 @@ final class LoopbackConnectProxy {
     private let upstream: UpstreamFactory
     private let handshakeTimeout: TimeInterval
     private let idleTimeout: TimeInterval
+    #if DEBUG
+    private var debugTimer: DispatchSourceTimer?
+    #endif
 
     init(
         handshakeTimeout: TimeInterval = WLOCProbePolicy.handshakeTimeout,
@@ -44,6 +47,9 @@ final class LoopbackConnectProxy {
                         guard let port = listener.port?.rawValue else { return }
                         self.state.port = port
                         self.state.listening = true
+                        #if DEBUG
+                        self.startDebugTelemetry()
+                        #endif
                         let callback = self.startCompletion
                         self.startCompletion = nil
                         callback?(.success(port))
@@ -76,6 +82,9 @@ final class LoopbackConnectProxy {
                 state.hosts = [:]
                 state.lastError = nil
                 state.resetAt = Date()
+                #if DEBUG
+                emitDebug(.reset)
+                #endif
             }
             state.activeConnections = clients.count
             completion(state)
@@ -90,6 +99,10 @@ final class LoopbackConnectProxy {
     }
 
     private func stopOnQueue() {
+        #if DEBUG
+        debugTimer?.cancel()
+        debugTimer = nil
+        #endif
         let callback = startCompletion
         startCompletion = nil
         listener?.stateUpdateHandler = nil
@@ -101,8 +114,29 @@ final class LoopbackConnectProxy {
         for client in Array(clients.values) { client.close() }
         clients.removeAll()
         state.activeConnections = 0
+        #if DEBUG
+        emitDebug(.stopped)
+        #endif
         callback?(.failure(ProxyError.stopped))
     }
+
+    #if DEBUG
+    private func startDebugTelemetry() {
+        debugTimer?.cancel()
+        let timer = DispatchSource.makeTimerSource(queue: queue)
+        timer.schedule(deadline: .now() + 2, repeating: 2, leeway: .milliseconds(250))
+        timer.setEventHandler { [weak self] in self?.emitDebug(.snapshot) }
+        debugTimer = timer
+        timer.resume()
+        emitDebug(.ready)
+    }
+
+    private func emitDebug(_ event: ProbeDebugRecord.Event) {
+        var snapshot = state
+        snapshot.activeConnections = clients.count
+        ProbeDebugLog.emit(ProbeDebugRecord(source: .tunnel, event: event, snapshot: ProbeDebugSnapshot(snapshot)))
+    }
+    #endif
 
     private func accept(_ connection: NWConnection) {
         guard clients.count < WLOCProbePolicy.maximumConnections else {

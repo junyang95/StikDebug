@@ -41,6 +41,9 @@ final class EmbeddedVPNService: ObservableObject {
     private var selfTestSession: URLSession?
     private var generation: UInt64 = 0
     private let restoreOnDemandKey = "wlocProbeRestoreOnDemand"
+    #if DEBUG
+    private(set) var debugSelfTest: ProbeDebugSelfTest?
+    #endif
 
     var isExperimentEnabled: Bool { experimentPending || mode == .wlocProbe }
     var modeTitle: String {
@@ -142,6 +145,9 @@ final class EmbeddedVPNService: ObservableObject {
         generation &+= 1
         lastProbeError = nil
         selfTestResult = nil
+        #if DEBUG
+        debugSelfTest = nil
+        #endif
         defer { isTransitioning = false }
         do {
             // Drain an already-running preflight; its subsequent stages see the gate and stop.
@@ -265,6 +271,9 @@ final class EmbeddedVPNService: ObservableObject {
             guard !isTransitioning, revision == generation else { return }
             acceptProbeSnapshot(snapshot)
             selfTestResult = nil
+            #if DEBUG
+            debugSelfTest = nil
+            #endif
             lastProbeError = nil
         } catch {
             if !isTransitioning, revision == generation { lastProbeError = error.localizedDescription }
@@ -276,6 +285,10 @@ final class EmbeddedVPNService: ObservableObject {
         isSelfTesting = true
         let revision = generation
         selfTestResult = "正在通过系统代理设置发起 HTTPS 请求…".localized
+        #if DEBUG
+        debugSelfTest = ProbeDebugSelfTest(outcome: .running)
+        ProbeDebugLog.emit(debugRecord(event: .selfTest))
+        #endif
         defer { isSelfTesting = false; selfTestSession = nil }
         do {
             let before = try await sendProbeCommand(.reset)
@@ -304,16 +317,48 @@ final class EmbeddedVPNService: ObservableObject {
             let httpStatus = (response as? HTTPURLResponse)?.statusCode ?? 0
             if delegate.usedProxy, after.totalConnections > 0, after.uploadedBytes > 0, after.downloadedBytes > 0 {
                 selfTestResult = String(format: "HTTPS 请求与代理双向数据均已观察到（HTTP %d）。请清空记录后再打开地图；这不是定位成功证明。".localized, httpStatus)
+                #if DEBUG
+                debugSelfTest = ProbeDebugSelfTest(outcome: .passed, httpStatus: httpStatus, usedProxy: delegate.usedProxy)
+                #endif
             } else {
                 selfTestResult = "HTTPS 请求完成，但未观察到代理双向数据，不能确认请求经过本机代理。".localized
+                #if DEBUG
+                debugSelfTest = ProbeDebugSelfTest(outcome: .unconfirmed, httpStatus: httpStatus, usedProxy: delegate.usedProxy)
+                #endif
             }
+            #if DEBUG
+            ProbeDebugLog.emit(debugRecord(event: .selfTest))
+            #endif
         } catch {
             if isExperimentEnabled, !isTransitioning, revision == generation {
                 selfTestResult = "自测未通过：".localized + error.localizedDescription
                 await refreshProbeStatus()
+                #if DEBUG
+                let nsError = error as NSError
+                debugSelfTest = ProbeDebugSelfTest(outcome: .failed,
+                    urlErrorCode: nsError.domain == NSURLErrorDomain ? nsError.code : nil)
+                ProbeDebugLog.emit(debugRecord(event: .selfTest))
+                #endif
             }
         }
     }
+
+    #if DEBUG
+    func debugRecord(event: ProbeDebugRecord.Event) -> ProbeDebugRecord {
+        let vpnState: ProbeDebugRecord.VPNState = switch status {
+        case .loading: .loading
+        case .disconnected: .disconnected
+        case .connecting: .connecting
+        case .connected: .connected
+        case .disconnecting: .disconnecting
+        case .failed: .failed
+        }
+        let snapshot = mode == .wlocProbe && status.isConnected ? probeSnapshot.map(ProbeDebugSnapshot.init) : nil
+        return ProbeDebugRecord(source: .app, event: event, snapshot: snapshot,
+                                selfTest: debugSelfTest, vpnState: vpnState,
+                                experimentEnabled: isExperimentEnabled)
+    }
+    #endif
 
     private func acceptProbeSnapshot(_ snapshot: ProbeSnapshot) {
         // A poll issued before Reset may reply after it. Do not resurrect cleared observations.
