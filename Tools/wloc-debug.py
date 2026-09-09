@@ -1,13 +1,17 @@
 #!/usr/bin/env python3
 """Bounded, metadata-only WLOC diagnostics over a paired iPhone's USB connection."""
 import argparse
+import fcntl
+import hashlib
 import json
 import math
 import os
+from pathlib import Path
 import selectors
 import shutil
 import subprocess
 import sys
+import tempfile
 import time
 import uuid
 
@@ -150,6 +154,69 @@ def watch(args):
         return 0 if count else 2
 
 
+def device_call(args, work, command):
+    """Only devicectl's documented JSON result is consumed, never its log text."""
+    result_path = work / "devicectl-result.json"
+    result_path.unlink(missing_ok=True)
+    result = subprocess.run(["xcrun", "devicectl", "device", *command,
+                             "--device", args.device, "--timeout", "10", "--quiet",
+                             "--json-output", str(result_path)],
+                            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=12)
+    if result.returncode != 0 or not result_path.exists():
+        return False
+    try:
+        info = json.loads(result_path.read_text())
+        return info.get("info", {}).get("outcome") == "success"
+    except (ValueError, OSError):
+        return False
+
+
+def send_command(args):
+    # One tool owns this device/bundle mailbox at a time. No retries of actions:
+    # a timeout could mean the action ran but its acknowledgement was lost.
+    key = hashlib.sha256((args.device + "/" + args.bundle_id).encode()).hexdigest()[:24]
+    lock_path = Path(tempfile.gettempdir()) / ("stikdebug-wloc-" + key + ".lock")
+    with lock_path.open("a") as lock:
+        try:
+            fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError:
+            raise RuntimeError("Another command owns this device mailbox; wait for it to finish.")
+        with tempfile.TemporaryDirectory(prefix="stikdebug-wloc-command-") as temporary:
+            work = Path(temporary)
+            if not args.no_launch:
+                if not device_call(args, work, ["process", "launch", args.bundle_id]):
+                    raise RuntimeError("Cannot open Debug app. Check pairing, unlock iPhone, and retry.")
+            request = {"version": 1, "id": str(uuid.uuid4()), "issuedAt": time.time(),
+                       "action": "selfTest" if args.command == "self-test" else args.command}
+            payload = work / "request.json"
+            payload.write_text(json.dumps(request))
+            marker = work / "ready.txt"
+            marker.write_text(request["id"])
+            domain = ["--domain-type", "appDataContainer", "--domain-identifier", args.bundle_id]
+            for file in (payload, marker):
+                if not device_call(args, work, ["copy", "to", "--source", str(file),
+                                                "--destination", "Documents/WLOCDebug/" + file.name, *domain]):
+                    raise RuntimeError("USB mailbox copy failed. Check Debug version, app foreground, and device trust.")
+            deadline = time.monotonic() + 40
+            reply_path = work / "response.json"
+            while time.monotonic() < deadline:
+                if device_call(args, work, ["copy", "from", "--source", "Documents/WLOCDebug/response.json",
+                                            "--destination", str(reply_path), *domain]):
+                    if reply_path.stat().st_size <= 4096:
+                        try:
+                            reply = json.loads(reply_path.read_text())
+                            if (validate_record(reply, args.bundle_id)
+                                    and reply.get("requestID", "").lower() == request["id"]
+                                    and reply.get("result") != "accepted"):
+                                print(json.dumps(reply, ensure_ascii=False, separators=(",", ":")), flush=True)
+                                return 0 if reply.get("result") == "ok" else 2
+                        except (ValueError, TypeError):
+                            pass
+                time.sleep(0.5)
+            raise RuntimeError("No final acknowledgement. Do not blindly resend; check status first. "
+                               "Commands require app foreground and Mac/iPhone clocks within 5 seconds.")
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--bundle-id", required=True, help="Exact installed Debug app ID, not the extension ID")
@@ -157,10 +224,14 @@ def main():
     stream = commands.add_parser("watch", help="Read metadata, including while the app is backgrounded")
     stream.add_argument("--udid", required=True)
     stream.add_argument("--seconds", type=int, choices=range(1, 56), default=45, metavar="1..55")
+    for action in ("status", "reset", "self-test", "stop"):
+        command = commands.add_parser(action, help="Send restricted USB command (opens app by default)")
+        command.add_argument("--device", required=True, help="CoreDevice identifier or UDID")
+        command.add_argument("--no-launch", action="store_true", help="App must already be foregrounded")
     args = parser.parse_args()
     try:
-        return watch(args)
-    except (OSError, RuntimeError) as error:
+        return watch(args) if args.command == "watch" else send_command(args)
+    except (OSError, RuntimeError, subprocess.TimeoutExpired) as error:
         print(f"Diagnostic tool failed: {error}", file=sys.stderr)
         return 1
 

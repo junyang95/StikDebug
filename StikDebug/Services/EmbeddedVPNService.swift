@@ -263,20 +263,23 @@ final class EmbeddedVPNService: ObservableObject {
         }
     }
 
-    func resetProbeStatistics() async {
-        guard !isTransitioning, !isSelfTesting, mode == .wlocProbe, status.isConnected else { return }
+    @discardableResult
+    func resetProbeStatistics() async -> Bool {
+        guard !isTransitioning, !isSelfTesting, mode == .wlocProbe, status.isConnected else { return false }
         let revision = generation
         do {
             let snapshot = try await sendProbeCommand(.reset)
-            guard !isTransitioning, revision == generation else { return }
+            guard !isTransitioning, revision == generation else { return false }
             acceptProbeSnapshot(snapshot)
             selfTestResult = nil
             #if DEBUG
             debugSelfTest = nil
             #endif
             lastProbeError = nil
+            return true
         } catch {
             if !isTransitioning, revision == generation { lastProbeError = error.localizedDescription }
+            return false
         }
     }
 
@@ -344,6 +347,60 @@ final class EmbeddedVPNService: ObservableObject {
     }
 
     #if DEBUG
+    func performDebugCommand(_ command: ProbeDebugCommand) async -> ProbeDebugRecord {
+        var result: ProbeDebugRecord.Result = .ok
+        if isTransitioning || isSelfTesting {
+            result = .busy
+        } else {
+            await load()
+            // Recheck after suspension: a user action may have started meanwhile.
+            if isTransitioning || isSelfTesting { result = .busy }
+            else {
+                switch command.action {
+                case .status:
+                    if status.isConnected {
+                        do {
+                            let revision = generation
+                            let snapshot = try await sendProbeCommand(.status)
+                            guard revision == generation, !isTransitioning, status.isConnected else {
+                                var record = debugRecord(event: .command)
+                                record.requestID = command.id
+                                record.result = .busy
+                                return record
+                            }
+                            var record = debugRecord(event: .command)
+                            record.snapshot = ProbeDebugSnapshot(snapshot)
+                            record.requestID = command.id
+                            record.result = .ok
+                            return record
+                        } catch { result = .unavailable }
+                    } else if status != .disconnected { result = .unavailable }
+                case .reset:
+                    guard mode == .wlocProbe, status.isConnected else {
+                        var record = debugRecord(event: .command)
+                        record.requestID = command.id
+                        record.result = .unavailable
+                        return record
+                    }
+                    result = await resetProbeStatistics() ? .ok : .failed
+                case .selfTest:
+                    if mode == .wlocProbe, status.isConnected {
+                        await runProbeSelfTest()
+                        result = debugSelfTest?.outcome == .passed ? .ok : .failed
+                    } else { result = .unavailable }
+                case .stop:
+                    // Idempotent: never disconnect an ordinary developer tunnel.
+                    if isExperimentEnabled { await stopProbe() }
+                    result = !isExperimentEnabled && lastProbeError == nil ? .ok : .failed
+                }
+            }
+        }
+        var record = debugRecord(event: .command)
+        record.requestID = command.id
+        record.result = result
+        return record
+    }
+
     func debugRecord(event: ProbeDebugRecord.Event) -> ProbeDebugRecord {
         let vpnState: ProbeDebugRecord.VPNState = switch status {
         case .loading: .loading

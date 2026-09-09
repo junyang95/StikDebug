@@ -3,6 +3,8 @@ import importlib.util
 from pathlib import Path
 import json
 import unittest
+from types import SimpleNamespace
+from unittest.mock import patch
 
 spec = importlib.util.spec_from_file_location("wloc_debug", Path(__file__).with_name("wloc-debug.py"))
 debug = importlib.util.module_from_spec(spec)
@@ -45,6 +47,37 @@ class DebugReaderTests(unittest.TestCase):
         self.record["snapshot"]["hosts"].pop("unknown.example")
         self.record["snapshot"]["active"] = True
         self.assertFalse(debug.validate_record(self.record, "test.app"))
+
+    def test_command_copies_payload_then_marker_and_matches_ack(self):
+        args = SimpleNamespace(device="test-device", bundle_id="test.app", no_launch=True, command="status")
+        calls = []
+        request = {}
+
+        def transport(args, work, command):
+            calls.append(command[:2])
+            if command[:2] == ["copy", "to"]:
+                source = command[command.index("--source") + 1]
+                if source.endswith("request.json"):
+                    request.update(json.loads(Path(source).read_text()))
+                else:
+                    self.assertEqual(Path(source).read_text(), request["id"])
+            else:
+                response = {"version": 1, "at": 1000, "bundleID": args.bundle_id, "source": "app",
+                            "event": "command", "requestID": request["id"], "result": "ok"}
+                (work / "response.json").write_text(json.dumps(response))
+            return True
+
+        with patch.object(debug, "device_call", side_effect=transport), patch("builtins.print"):
+            self.assertEqual(debug.send_command(args), 0)
+        self.assertEqual(calls, [["copy", "to"], ["copy", "to"], ["copy", "from"]])
+        self.assertEqual(request["action"], "status")
+
+    def test_failed_copy_never_sends_commit_marker_or_retries(self):
+        args = SimpleNamespace(device="test-device", bundle_id="test.app", no_launch=True, command="reset")
+        with patch.object(debug, "device_call", return_value=False) as transport:
+            with self.assertRaises(RuntimeError):
+                debug.send_command(args)
+            self.assertEqual(transport.call_count, 1)
 
 
 if __name__ == "__main__":

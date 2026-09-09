@@ -41,6 +41,9 @@ struct StikDebugApp: App {
                     guard !isTesting,
                           !ProcessInfo.processInfo.arguments.contains("--ui-testing") else { return }
                     await vpn.load()
+                    #if DEBUG
+                    WLOCUSBDebugBridge.shared.setActive(scenePhase == .active)
+                    #endif
                     if UserDefaults.standard.bool(forKey: "autoConnectEmbeddedVPN"),
                        !vpn.status.isConnected {
                         await vpn.connect()
@@ -50,6 +53,11 @@ struct StikDebugApp: App {
                     await health.refreshToday()
                 }
                 .onChange(of: scenePhase) { _, phase in
+                    #if DEBUG
+                    if !isTesting, !ProcessInfo.processInfo.arguments.contains("--ui-testing") {
+                        WLOCUSBDebugBridge.shared.setActive(phase == .active)
+                    }
+                    #endif
                     FixedLocationSessionController.shared.updateForegroundState(phase == .active)
                     guard phase == .active else { return }
                     Task {
