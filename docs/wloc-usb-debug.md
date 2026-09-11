@@ -68,3 +68,14 @@ python3 -B Tools/wloc-debug.py --bundle-id app.eclipse296.lake3160 status \
 - 已重新验证 IPA SHA-256 与上次记录一致。USB 读取偏好仍存在实验恢复标记；首次检查尚无 `Documents/WLOCDebug`，符合仍在旧版的状态，不能宣称诊断通道已连通。
 - 修正 Mac CLI 冷启动竞争：在发送载荷之前，最多等待 8 秒轮询诊断目录就绪（单次设备调用另有限时）；只重试只读检查，不重试已提交动作。真机确认不存在的目录会返回失败，能正确阻止过早发送。
 - Mac 工具 7 项测试通过；这一节仅改变 Mac 工具和测试，不改变已签名 IPA。
+
+### 2026-09-11：安装与 USB 双向通信真机通过
+
+- 用户确认已停止；设备进程列表成功读取，未见 `PikminTunnel`。偏好标记仍存在，但它表示**待完成的恢复流程**，并非当前代理正在运行，不能仅凭它要求用户反复停止。
+- 已成功更新安装 `StikDebug-WLOC-USB-6352c79-zsign.ipa`，Bundle ID 保持不变，未卸载 App 或删除数据；新 App 已成功启动。
+- 发现并复现 Mac 启动命令参数顺序问题：`process launch` 把 Bundle ID 后的参数当作 App 参数，导致工具报缺少 `--device`。现已将 devicectl 公共选项放在 Bundle ID 前；8 项 Mac 测试通过，修正版自动打开 + USB `status` 真机成功。
+- 首个 USB `status`：`vpnState=disconnected`、`experimentEnabled=true`。同一 UUID 的 `accepted` / `ok` 回执既能从文件通道读出，也能通过 USB 系统日志读出，证明双向指令与日志通道均可用。
+- USB `stop` 成功完成恢复：`vpnState=connected`、`experimentEnabled=false`。这是恢复进入实验前的普通开发隧道，不是重新启动 WLOC，也未恢复模拟坐标。
+- 用户手动开启新实验后，真实扩展快照为 `mode=wlocProbe`、`listening=true`；Mac `reset` 收到成功回执和空统计。
+- Mac `self-test` 成功：HTTP **404**，`usedProxy=true`，`gs-loc.apple.com` **1** 个连接，发送 **1,904 B**、接收 **3,316 B**，活动连接随后从 1 回到 0。45 秒观察共接收 **31** 条白名单诊断记录，含扩展心跳、清零、自测和对应回执。
+- 自测后再次 USB 清零成功。接下来单独观察用户切换系统定位服务时的后台扩展日志；系统 WLOC 来源/请求路径与新版本后台 5 分钟测试尚未确认。

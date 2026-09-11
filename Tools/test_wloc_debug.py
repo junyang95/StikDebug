@@ -48,6 +48,26 @@ class DebugReaderTests(unittest.TestCase):
         self.record["snapshot"]["active"] = True
         self.assertFalse(debug.validate_record(self.record, "test.app"))
 
+    def test_launch_options_precede_positional_bundle_identifier(self):
+        args = SimpleNamespace(device="test-device", bundle_id="test.app")
+        with debug.tempfile.TemporaryDirectory(prefix="stikdebug-wloc-test-") as temporary:
+            work = Path(temporary)
+
+            def run(command, **kwargs):
+                self.assertEqual(command[:5], ["xcrun", "devicectl", "device", "process", "launch"])
+                bundle_index = command.index(args.bundle_id)
+                for option in ("--device", "--timeout", "--quiet", "--json-output"):
+                    self.assertLess(command.index(option), bundle_index)
+                self.assertEqual(command[command.index("--device") + 1], args.device)
+                self.assertEqual(command[-1], args.bundle_id)
+                output = Path(command[command.index("--json-output") + 1])
+                output.write_text(json.dumps({"info": {"outcome": "success"}}))
+                return SimpleNamespace(returncode=0)
+
+            with patch.object(debug.subprocess, "run", side_effect=run) as process:
+                self.assertTrue(debug.device_call(args, work, ["process", "launch", args.bundle_id]))
+                process.assert_called_once()
+
     def test_command_copies_payload_then_marker_and_matches_ack(self):
         args = SimpleNamespace(device="test-device", bundle_id="test.app", no_launch=True, command="status")
         calls = []

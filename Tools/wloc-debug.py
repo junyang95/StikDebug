@@ -158,9 +158,11 @@ def device_call(args, work, command):
     """Only devicectl's documented JSON result is consumed, never its log text."""
     result_path = work / "devicectl-result.json"
     result_path.unlink(missing_ok=True)
-    result = subprocess.run(["xcrun", "devicectl", "device", *command,
+    # Launch treats arguments after the positional bundle ID as app arguments.
+    # Keep every devicectl option before that positional argument.
+    result = subprocess.run(["xcrun", "devicectl", "device", *command[:2],
                              "--device", args.device, "--timeout", "10", "--quiet",
-                             "--json-output", str(result_path)],
+                             "--json-output", str(result_path), *command[2:]],
                             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=12)
     if result.returncode != 0 or not result_path.exists():
         return False
