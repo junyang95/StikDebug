@@ -86,6 +86,20 @@ Debug / Release iPhone 构建均成功；仍有原有 libpairable_host.a 的 iOS
 原生 Form 使用语义字体/颜色、可换行指纹、原生导航和无固定底部按钮；
 真机页面、小屏/横屏/最大动态字体、VoiceOver 和深色模式的视觉检查尚未完成。
 
+### 119484a 安装记录
+
+- 使用用户原有 P12/profile 和 zsign，未修改源工程的 Bundle ID；没有卸载 App。
+- IPA：`wloc-reasearch/artifacts/StikDebug-WLOC-CA-119484a-zsign.ipa`。
+  SHA-256：`16839f954782194015e55590023f497b4c7cf53e7f29972c23818d828701ee39`。
+- 14:36，`devicectl device install app` 确认成功：目标仅为 iPhone 16 Pro Max
+  `7E85C01C-59CA-4ACE-85CA-C12E43279E57`，App 为 `app.eclipse296.lake3160`。
+- 签名副本及安装 JSON：`/private/tmp/stikdebug-ca-sign.JLbpJC/`。Mac strict codesign
+  与 zsign 的既有差异仍存在；不把设备接受安装等同于完整签名验证。
+- 安装后的 USB `certificate-status` 未能完成自动启动；随后直接启动命令也在
+  10 秒超时。没有收到证书状态，不能认定 App 启动成功、证书已生成或已受信任，
+  也没有足够证据将超时归因为锁屏。已请用户手动打开新版证书页面生成证书，
+  暂不下载或信任，随后再以 USB 检查默认不可信状态。
+
 ## 依赖与下一节
 
 精确锁定 `swift-certificates 1.18.0`、`swift-crypto 3.12.3`、`swift-asn1 1.3.1`，
