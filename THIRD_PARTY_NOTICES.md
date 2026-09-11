@@ -1,5 +1,19 @@
 # Third-party notices
 
+## WLOC certificate experiment: Apple Swift packages
+
+The tunnel's certificate-only implementation uses unmodified Apple packages:
+
+- [swift-certificates 1.18.0](https://github.com/apple/swift-certificates/tree/1.18.0), X509.
+- [swift-crypto 3.12.3](https://github.com/apple/swift-crypto/tree/3.12.3), transitive dependency.
+- [swift-asn1 1.3.1](https://github.com/apple/swift-asn1/tree/1.3.1), transitive dependency.
+
+Versions are pinned for Xcode 16.2 / Swift 6.0 compatibility. Their complete
+LICENSE.txt and NOTICE.txt texts are included in the app resource
+`StikDebug/Resources/WLOCAppleDependencyNotices.txt`. This section does not
+claim that the experiment meets Apple distribution requirements. No Knot or
+ProxyPin implementation was copied into the certificate or profile server.
+
 ## LocalDevVPN / StosVPN
 
 Pikmin Helper's embedded local packet tunnel is based on LocalDevVPN / StosVPN

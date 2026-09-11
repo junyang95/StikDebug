@@ -8,12 +8,29 @@ final class ProbeDebugCommandTests: XCTestCase {
         Data("{\"version\":1,\"id\":\"B1000000-0000-0000-0000-000000000001\",\"issuedAt\":\(time),\"action\":\"\(action)\"}".utf8)
     }
 
-    func testOnlyFourBoundedActionsAccepted() throws {
-        for action in ["status", "reset", "selfTest", "stop"] {
+    func testOnlySixBoundedActionsAccepted() throws {
+        for action in ["status", "reset", "selfTest", "stop", "certificateStatus", "certificateVerify"] {
             XCTAssertEqual(try ProbeDebugCommand.decode(request(action: action), now: now, after: 0).action.rawValue, action)
         }
-        for action in ["start", "setLocation", "shell", "https://example.com"] {
+        for action in ["start", "setLocation", "shell", "https://example.com", "certificatePrepare",
+                       "certificateDownload", "certificateInstall", "certificateTrust", "certificate-status"] {
             XCTAssertThrowsError(try ProbeDebugCommand.decode(request(action: action), now: now, after: 0))
+        }
+    }
+
+    func testCertificateActionsKeepFreshnessAndNoArgumentBounds() throws {
+        for action in ["certificateStatus", "certificateVerify"] {
+            for time in [939.0, 1006.0] {
+                XCTAssertThrowsError(try ProbeDebugCommand.decode(request(action: action, time: time), now: now, after: 0))
+            }
+            XCTAssertThrowsError(try ProbeDebugCommand.decode(request(action: action), now: now, after: 999))
+            for key in ["hostname", "url", "certificateDER", "privateKey"] {
+                var object = try XCTUnwrap(JSONSerialization.jsonObject(with: request(action: action)) as? [String: Any])
+                object[key] = "private"
+                XCTAssertThrowsError(try ProbeDebugCommand.decode(
+                    JSONSerialization.data(withJSONObject: object), now: now, after: 0
+                ))
+            }
         }
     }
 

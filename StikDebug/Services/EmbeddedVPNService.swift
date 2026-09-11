@@ -37,6 +37,11 @@ final class EmbeddedVPNService: ObservableObject {
     @Published private(set) var lastProbeError: String?
     @Published private(set) var selfTestResult: String?
     @Published private(set) var isSelfTesting = false
+    @Published private(set) var certificateInfo: WLOCCertificateInfo?
+    @Published private(set) var isCertificateBusy = false
+    @Published private(set) var certificateError: String?
+    @Published private(set) var certificateSystemTrusted: Bool?
+    @Published private(set) var certificateCheckedAt: Date?
     @Published private(set) var experimentPending = UserDefaults.standard.object(forKey: DeveloperConnectionGate.experimentKey) != nil
     private var selfTestSession: URLSession?
     private var generation: UInt64 = 0
@@ -349,12 +354,12 @@ final class EmbeddedVPNService: ObservableObject {
     #if DEBUG
     func performDebugCommand(_ command: ProbeDebugCommand) async -> ProbeDebugRecord {
         var result: ProbeDebugRecord.Result = .ok
-        if isTransitioning || isSelfTesting {
+        if isTransitioning || isSelfTesting || isCertificateBusy {
             result = .busy
         } else {
             await load()
             // Recheck after suspension: a user action may have started meanwhile.
-            if isTransitioning || isSelfTesting { result = .busy }
+            if isTransitioning || isSelfTesting || isCertificateBusy { result = .busy }
             else {
                 switch command.action {
                 case .status:
@@ -392,6 +397,30 @@ final class EmbeddedVPNService: ObservableObject {
                     // Idempotent: never disconnect an ordinary developer tunnel.
                     if isExperimentEnabled { await stopProbe() }
                     result = !isExperimentEnabled && lastProbeError == nil ? .ok : .failed
+                case .certificateStatus, .certificateVerify:
+                    guard status.isConnected else {
+                        var record = debugRecord(event: .command)
+                        record.requestID = command.id
+                        record.result = .unavailable
+                        return record
+                    }
+                    let revision = generation
+                    await performCertificateCommand(command.action == .certificateStatus ? .status : .verifyTrust)
+                    var record = debugRecord(event: .command)
+                    record.requestID = command.id
+                    guard revision == generation, !isTransitioning, status.isConnected else {
+                        record.result = .busy
+                        return record
+                    }
+                    record.result = certificateError == nil ? .ok : .failed
+                    if certificateError == nil {
+                        record.certificate = ProbeDebugCertificate(prepared: certificateInfo != nil,
+                            fingerprintSHA256: certificateInfo?.fingerprintSHA256,
+                            notAfter: certificateInfo?.notAfter.timeIntervalSince1970,
+                            systemTrusted: certificateSystemTrusted,
+                            checkedAt: certificateCheckedAt?.timeIntervalSince1970)
+                    }
+                    return record
                 }
             }
         }
@@ -425,20 +454,82 @@ final class EmbeddedVPNService: ObservableObject {
     }
 
     private func sendProbeCommand(_ command: ProbeCommand) async throws -> ProbeSnapshot {
+        try await sendProviderCommand(command, timeoutSeconds: 3)
+    }
+
+    /// Public CA metadata only. Does not enable interception or change VPN mode.
+    @discardableResult
+    func performCertificateCommand(_ command: WLOCCertificateCommand) async -> URL? {
+        guard !isCertificateBusy, !isTransitioning, status.isConnected else { return nil }
+        isCertificateBusy = true
+        certificateError = nil
+        // Trust may have changed in Settings. A fresh status/check must never retain stale success.
+        if command != .download {
+            certificateSystemTrusted = nil
+            certificateCheckedAt = nil
+        }
+        let revision = generation
+        let connection = manager?.connection
+        defer { isCertificateBusy = false }
+        do {
+            let reply: WLOCCertificateReply = try await sendProviderCommand(command, timeoutSeconds: 10)
+            guard !isTransitioning, revision == generation,
+                  connection === manager?.connection, status.isConnected else { return nil }
+            if let error = reply.error {
+                certificateError = error
+                certificateSystemTrusted = nil
+                certificateCheckedAt = nil
+                return nil
+            }
+            if certificateInfo?.fingerprintSHA256 != reply.info?.fingerprintSHA256 {
+                certificateSystemTrusted = nil
+                certificateCheckedAt = nil
+            }
+            certificateInfo = reply.info
+            if command == .verifyTrust {
+                certificateSystemTrusted = reply.systemTrusted
+                certificateCheckedAt = reply.checkedAt
+            }
+            // Only accept a local HTTP profile handoff. Never open arbitrary provider URLs.
+            if let url = reply.downloadURL {
+                guard url.scheme == "http", url.host == "127.0.0.1", url.port != nil,
+                      url.user == nil, url.password == nil, url.query == nil,
+                      url.fragment == nil, url.lastPathComponent == "StikDebug-WLOC.mobileconfig" else {
+                    certificateError = "扩展返回了无效的本机下载地址。".localized
+                    return nil
+                }
+                return url
+            }
+        } catch {
+            if !isTransitioning, revision == generation {
+                certificateError = error.localizedDescription
+                certificateSystemTrusted = nil
+                certificateCheckedAt = nil
+            }
+        }
+        return nil
+    }
+
+    private func sendProviderCommand<Command: Encodable, Reply: Decodable>(
+        _ command: Command, timeoutSeconds: Int
+    ) async throws -> Reply {
         guard let session = manager?.connection as? NETunnelProviderSession,
               session.status == .connected else { throw ProbeServiceError.notReady }
         let data = try JSONEncoder().encode(command)
         return try await withCheckedThrowingContinuation { continuation in
-            let reply = ProbeReply(continuation)
+            let reply = ProviderReply(continuation)
             reply.timeout = Task { @MainActor in
-                try? await Task.sleep(for: .seconds(3))
+                try? await Task.sleep(for: .seconds(timeoutSeconds))
                 if !Task.isCancelled { reply.finish(.failure(ProbeServiceError.timeout)) }
             }
             do {
                 try session.sendProviderMessage(data) { response in
                     Task { @MainActor in
                         guard let response else { reply.finish(.failure(ProbeServiceError.notReady)); return }
-                        reply.finish(Result { try JSONDecoder().decode(ProbeSnapshot.self, from: response) })
+                        guard response.count <= 64 * 1024 else {
+                            reply.finish(.failure(ProbeServiceError.notReady)); return
+                        }
+                        reply.finish(Result { try JSONDecoder().decode(Reply.self, from: response) })
                     }
                 }
             } catch { reply.finish(.failure(error)) }
@@ -489,6 +580,10 @@ final class EmbeddedVPNService: ObservableObject {
             LogManager.shared.addInfoLog("内置 VPN 状态：\(newStatus.title)")
         }
         status = newStatus
+        if !newStatus.isConnected {
+            certificateSystemTrusted = nil
+            certificateCheckedAt = nil
+        }
     }
 }
 
@@ -504,11 +599,11 @@ private enum ProbeServiceError: LocalizedError {
 }
 
 @MainActor
-private final class ProbeReply {
-    private var continuation: CheckedContinuation<ProbeSnapshot, Error>?
+private final class ProviderReply<Value> {
+    private var continuation: CheckedContinuation<Value, Error>?
     var timeout: Task<Void, Never>?
-    init(_ continuation: CheckedContinuation<ProbeSnapshot, Error>) { self.continuation = continuation }
-    func finish(_ result: Result<ProbeSnapshot, Error>) {
+    init(_ continuation: CheckedContinuation<Value, Error>) { self.continuation = continuation }
+    func finish(_ result: Result<Value, Error>) {
         guard let continuation else { return }
         self.continuation = nil
         timeout?.cancel()

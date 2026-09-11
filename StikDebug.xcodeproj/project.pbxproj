@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		AC3000010000000000000001 /* X509 in Frameworks */ = {isa = PBXBuildFile; productRef = AC3000030000000000000001 /* X509 */; };
 		AA0000010000000000000001 /* PikminTunnel.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = AA0000020000000000000001 /* PikminTunnel.appex */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		AB1000010000000000000001 /* PikminLiveActivity.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = AB1000030000000000000001 /* PikminLiveActivity.appex */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		AB1000020000000000000001 /* StikDebug/Models/PikminSessionAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB10000F0000000000000001 /* StikDebug/Models/PikminSessionAttributes.swift */; };
@@ -94,6 +95,11 @@
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
+		AC3000040000000000000001 /* WLOCCertificateCore */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = WLOCCertificateCore;
+			sourceTree = "<group>";
+		};
 		AC2000040000000000000001 /* WLOCProbeCore */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = WLOCProbeCore;
@@ -140,6 +146,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				AC3000010000000000000001 /* X509 in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -180,6 +187,7 @@
 				DC6F1D392D94EADD0071B2B6 /* StikDebug */,
 				AA0000040000000000000001 /* PikminTunnel */,
 				AC2000040000000000000001 /* WLOCProbeCore */,
+				AC3000040000000000000001 /* WLOCCertificateCore */,
 				AB1000040000000000000001 /* PikminLiveActivity */,
 				AB10000F0000000000000001 /* StikDebug/Models/PikminSessionAttributes.swift */,
 				DC6F1D4B2D94EADF0071B2B6 /* StikDebugTests */,
@@ -228,9 +236,11 @@
 			fileSystemSynchronizedGroups = (
 				AA0000040000000000000001 /* PikminTunnel */,
 				AC2000040000000000000001 /* WLOCProbeCore */,
+				AC3000040000000000000001 /* WLOCCertificateCore */,
 			);
 			name = PikminTunnel;
 			packageProductDependencies = (
+				AC3000030000000000000001 /* X509 */,
 			);
 			productName = PikminTunnel;
 			productReference = AA0000020000000000000001 /* PikminTunnel.appex */;
@@ -374,6 +384,9 @@
 			mainGroup = DC6F1D2E2D94EADD0071B2B6;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
+				AC3000020000000000000001 /* swift-certificates */,
+				AC3000020000000000000002 /* swift-crypto */,
+				AC3000020000000000000003 /* swift-asn1 */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = DC6F1D382D94EADD0071B2B6 /* Products */;
@@ -1021,6 +1034,32 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		AC3000020000000000000001 /* swift-certificates */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/apple/swift-certificates.git";
+			requirement = {kind = exactVersion; version = 1.18.0; };
+		};
+		AC3000020000000000000002 /* swift-crypto */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/apple/swift-crypto.git";
+			requirement = {kind = exactVersion; version = 3.12.3; };
+		};
+		AC3000020000000000000003 /* swift-asn1 */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/apple/swift-asn1.git";
+			requirement = {kind = exactVersion; version = 1.3.1; };
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		AC3000030000000000000001 /* X509 */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = AC3000020000000000000001 /* swift-certificates */;
+			productName = X509;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = DC6F1D2F2D94EADD0071B2B6 /* Project object */;
 }

@@ -24,6 +24,8 @@ ERRORS = {"listener_failed", "connection_limit", "connect_timeout", "idle_timeou
           "relay_interrupted", "relay_send_failed", "proxy_error"}
 COUNTERS = {"tcpAccepted", "connectAccepted", "upstreamReady", "relayReady",
             "closed", "errorClosed", "resetClosed", "stopClosed"}
+COMMAND_ACTIONS = {"status": "status", "reset": "reset", "self-test": "selfTest", "stop": "stop",
+                   "certificate-status": "certificateStatus", "certificate-verify": "certificateVerify"}
 
 
 def fields(value, required, optional=()):
@@ -32,7 +34,10 @@ def fields(value, required, optional=()):
 
 
 def number(value):
-    return type(value) in (int, float) and math.isfinite(value) and value >= 0
+    try:
+        return type(value) in (int, float) and math.isfinite(value) and value >= 0
+    except OverflowError:
+        return False
 
 
 def integer(value):
@@ -118,11 +123,33 @@ def validate_connection(connection):
     return "failure" not in connection or validate_failure(connection["failure"])
 
 
+def validate_certificate(certificate):
+    if (not fields(certificate, {"prepared"},
+                   {"fingerprintSHA256", "notAfter", "systemTrusted", "checkedAt"})
+            or type(certificate["prepared"]) is not bool):
+        return False
+    if not certificate["prepared"]:
+        return set(certificate) == {"prepared"}
+    if "fingerprintSHA256" in certificate:
+        fingerprint = certificate["fingerprintSHA256"]
+        if (not isinstance(fingerprint, str) or len(fingerprint) != 64
+                or not all(character in "0123456789abcdefABCDEF" for character in fingerprint)):
+            return False
+    if "notAfter" in certificate and not number(certificate["notAfter"]):
+        return False
+    if ("systemTrusted" in certificate) != ("checkedAt" in certificate):
+        return False
+    if "systemTrusted" in certificate:
+        if type(certificate["systemTrusted"]) is not bool or not number(certificate["checkedAt"]):
+            return False
+    return True
+
+
 def validate_record(record, bundle):
     """Reject unknown fields, not just unknown events, to avoid leaking future payloads."""
     if not fields(record, {"version", "at", "bundleID", "source", "event"},
                   {"snapshot", "selfTest", "vpnState", "experimentEnabled", "requestID", "result",
-                   "counters", "connection"}):
+                   "counters", "connection", "certificate"}):
         return False
     if (type(record["version"]) is not int or record["version"] != 1 or not number(record["at"])
             or record["source"] not in ("app", "tunnel")
@@ -133,6 +160,10 @@ def validate_record(record, bundle):
         return False
     if "connection" in record and (record["source"] != "tunnel" or not validate_connection(record["connection"])):
         return False
+    if "certificate" in record:
+        if (record["source"] != "app" or record["event"] != "command"
+                or not validate_certificate(record["certificate"])):
+            return False
     if "counters" in record:
         counters = record["counters"]
         if not fields(counters, COUNTERS) or not all(integer(value) for value in counters.values()):
@@ -257,6 +288,8 @@ def device_call(args, work, command):
 
 
 def send_command(args):
+    if args.command not in COMMAND_ACTIONS:
+        raise RuntimeError("Unsupported USB command.")
     # One tool owns this device/bundle mailbox at a time. No retries of actions:
     # a timeout could mean the action ran but its acknowledgement was lost.
     key = hashlib.sha256((args.device + "/" + args.bundle_id).encode()).hexdigest()[:24]
@@ -280,7 +313,7 @@ def send_command(args):
                     raise RuntimeError("Debug mailbox is not ready. Keep the updated Debug app foregrounded.")
                 time.sleep(0.5)
             request = {"version": 1, "id": str(uuid.uuid4()), "issuedAt": time.time(),
-                       "action": "selfTest" if args.command == "self-test" else args.command}
+                       "action": COMMAND_ACTIONS[args.command]}
             payload = work / "request.json"
             payload.write_text(json.dumps(request))
             marker = work / "ready.txt"
@@ -316,7 +349,7 @@ def main():
     stream = commands.add_parser("watch", help="Read metadata, including while the app is backgrounded")
     stream.add_argument("--udid", required=True)
     stream.add_argument("--seconds", type=int, choices=range(1, 56), default=45, metavar="1..55")
-    for action in ("status", "reset", "self-test", "stop"):
+    for action in COMMAND_ACTIONS:
         command = commands.add_parser(action, help="Send restricted USB command (opens app by default)")
         command.add_argument("--device", required=True, help="CoreDevice identifier or UDID")
         command.add_argument("--no-launch", action="store_true", help="App must already be foregrounded")

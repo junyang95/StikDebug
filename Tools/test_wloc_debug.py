@@ -29,6 +29,136 @@ class DebugReaderTests(unittest.TestCase):
                     "reason": "transportError", "failure": {"operation": "relayRead", "side": "upstream",
                         "network": {"domain": "posix", "code": 54}, "availableBytes": 0, "endOfStream": False}}}
 
+    def certificate_record(self):
+        return {"version": 1, "at": 1000, "bundleID": "test.app", "source": "app",
+                "event": "command", "requestID": "B1000000-0000-0000-0000-000000000001", "result": "ok",
+                "certificate": {"prepared": True, "fingerprintSHA256": "AB09" * 16,
+                                "notAfter": 2000, "systemTrusted": False, "checkedAt": 1000.5}}
+
+    def test_certificate_status_and_trust_metadata_are_accepted_with_legacy_compatibility(self):
+        full = self.certificate_record()
+        for certificate in ({"prepared": False}, {"prepared": True},
+                            {"prepared": True, "fingerprintSHA256": "ab09" * 16},
+                            {"prepared": True, "notAfter": 0},
+                            {"prepared": True, "systemTrusted": True, "checkedAt": 0},
+                            full["certificate"]):
+            with self.subTest(certificate=certificate):
+                record = copy.deepcopy(full)
+                record["certificate"] = certificate
+                self.assertEqual(debug.parse_line(debug.PREFIX + json.dumps(record), "test.app"), record)
+        full.pop("certificate")
+        self.assertTrue(debug.validate_record(full, "test.app"))
+        self.assertTrue(debug.validate_record(self.record, "test.app"))
+
+    def test_certificate_metadata_is_only_accepted_for_app_command_records(self):
+        for source, event in (("tunnel", "command"), ("app", "ready"), ("app", "snapshot"),
+                              ("app", "selfTest"), ("app", "reset"), ("app", "stopped")):
+            with self.subTest(source=source, event=event):
+                record = self.certificate_record()
+                record.update(source=source, event=event,
+                              bundleID="test.app" + (".networkextension" if source == "tunnel" else ""))
+                self.assertFalse(debug.validate_record(record, "test.app"))
+        record = self.lifecycle_record()
+        record["certificate"] = {"prepared": False}
+        self.assertFalse(debug.validate_record(record, "test.app"))
+
+    def test_certificate_rejects_unknown_fields_and_all_payload_material(self):
+        for key in ("certificateDER", "der", "privateKey", "pkcs12", "url", "downloadURL", "error", "commonName"):
+            with self.subTest(key=key):
+                record = self.certificate_record()
+                record["certificate"][key] = "https://private.example/?token=secret"
+                self.assertIsNone(debug.parse_line(debug.PREFIX + json.dumps(record), "test.app"))
+        for certificate in (None, [], "private", True, {}, {"prepared": True, "fingerprintSHA256": {"der": "private"}}):
+            record = self.certificate_record()
+            record["certificate"] = certificate
+            self.assertFalse(debug.validate_record(record, "test.app"))
+
+    def test_certificate_requires_ascii_64_hex_fingerprints(self):
+        for value in (None, 1, True, [], "", "A" * 63, "A" * 65, "G" * 64,
+                      "Ａ" * 64, "٠" * 64, "a:" * 32, "A" * 63 + "\n", "https://" + "a" * 56):
+            with self.subTest(value=value):
+                record = self.certificate_record()
+                record["certificate"]["fingerprintSHA256"] = value
+                self.assertFalse(debug.validate_record(record, "test.app"))
+
+    def test_certificate_types_finite_timestamps_and_trust_pair_are_required(self):
+        for value in (None, 0, 1, "true", [], {}):
+            record = self.certificate_record()
+            record["certificate"]["prepared"] = value
+            self.assertFalse(debug.validate_record(record, "test.app"))
+        for key in ("notAfter", "checkedAt"):
+            for value in (None, -1, True, "1000", [], float("nan"), float("inf"), 10 ** 1000):
+                with self.subTest(key=key, value=value):
+                    record = self.certificate_record()
+                    record["certificate"][key] = value
+                    self.assertFalse(debug.validate_record(record, "test.app"))
+        for value in (None, 0, 1, "false", [], {}):
+            record = self.certificate_record()
+            record["certificate"]["systemTrusted"] = value
+            self.assertFalse(debug.validate_record(record, "test.app"))
+        for missing in ("systemTrusted", "checkedAt"):
+            record = self.certificate_record()
+            record["certificate"].pop(missing)
+            self.assertFalse(debug.validate_record(record, "test.app"))
+
+    def test_unprepared_certificate_forbids_even_null_optional_fields(self):
+        for key, value in self.certificate_record()["certificate"].items():
+            if key == "prepared":
+                continue
+            for optional in (value, None):
+                record = self.certificate_record()
+                record["certificate"] = {"prepared": False, key: optional}
+                self.assertFalse(debug.validate_record(record, "test.app"))
+
+    def test_certificate_cli_exposes_only_two_read_only_actions(self):
+        for command in ("certificate-status", "certificate-verify"):
+            argv = ["wloc-debug.py", "--bundle-id", "test.app", command, "--device", "device", "--no-launch"]
+            with patch.object(debug.sys, "argv", argv), patch.object(debug, "send_command", return_value=0) as send:
+                self.assertEqual(debug.main(), 0)
+                self.assertEqual(send.call_args.args[0].command, command)
+        for action in ("certificate-prepare", "certificate-download", "certificate-install", "certificate-trust",
+                       "certificateStatus", "https://private.example"):
+            argv = ["wloc-debug.py", "--bundle-id", "test.app", action, "--device", "device"]
+            with patch.object(debug.sys, "argv", argv), patch.object(debug.sys, "stderr"), \
+                    patch.object(debug, "send_command") as send:
+                with self.assertRaises(SystemExit) as error:
+                    debug.main()
+                self.assertEqual(error.exception.code, 2)
+                send.assert_not_called()
+        argv = ["wloc-debug.py", "--bundle-id", "test.app", "certificate-verify", "--device", "device",
+                "--hostname", "example.com"]
+        with patch.object(debug.sys, "argv", argv), patch.object(debug.sys, "stderr"), \
+                patch.object(debug, "send_command") as send:
+            with self.assertRaises(SystemExit):
+                debug.main()
+            send.assert_not_called()
+
+    def test_certificate_cli_maps_exact_wire_actions_and_returns_validated_reply(self):
+        for command, action in (("certificate-status", "certificateStatus"), ("certificate-verify", "certificateVerify")):
+            args = SimpleNamespace(device="test-device", bundle_id="test.app", no_launch=True, command=command)
+            request = {}
+
+            def transport(args, work, command):
+                if command[:2] == ["copy", "to"]:
+                    source = Path(command[command.index("--source") + 1])
+                    if source.name == "request.json":
+                        request.update(json.loads(source.read_text()))
+                elif command[:2] == ["copy", "from"]:
+                    reply = self.certificate_record()
+                    reply["requestID"] = request["id"]
+                    (work / "response.json").write_text(json.dumps(reply))
+                return True
+
+            with self.subTest(command=command), patch.object(debug, "device_call", side_effect=transport), \
+                    patch("builtins.print"):
+                self.assertEqual(debug.send_command(args), 0)
+                self.assertEqual(request["action"], action)
+                self.assertEqual(set(request), {"version", "id", "issuedAt", "action"})
+        with patch.object(debug, "device_call") as transport:
+            with self.assertRaisesRegex(RuntimeError, "Unsupported"):
+                debug.send_command(SimpleNamespace(command="certificate-prepare"))
+            transport.assert_not_called()
+
     def test_accepts_lifecycle_phases_and_signed_network_codes(self):
         record = self.lifecycle_record()
         self.assertEqual(debug.parse_line(debug.PREFIX + json.dumps(record), "test.app"), record)

@@ -52,6 +52,30 @@ struct ProbeDebugSelfTest: Codable {
     var urlErrorCode: Int?
 }
 
+/// Public identifiers and trust result only. Never include certificate DER, keys, URLs, or errors.
+struct ProbeDebugCertificate: Codable {
+    let prepared: Bool
+    var fingerprintSHA256: String?
+    var notAfter: TimeInterval?
+    var systemTrusted: Bool?
+    var checkedAt: TimeInterval?
+
+    var isValid: Bool {
+        if !prepared {
+            return fingerprintSHA256 == nil && notAfter == nil && systemTrusted == nil && checkedAt == nil
+        }
+        if let fingerprintSHA256 {
+            let bytes = fingerprintSHA256.utf8
+            guard bytes.count == 64, bytes.allSatisfy({
+                (48...57).contains($0) || (65...70).contains($0) || (97...102).contains($0)
+            }) else { return false }
+        }
+        if let notAfter, !notAfter.isFinite || notAfter < 0 { return false }
+        if let checkedAt, !checkedAt.isFinite || checkedAt < 0 { return false }
+        return (systemTrusted == nil) == (checkedAt == nil)
+    }
+}
+
 struct ProbeDebugRecord: Codable {
     enum Source: String, Codable { case app, tunnel }
     enum Event: String, Codable { case ready, snapshot, reset, stopped, selfTest, command, connection }
@@ -71,8 +95,18 @@ struct ProbeDebugRecord: Codable {
     var result: Result?
     var counters: ProbeDebugCounters?
     var connection: ProbeDebugConnection?
+    var certificate: ProbeDebugCertificate?
 
-    func encoded() throws -> Data { try JSONEncoder().encode(self) }
+    func encoded() throws -> Data {
+        if let certificate {
+            guard source == .app, event == .command, certificate.isValid else {
+                throw EncodingFailure.certificateMetadata
+            }
+        }
+        return try JSONEncoder().encode(self)
+    }
+
+    enum EncodingFailure: Error { case certificateMetadata }
 }
 
 enum ProbeDebugLog {

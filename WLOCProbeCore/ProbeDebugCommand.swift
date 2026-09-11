@@ -4,7 +4,10 @@ import Foundation
 /// A fixed, paired-Mac mailbox, not a general RPC server. No start, arbitrary URL,
 /// coordinate, shell, file-path or VPN-configuration command is accepted.
 struct ProbeDebugCommand: Codable {
-    enum Action: String, Codable { case status, reset, selfTest, stop }
+    enum Action: String, Codable {
+        case status, reset, selfTest, stop
+        case certificateStatus, certificateVerify
+    }
     let version: Int
     let id: UUID
     let issuedAt: TimeInterval

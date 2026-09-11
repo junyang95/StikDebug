@@ -14,6 +14,7 @@ final class PacketTunnelProvider: NEPacketTunnelProvider {
     private var isReadingPackets = false
     private var probe: LoopbackConnectProxy?
     private var mode = EmbeddedVPNMode.developerLoopback
+    private var certificates: WLOCCertificateService?
 
     override func startTunnel(
         options: [String: NSObject]?,
@@ -88,6 +89,7 @@ final class PacketTunnelProvider: NEPacketTunnelProvider {
                     return
                 }
                 self.isReadingPackets = true
+                self.certificates = WLOCCertificateService()
                 self.readPackets(revision: revision)
                 self.finishStart(nil)
             }
@@ -107,18 +109,34 @@ final class PacketTunnelProvider: NEPacketTunnelProvider {
         lifecycleQueue.async { [self] in
             generation &+= 1
             isReadingPackets = false
+            let cleanup = DispatchGroup()
+            if let certificates {
+                cleanup.enter()
+                certificates.stop { cleanup.leave() }
+            }
+            certificates = nil
             // A late listener/settings callback must not restart packet reading after Stop.
             finishStart(NEVPNError(.configurationInvalid))
             if let probe {
-                probe.stop(completion: completionHandler)
+                cleanup.enter()
+                probe.stop { cleanup.leave() }
                 self.probe = nil
-            } else {
-                completionHandler()
             }
+            cleanup.notify(queue: lifecycleQueue, execute: completionHandler)
         }
     }
 
     override func handleAppMessage(_ messageData: Data, completionHandler: ((Data?) -> Void)? = nil) {
+        if messageData.count < 256,
+           let command = try? JSONDecoder().decode(WLOCCertificateCommand.self, from: messageData) {
+            lifecycleQueue.async { [self] in
+                guard isReadingPackets, let certificates else { completionHandler?(nil); return }
+                certificates.handle(command) { reply in
+                    completionHandler?(try? JSONEncoder().encode(reply))
+                }
+            }
+            return
+        }
         guard messageData.count < 256,
               let command = try? JSONDecoder().decode(ProbeCommand.self, from: messageData) else {
             completionHandler?(nil)

@@ -45,6 +45,16 @@ struct WLOCProbeView: View {
             }
 
             Section {
+                NavigationLink {
+                    WLOCCertificateView()
+                } label: {
+                    Label("第二阶段 · 本机实验证书", systemImage: "lock.doc")
+                }
+            } footer: {
+                Text("透传验证后，可独立准备证书并检查信任。这一步仍不解密流量或修改位置。")
+            }
+
+            Section {
                 Button {
                     Task { await vpn.runProbeSelfTest() }
                 } label: {
