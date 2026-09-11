@@ -169,3 +169,21 @@ python3 -B Tools/wloc-debug.py --bundle-id app.eclipse296.lake3160 status \
 - 代码提交 `b907575`，使用原有 P12 / 描述文件 / zsign。IPA：`/Users/junyang/IdeaProjects/wloc-reasearch/artifacts/StikDebug-WLOC-HalfClose-b907575-zsign.ipa`；SHA-256：`b206198f9ab612aadae02adc30610253027f5ab33bffeca94e22457419b3244e`，ZIP 校验通过。
 - 安装前 USB 确认实验关闭、真实扩展为普通回环模式。已成功覆盖安装到同一台 iPhone 16 Pro Max（🐑🐑），App / tunnel / Live Activity Bundle ID 保持不变；未卸载、未清理数据、未操作其它手机或同名 App。签名后 tunnel 动态库确认包含本次 `HalfCloseDrainPolicy`。
 - 安装后 App 自动打开成功，USB `status` 返回 `mode=developerLoopback`、`experimentEnabled=false`、`listening=false`，普通回环仍连接。已请求用户手动启动一次实验，之后由 Mac 连续自测并停止；此时尚未宣称新版真机转发验证完成。
+
+### 半关闭修复版：连续三次真机自测与恢复
+
+- 用户确认已开始；真实扩展 sessionID 为 `41CA03C5-94BE-4DE4-8471-536125EE8298`、端口 50894。最初只读 `status --no-launch` 未收到最终回执，扩展日志仍正常；Mac 打开准确 App 后重新查询只读状态成功，没有重发任何结果未知的变更动作。诊断目录存在不等于主 App 已在前台；后续自动流程应默认 launch，再等待明确回执。
+- 自测前快照已有 CN 域名 19 条连接、发送 40,437 B / 接收 234,358 B；它们发生在本轮采样前，只作基线，无法从此次日志补回关闭细节或确认来源动作。之后三次自测分别独立清零，不与这些记录混算。
+- 三次自测全部为 `result=ok`、`outcome=passed`、`usedProxy=true`、HTTP **404**。均只观察到自测域名 `gs-loc.apple.com` 的一次 CONNECT：
+
+| 次序 | resetAt（Unix） | 上传 / 下载 | 连接耗时 | 关闭记录 |
+|---|---|---|---|---|
+| 1 | 1789106274.887055 | 1,904 / 3,315 B | 145 ms | 双 EOF，`completeEOF` |
+| 2 | 1789106276.159226 | 1,904 / 3,316 B | 410 ms | 双 EOF，`completeEOF` |
+| 3 | 1789106277.712682 | 1,904 / 3,316 B | 116 ms | `relayRead` / client / POSIX 54 |
+
+- 第三条错误回调的 `availableBytes=0`、`endOfStream=true`；上游 EOF、向客户端 FIN 的提交及成功回调均先于该错误。`clientEOF=false` 表示没有走无错误/允许排空的 EOF 标记路径，**不表示该错误回调没携带 EOF**。App 仍取得完整 HTTP HEAD 响应；不能将这条客户端复位推广为全部系统连接都属无害收尾，也不能认定底层连接无错误。
+- `usb-selftest-cycle.jsonl` 共 **58** 条经过白名单校验的记录，含三次独立 reset、三组 running/passed、三组 accepted/ok 回执，以及 **15/15** 条连接生命周期事件。三个连接 ID 分别为 `E3B82BF8-47E6-454F-B1E7-9C519AF59C13`、`BBA2A992-E252-4E4E-8953-B0B33269B1C3`、`EA6C2F93-7123-4D11-9662-C87D8A421EEA`；终止记录均可与对应 epoch 一一核对。
+- 自动循环完成后 USB `stop` 成功；再次独立 `status` 确认 `mode=developerLoopback`、`experimentEnabled=false`、`listening=false`、`active=0`、`vpnState=connected`，已恢复普通回环。未恢复模拟坐标。
+- 证据位于 `/private/tmp/stikdebug-halfclose-sign.MFI8uR/`：`self-test-1.json` 至 `self-test-3.json`、`usb-selftest-cycle.jsonl`、`stop-after-cycle.json`、`status-after-cycle.json`。只含受限元数据，不含原始系统日志或 TLS/HTTP 正文。
+- 结论仅为本版本三次真机 HTTPS 自测及停止恢复通过。三次都是小请求，未出现 POSIX 50，不能声称真机已覆盖 ENETDOWN 排空路径；大载荷截断修复仍以本机 BSD 回归证明。本轮未重跑新版的完整后台 5 分钟流程，也未解密确认 `/clls/wloc`、修改位置或验证游戏效果。
