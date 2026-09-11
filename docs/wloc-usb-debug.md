@@ -113,3 +113,29 @@ python3 -B Tools/wloc-debug.py --bundle-id app.eclipse296.lake3160 status \
 - Mac 端严格校验新事件的所有字段、白名单域名和枚举，仍限制单条 JSON 为 4 KB，并兼容原有诊断版本；未知字段或非元数据内容不输出。
 
 本地验证：新增 10 项纯诊断测试、1 项不完整 CONNECT 提前 EOF 回归测试，并为 7 项现有集成测试补充生命周期断言；完整 Swift 测试共 34 项通过，半关闭测试额外连续复测 5 次通过；Mac 工具 14 项测试通过。Debug/Release 真机目标构建通过，Release 包未检出诊断标识或 `ProbeConnectionTrace`。回环测试观察到完整载荷和双向 EOF 与底层断连错误可以同时出现，因此测试和结论不把 EOF 等同于 HTTPS 成功。新诊断版本尚待签名安装及真机采样。
+
+### 连接级诊断版本签名安装
+
+- 代码提交：`21cc78e`。使用原有 P12、配套描述文件及 zsign 签名；IPA 为 `/Users/junyang/IdeaProjects/wloc-reasearch/artifacts/StikDebug-WLOC-Trace-21cc78e-zsign.ipa`，SHA-256 为 `2e36c03954a7eb3191ff020e5143062c342aafe8bd8d861445bb2bd6643ee4f9`，ZIP 完整性校验通过。
+- App / tunnel / Live Activity Bundle ID 分别保持 `app.eclipse296.lake3160`、`.networkextension`、`.liveactivity`；签名前排除了构建目录残留的测试包、dSYM 和旧签名。签名后 App 与 tunnel 的 Debug 动态库均检出 `ProbeConnectionTrace`。
+- 安装前 USB 查询确认 `experimentEnabled=false`、扩展真实模式为 `developerLoopback`。已在同一台 iPhone 16 Pro Max（🐑🐑）成功覆盖安装，未卸载或清理数据；其它手机和同名 App 未操作。
+- 安装后自动打开 App 并完成 USB `status`，仍为普通回环模式（`vpnState=connected`、`experimentEnabled=false`、`listening=false`）。尚待用户手动开启实验后验证新生命周期日志；不把安装和状态查询等同于已完成真机转发测试。
+
+### 新版真机自测：HTTP 已完成仍有关闭阶段错误
+
+- 用户手动开始实验，新扩展 sessionID 为 `E18E9025-FFDF-4DCE-B200-18907D60FB3F`，监听端口 50893。新计数器通过 USB 日志正常输出；清零指令成功。
+- Mac 发起一次 App 内 HTTPS 自测，结果为 `passed`、`usedProxy=true`、HTTP **404**。连接 `6B167C8A-73E8-455E-B07C-AA7DB450932C` 的五条阶段记录均收到：TCP 接入 0 ms、CONNECT 校验 1 ms、上游就绪 57 ms、转发就绪 58 ms、关闭 221 ms；发送 **1,904 B**、接收 **3,316 B**。
+- 同一连接关闭原因为 `transportError`，首个失败为 `clientState` / `client` / POSIX **50**；关闭时 `clientEOF=true`、`upstreamEOF=true`。因此 `errorClosed=1` 与已获得 HTTP 响应可以同时成立，不能直接当作失败请求数。此记录仍不足以把所有相似错误视为正常，也不能推广到尚未观察的系统请求。
+- 自测观察文件 `self-test-lifecycle.jsonl` 共 41 条白名单记录（含五条连接阶段），位于 `/private/tmp/stikdebug-trace-sign.YxLP1V/`；没有保存原始系统日志或正文。
+- 自测后再次 USB 清零（Unix `1789104238.585957`），随后只读观察用户切换系统定位服务，避免混入 App 自测。
+
+### 新版非自测定位域名采样
+
+- 请求用户切换系统定位服务后，两个只读 USB 窗口分别收到 120 条、27 条白名单记录；采样中没有再次启动 StikDebug、运行自测或清零。采集时尚未收到用户“已切换”确认，因此只能与操作请求窗口关联，不能声称已确认精确触发动作或来源进程。
+- 同一 session/reset epoch 共 **20** 条 `gs-loc-cn.apple.com` CONNECT，全部观察到独立的 `upstreamReady`、`relayReady`、`closed` 记录；累计发送 **42,499 B**、接收 **238,132 B**，最终活动连接为 0。没有 `gs-loc.apple.com` 自测连接混入。
+- 关闭分类：**4** 条 `completeEOF`（双 EOF、无记录错误）；**15** 条 `clientState` / `client` / POSIX **54**（客户端 EOF 为 true，上游 EOF 为 false）；**1** 条 `upstreamState` / `upstream` / POSIX **50**（双 EOF）。最后一条心跳计数为 `tcpAccepted=connectAccepted=upstreamReady=relayReady=closed=20`、`errorClosed=16`。
+- USB 单事件日志并非完整无丢失：共收到 96 条连接事件，其中 `accepted` 19 条、`targetValidated` 17 条，后三个阶段各 20 条；前两阶段依累计计数交叉核对，不能宣称每条连接的五条日志全部收到。全部 20 条终止记录均在采样文件中。
+- 样本已证明错误并非都与 App 自测主动结束有关，但尚不能断定是系统正常取消、半关闭时序或代理转发缺陷。双向字节与 EOF 也不足以证明系统 HTTP 响应完整或 `/clls/wloc` 成功；没有进行 TLS 解密。
+- 下一项最小验证应针对“读取 EOF → 对侧 `.finalMessage` 提交/完成 → 状态失败”的先后关系，补充确定性半关闭/客户端复位对照；保持现有错误可见，不通过忽略 POSIX 50/54 或扩大代理范围来制造成功结果。
+- 本轮新诊断的真机观察文件为 `/private/tmp/stikdebug-trace-sign.YxLP1V/location-toggle-lifecycle.jsonl` 与 `location-toggle-followup.jsonl`。本次新增验证未重跑完整 5 分钟后台实验，之前版本的后台证据保留在前文，不混写为本次版本已通过。
+- 采集完成后 USB `stop` 成功；随后独立 `status` 确认 `experimentEnabled=false`、`mode=developerLoopback`、`listening=false`、`vpnState=connected`，实验代理已撤销并恢复普通回环模式。
