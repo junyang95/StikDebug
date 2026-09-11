@@ -81,7 +81,7 @@ Debug / Release iPhone 构建均成功；仍有原有 libpairable_host.a 的 iOS
 64 KiB 完整下载、4 KiB 分片请求头、FIN、非法请求、连接上限、超时和停止竞态。
 显式信任锚只存在主机测试代码中，不存在产品代码中。
 
-尚需真机验证：实际重签权限下的 Keychain 创建/重启持久化；Safari 本机下载；
+安装时尚待真机验证的项目（进展见后续记录）：实际重签权限下的 Keychain 创建/重启持久化；Safari 本机下载；
 用户手动安装与信任；默认系统策略由 false 变 true；关闭信任后再次变 false。
 原生 Form 使用语义字体/颜色、可换行指纹、原生导航和无固定底部按钮；
 真机页面、小屏/横屏/最大动态字体、VoiceOver 和深色模式的视觉检查尚未完成。
@@ -100,7 +100,30 @@ Debug / Release iPhone 构建均成功；仍有原有 libpairable_host.a 的 iOS
   也没有足够证据将超时归因为锁屏。已请用户手动打开新版证书页面生成证书，
   暂不下载或信任，随后再以 USB 检查默认不可信状态。
 
-## 依赖与下一节
+## 2026-09-11 15:23–15:29：USB 重新连接后的真机验证
+
+- 目标 iPhone 的 USB pairing 验证成功；手机和 Mac 的时间读数同秒。
+  新安装路径中的 App、Live Activity 和 tunnel 进程均在运行。
+- 首次 `certificate-status` 的 CLI 最终确认超时；随后单独读取手机
+  `response.json` 得到合法公开证书状态。因为首次请求临时目录已被工具清理，
+  不把这份恢复读到的结果追认为 UUID 已核对的同一次请求。
+- 之后 `certificate-verify --no-launch` 完整返回 UUID 匹配的最终结果：
+  `44DECEF4-483C-4E16-A1B9-C7897ED90C65`，`result=ok`、`prepared=true`、
+  `systemTrusted=true`。用户确认已安装描述文件并手动开启完全信任。
+- CA 指纹：`53A2002A749277B01D1711DFEA1ABD3319744EA81ED044A3B5E714AFCFCDB854`；
+  `notAfter=1796887302`。没有获取或导出私钥。
+- 发送一次 stop 后，`experimentEnabled=false`、`vpnState=connected`，恢复普通隧道。
+  tunnel PID 从 `22905` 变为 `22963`。重新校验得到同一指纹、同一有效期、
+  `systemTrusted=true`，证明该签名配置下材料能跨扩展进程重启读取并使用。
+- 相同本地目标文件的重复 `devicectl copy from` 实测成功，排除了“复制不覆盖”
+  对本次超时的解释；没有据未确证的启动时序猜测修改代码或放宽邮箱检查。
+- 证据仅存公开元数据：`/private/tmp/stikdebug-ca-usb.jsZdm1/` 中
+  `certificate-verify.json`、`stop.json`、`certificate-after-restart.json`。
+- 初次生成时用户已经完成信任安装，因此未采集到“安装前不可信”的真机基线。
+  已请求临时关闭 StikDebug CA 的完全信任，下一步检查 false，再恢复 true；
+  当前不把反向检查、TLS 握手、解密或 WLOC 请求识别标为通过。
+
+## 依赖版本与后续范围
 
 精确锁定 `swift-certificates 1.18.0`、`swift-crypto 3.12.3`、`swift-asn1 1.3.1`，
 兼容本机 Xcode 16.2 / Swift 6.0。版本锁同时进入 SwiftPM 与 Xcode。
