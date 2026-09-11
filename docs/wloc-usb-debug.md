@@ -163,3 +163,9 @@ python3 -B Tools/wloc-debug.py --bundle-id app.eclipse296.lake3160 status \
 - 最终 **49** 项 Debug Swift、**23** 项 Release Swift、**16** 项 Mac 工具测试通过。8 项终止场景连续 **3** 轮（24/24）通过；其中无实际 FIN 的截止分别为 1004 / 1005 / 1005 ms，排空中的 stop/reset 立即结束，旧定时器不会重复关闭或污染新 epoch。此前5项真实 BSD 场景另已连续5轮通过；没有放宽原样载荷断言。
 - Debug/Release 真机目标构建成功。Release App 包未检出诊断前缀、USB 桥或 `ProbeConnectionTrace`。保留既有 FFI 静态库链接警告，未修改这些依赖。
 - 本地验证不代表已消除手机上此前所有 POSIX 54；安装后仍需通过 USB 自测验证实际构建。本节尚未部署 CA、MITM、坐标改写或远程代理。
+
+### 半关闭修复版安装
+
+- 代码提交 `b907575`，使用原有 P12 / 描述文件 / zsign。IPA：`/Users/junyang/IdeaProjects/wloc-reasearch/artifacts/StikDebug-WLOC-HalfClose-b907575-zsign.ipa`；SHA-256：`b206198f9ab612aadae02adc30610253027f5ab33bffeca94e22457419b3244e`，ZIP 校验通过。
+- 安装前 USB 确认实验关闭、真实扩展为普通回环模式。已成功覆盖安装到同一台 iPhone 16 Pro Max（🐑🐑），App / tunnel / Live Activity Bundle ID 保持不变；未卸载、未清理数据、未操作其它手机或同名 App。签名后 tunnel 动态库确认包含本次 `HalfCloseDrainPolicy`。
+- 安装后 App 自动打开成功，USB `status` 返回 `mode=developerLoopback`、`experimentEnabled=false`、`listening=false`，普通回环仍连接。已请求用户手动启动一次实验，之后由 Mac 连续自测并停止；此时尚未宣称新版真机转发验证完成。
