@@ -55,6 +55,8 @@ class DebugReaderTests(unittest.TestCase):
 
         def transport(args, work, command):
             calls.append(command[:2])
+            if command[:2] == ["info", "files"]:
+                return True
             if command[:2] == ["copy", "to"]:
                 source = command[command.index("--source") + 1]
                 if source.endswith("request.json"):
@@ -69,15 +71,24 @@ class DebugReaderTests(unittest.TestCase):
 
         with patch.object(debug, "device_call", side_effect=transport), patch("builtins.print"):
             self.assertEqual(debug.send_command(args), 0)
-        self.assertEqual(calls, [["copy", "to"], ["copy", "to"], ["copy", "from"]])
+        self.assertEqual(calls, [["info", "files"], ["copy", "to"], ["copy", "to"], ["copy", "from"]])
         self.assertEqual(request["action"], "status")
 
     def test_failed_copy_never_sends_commit_marker_or_retries(self):
         args = SimpleNamespace(device="test-device", bundle_id="test.app", no_launch=True, command="reset")
-        with patch.object(debug, "device_call", return_value=False) as transport:
+        with patch.object(debug, "device_call", side_effect=[True, False]) as transport:
             with self.assertRaises(RuntimeError):
                 debug.send_command(args)
+            self.assertEqual(transport.call_count, 2)
+
+    def test_unready_mailbox_does_not_submit_any_action(self):
+        args = SimpleNamespace(device="test-device", bundle_id="test.app", no_launch=True, command="reset")
+        with patch.object(debug, "device_call", return_value=False) as transport, \
+                patch.object(debug.time, "monotonic", side_effect=[0, 9]):
+            with self.assertRaisesRegex(RuntimeError, "not ready"):
+                debug.send_command(args)
             self.assertEqual(transport.call_count, 1)
+            self.assertEqual(transport.call_args.args[2][:2], ["info", "files"])
 
 
 if __name__ == "__main__":

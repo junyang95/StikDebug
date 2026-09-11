@@ -186,13 +186,20 @@ def send_command(args):
             if not args.no_launch:
                 if not device_call(args, work, ["process", "launch", args.bundle_id]):
                     raise RuntimeError("Cannot open Debug app. Check pairing, unlock iPhone, and retry.")
+            domain = ["--domain-type", "appDataContainer", "--domain-identifier", args.bundle_id]
+            # Launch acknowledgement precedes the app's asynchronous setup. Only
+            # retry this read-only readiness check, never a submitted action.
+            ready_deadline = time.monotonic() + 8
+            while not device_call(args, work, ["info", "files", "--subdirectory", "Documents/WLOCDebug", *domain]):
+                if time.monotonic() >= ready_deadline:
+                    raise RuntimeError("Debug mailbox is not ready. Keep the updated Debug app foregrounded.")
+                time.sleep(0.5)
             request = {"version": 1, "id": str(uuid.uuid4()), "issuedAt": time.time(),
                        "action": "selfTest" if args.command == "self-test" else args.command}
             payload = work / "request.json"
             payload.write_text(json.dumps(request))
             marker = work / "ready.txt"
             marker.write_text(request["id"])
-            domain = ["--domain-type", "appDataContainer", "--domain-identifier", args.bundle_id]
             for file in (payload, marker):
                 if not device_call(args, work, ["copy", "to", "--source", str(file),
                                                 "--destination", "Documents/WLOCDebug/" + file.name, *domain]):
