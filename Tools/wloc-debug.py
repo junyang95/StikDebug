@@ -22,6 +22,8 @@ ERRORS = {"listener_failed", "connection_limit", "connect_timeout", "idle_timeou
           "client_failed", "header_read_failed", "connect_rejected", "parse_failed",
           "upstream_interrupted", "reply_failed", "upstream_send_failed", "upstream_failed",
           "relay_interrupted", "relay_send_failed", "proxy_error"}
+COUNTERS = {"tcpAccepted", "connectAccepted", "upstreamReady", "relayReady",
+            "closed", "errorClosed", "resetClosed", "stopClosed"}
 
 
 def fields(value, required, optional=()):
@@ -44,16 +46,67 @@ def identifier(value):
         return False
 
 
+def validate_failure(failure):
+    if not fields(failure, {"operation", "side"}, {"network", "availableBytes", "endOfStream"}):
+        return False
+    if (failure["operation"] not in ("clientState", "headerRead", "upstreamConnect", "upstreamWaiting",
+                                    "upstreamState", "connectReply", "initialUpload", "relayRead",
+                                    "relayWrite", "halfClose")
+            or failure["side"] not in ("client", "upstream")):
+        return False
+    if "network" in failure:
+        network = failure["network"]
+        if (not fields(network, {"domain"}, {"code"})
+                or network["domain"] not in ("posix", "dns", "tls", "other")
+                or ("code" in network and type(network["code"]) is not int)):
+            return False
+    if "availableBytes" in failure and not integer(failure["availableBytes"]):
+        return False
+    if "endOfStream" in failure and type(failure["endOfStream"]) is not bool:
+        return False
+    return True
+
+
+def validate_connection(connection):
+    if not fields(connection, {"id", "sessionID", "resetAt", "phase", "elapsedMS", "sent", "received",
+                               "clientEOF", "upstreamEOF"}, {"host", "reason", "failure"}):
+        return False
+    if (not identifier(connection["id"]) or not identifier(connection["sessionID"])
+            or not number(connection["resetAt"])
+            or connection["phase"] not in ("accepted", "targetValidated", "upstreamReady", "relayReady", "closed")
+            or not all(integer(connection[key]) for key in ("elapsedMS", "sent", "received"))
+            or any(type(connection[key]) is not bool for key in ("clientEOF", "upstreamEOF"))):
+        return False
+    if "host" in connection and (not isinstance(connection["host"], str) or connection["host"] not in HOSTS):
+        return False
+    if (connection["phase"] == "closed") != ("reason" in connection):
+        return False
+    if "reason" in connection and connection["reason"] not in (
+            "completeEOF", "clientEOF", "cancelled", "rejected", "transportError", "handshakeTimeout",
+            "idleTimeout", "reset", "stop", "connectionLimit"):
+        return False
+    return "failure" not in connection or validate_failure(connection["failure"])
+
+
 def validate_record(record, bundle):
     """Reject unknown fields, not just unknown events, to avoid leaking future payloads."""
     if not fields(record, {"version", "at", "bundleID", "source", "event"},
-                  {"snapshot", "selfTest", "vpnState", "experimentEnabled", "requestID", "result"}):
+                  {"snapshot", "selfTest", "vpnState", "experimentEnabled", "requestID", "result",
+                   "counters", "connection"}):
         return False
     if (type(record["version"]) is not int or record["version"] != 1 or not number(record["at"])
             or record["source"] not in ("app", "tunnel")
             or record["bundleID"] != bundle + (".networkextension" if record["source"] == "tunnel" else "")
-            or record["event"] not in ("ready", "snapshot", "reset", "stopped", "selfTest", "command")):
+            or record["event"] not in ("ready", "snapshot", "reset", "stopped", "selfTest", "command", "connection")):
         return False
+    if (record["event"] == "connection") != ("connection" in record):
+        return False
+    if "connection" in record and (record["source"] != "tunnel" or not validate_connection(record["connection"])):
+        return False
+    if "counters" in record:
+        counters = record["counters"]
+        if not fields(counters, COUNTERS) or not all(integer(value) for value in counters.values()):
+            return False
     if "requestID" in record and not identifier(record["requestID"]):
         return False
     if "result" in record and record["result"] not in ("ok", "busy", "unavailable", "failed", "accepted"):

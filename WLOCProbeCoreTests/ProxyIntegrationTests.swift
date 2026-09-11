@@ -36,6 +36,10 @@ final class ProxyIntegrationTests: XCTestCase {
             XCTFail("Forbidden target reached upstream factory")
             return NWConnection(host: "127.0.0.1", port: 1, using: .tcp)
         })
+        #if DEBUG
+        let trace = ProxyTraceRecorder()
+        proxy.debugObserver = trace.observe
+        #endif
         let port = try await start(proxy)
         defer { proxy.stop() }
         let client = try await connect(port)
@@ -45,10 +49,23 @@ final class ProxyIntegrationTests: XCTestCase {
         XCTAssertTrue(String(decoding: data, as: UTF8.self).hasPrefix("HTTP/1.1 403"))
         let state = await snapshot(proxy)
         XCTAssertEqual(state.totalConnections, 0)
+        #if DEBUG
+        let closed = try await closedRecord(trace)
+        XCTAssertEqual(closed.connection?.reason, .rejected)
+        XCTAssertNil(closed.connection?.host)
+        XCTAssertNil(closed.connection?.failure)
+        XCTAssertEqual(closed.counters?.tcpAccepted, 1)
+        XCTAssertEqual(closed.counters?.connectAccepted, 0)
+        XCTAssertEqual(closed.counters?.errorClosed, 1)
+        #endif
     }
 
     func testPartialHeaderTimesOutAndEarlyCloseReleasesSlot() async throws {
         let proxy = LoopbackConnectProxy(handshakeTimeout: 0.2)
+        #if DEBUG
+        let trace = ProxyTraceRecorder()
+        proxy.debugObserver = trace.observe
+        #endif
         let port = try await start(proxy)
         defer { proxy.stop() }
         let client = try await connect(port)
@@ -59,6 +76,15 @@ final class ProxyIntegrationTests: XCTestCase {
         var state = await snapshot(proxy)
         XCTAssertEqual(state.activeConnections, 0)
         XCTAssertNotNil(state.lastError)
+        #if DEBUG
+        let closed = try await closedRecord(trace)
+        XCTAssertEqual(closed.connection?.reason, .handshakeTimeout)
+        XCTAssertNil(closed.connection?.host)
+        XCTAssertNil(closed.connection?.failure)
+        XCTAssertEqual(closed.counters?.tcpAccepted, 1)
+        XCTAssertEqual(closed.counters?.connectAccepted, 0)
+        XCTAssertEqual(closed.counters?.errorClosed, 1)
+        #endif
         let early = try await connect(port)
         early.cancel()
         try await Task.sleep(nanoseconds: 100_000_000)
@@ -68,6 +94,10 @@ final class ProxyIntegrationTests: XCTestCase {
 
     func testResetClosesOldConnectionsWithoutRestartingListener() async throws {
         let proxy = LoopbackConnectProxy()
+        #if DEBUG
+        let trace = ProxyTraceRecorder()
+        proxy.debugObserver = trace.observe
+        #endif
         let port = try await start(proxy)
         defer { proxy.stop() }
         let client = try await connect(port)
@@ -86,22 +116,60 @@ final class ProxyIntegrationTests: XCTestCase {
         XCTAssertEqual(before.port, after.port)
         XCTAssertTrue(after.listening)
         _ = await read(client, count: 1, expectEOF: true)
+        #if DEBUG
+        let closed = try await closedRecord(trace)
+        XCTAssertEqual(closed.connection?.reason, .reset)
+        XCTAssertEqual(closed.connection?.sessionID, before.sessionID)
+        XCTAssertEqual(closed.connection?.resetAt, before.resetAt.timeIntervalSince1970)
+        XCTAssertEqual(closed.counters?.resetClosed, 1)
+        XCTAssertEqual(closed.counters?.stopClosed, 0)
+        XCTAssertEqual(closed.counters?.errorClosed, 0)
+        let reset = try XCTUnwrap(trace.records.last { $0.event == .reset })
+        XCTAssertEqual(reset.counters?.tcpAccepted, 0)
+        XCTAssertEqual(reset.counters?.closed, 0)
+        XCTAssertEqual(reset.snapshot?.resetAt, after.resetAt.timeIntervalSince1970)
+        #endif
     }
 
     func testStopCompletesAndRemovesListener() async throws {
         let proxy = LoopbackConnectProxy()
-        _ = try await start(proxy)
+        #if DEBUG
+        let trace = ProxyTraceRecorder()
+        proxy.debugObserver = trace.observe
+        #endif
+        let port = try await start(proxy)
+        let client = try await connect(port)
+        defer { client.cancel() }
+        for _ in 0..<100 {
+            if await snapshot(proxy).activeConnections == 1 { break }
+            try await Task.sleep(nanoseconds: 10_000_000)
+        }
+        let before = await snapshot(proxy)
+        XCTAssertEqual(before.activeConnections, 1)
         await withCheckedContinuation { continuation in proxy.stop { continuation.resume() } }
         let stopped = await snapshot(proxy)
         XCTAssertFalse(stopped.listening)
         XCTAssertNil(stopped.port)
         XCTAssertEqual(stopped.activeConnections, 0)
+        #if DEBUG
+        let closed = try await closedRecord(trace)
+        XCTAssertEqual(closed.connection?.reason, .stop)
+        XCTAssertEqual(closed.counters?.stopClosed, 1)
+        XCTAssertEqual(closed.counters?.resetClosed, 0)
+        XCTAssertEqual(closed.counters?.errorClosed, 0)
+        await withCheckedContinuation { continuation in proxy.stop { continuation.resume() } }
+        XCTAssertEqual(trace.records.filter { $0.connection?.phase == .closed }.count, 1)
+        #endif
     }
 
     func testUpstreamFailureReturns502AndReleasesConnection() async throws {
         let proxy = LoopbackConnectProxy(upstream: { _ in
             NWConnection(host: "127.0.0.1", port: 1, using: .tcp)
         })
+        #if DEBUG
+        let trace = ProxyTraceRecorder()
+        proxy.debugObserver = trace.observe
+        #endif
         let port = try await start(proxy)
         defer { proxy.stop() }
         let client = try await connect(port)
@@ -112,6 +180,22 @@ final class ProxyIntegrationTests: XCTestCase {
         let state = await snapshot(proxy)
         XCTAssertEqual(state.totalConnections, 1)
         XCTAssertEqual(state.uploadedBytes, 0)
+        #if DEBUG
+        let closed = try await closedRecord(trace)
+        XCTAssertEqual(closed.connection?.reason, .transportError)
+        XCTAssertEqual(closed.connection?.host, "gs-loc.apple.com")
+        let failure = try XCTUnwrap(closed.connection?.failure)
+        XCTAssertTrue([.upstreamConnect, .upstreamWaiting].contains(failure.operation))
+        XCTAssertEqual(failure.side, .upstream)
+        XCTAssertEqual(failure.network?.domain, .posix)
+        XCTAssertEqual(failure.network?.code, Int(POSIXErrorCode.ECONNREFUSED.rawValue))
+        XCTAssertEqual(closed.counters?.tcpAccepted, 1)
+        XCTAssertEqual(closed.counters?.connectAccepted, 1)
+        XCTAssertEqual(closed.counters?.upstreamReady, 0)
+        XCTAssertEqual(closed.counters?.relayReady, 0)
+        XCTAssertEqual(closed.counters?.closed, 1)
+        XCTAssertEqual(closed.counters?.errorClosed, 1)
+        #endif
     }
 
     func testTunnelIdleTimeoutClosesBothDirections() async throws {
@@ -121,6 +205,10 @@ final class ProxyIntegrationTests: XCTestCase {
         let proxy = LoopbackConnectProxy(idleTimeout: 0.2, upstream: { _ in
             NWConnection(host: "127.0.0.1", port: upstreamPort, using: .tcp)
         })
+        #if DEBUG
+        let trace = ProxyTraceRecorder()
+        proxy.debugObserver = trace.observe
+        #endif
         let port = try await start(proxy)
         defer { proxy.stop() }
         let client = try await connect(port)
@@ -132,6 +220,15 @@ final class ProxyIntegrationTests: XCTestCase {
         let state = await snapshot(proxy)
         XCTAssertEqual(state.activeConnections, 0)
         XCTAssertEqual(state.lastError, "透传连接空闲超时")
+        #if DEBUG
+        let closed = try await closedRecord(trace)
+        XCTAssertEqual(trace.records.compactMap { $0.connection?.phase }, [.accepted, .targetValidated, .upstreamReady, .relayReady, .closed])
+        XCTAssertEqual(closed.connection?.reason, .idleTimeout)
+        XCTAssertNil(closed.connection?.failure)
+        XCTAssertEqual(closed.counters?.upstreamReady, 1)
+        XCTAssertEqual(closed.counters?.relayReady, 1)
+        XCTAssertEqual(closed.counters?.errorClosed, 1)
+        #endif
     }
 
     func testClientHalfCloseStillReceivesUpstreamResponse() async throws {
@@ -141,6 +238,10 @@ final class ProxyIntegrationTests: XCTestCase {
         let proxy = LoopbackConnectProxy(upstream: { _ in
             NWConnection(host: "127.0.0.1", port: upstreamPort, using: .tcp)
         })
+        #if DEBUG
+        let trace = ProxyTraceRecorder()
+        proxy.debugObserver = trace.observe
+        #endif
         let port = try await start(proxy)
         defer { proxy.stop() }
         let client = try await connect(port)
@@ -155,7 +256,69 @@ final class ProxyIntegrationTests: XCTestCase {
         let state = await snapshot(proxy)
         XCTAssertEqual(state.uploadedBytes, Int64(payload.count))
         XCTAssertEqual(state.downloadedBytes, Int64(payload.count))
+        #if DEBUG
+        let closed = try await closedRecord(trace)
+        let connection = try XCTUnwrap(closed.connection)
+        XCTAssertEqual(closed.connection?.sent, Int64(payload.count))
+        XCTAssertEqual(closed.connection?.received, Int64(payload.count))
+        XCTAssertEqual(closed.connection?.clientEOF, true)
+        XCTAssertEqual(closed.connection?.upstreamEOF, true)
+        // Network.framework may report a final state/write failure after both EOFs.
+        // Delivered bytes and EOF observations must not be promoted to clean success.
+        if let failure = connection.failure {
+            XCTAssertEqual(connection.reason, .transportError)
+            XCTAssertNotNil(failure.network)
+            XCTAssertEqual(closed.counters?.errorClosed, 1)
+        } else {
+            XCTAssertEqual(connection.reason, .completeEOF)
+            XCTAssertEqual(closed.counters?.errorClosed, 0)
+        }
+        #endif
     }
+
+    #if DEBUG
+    func testClientEOFBeforeCONNECTIsVisibleWithoutHostOrError() async throws {
+        let proxy = LoopbackConnectProxy(upstream: { _ in
+            XCTFail("Incomplete CONNECT must not create an upstream connection")
+            return NWConnection(host: "127.0.0.1", port: 1, using: .tcp)
+        })
+        let trace = ProxyTraceRecorder()
+        proxy.debugObserver = trace.observe
+        let port = try await start(proxy)
+        defer { proxy.stop() }
+        let client = try await connect(port)
+        defer { client.cancel() }
+        client.send(content: Data("CONNE".utf8), contentContext: .finalMessage,
+                    isComplete: true, completion: .contentProcessed { _ in })
+        _ = await read(client, count: 1, expectEOF: true)
+        let closed = try await closedRecord(trace)
+        let state = await snapshot(proxy)
+
+        XCTAssertEqual(trace.records.compactMap { $0.connection?.phase }, [.accepted, .closed])
+        XCTAssertEqual(closed.connection?.reason, .clientEOF)
+        XCTAssertEqual(closed.connection?.clientEOF, true)
+        XCTAssertEqual(closed.connection?.upstreamEOF, false)
+        XCTAssertEqual(closed.connection?.sent, 0)
+        XCTAssertEqual(closed.connection?.received, 0)
+        XCTAssertNil(closed.connection?.host)
+        XCTAssertNil(closed.connection?.failure)
+        XCTAssertEqual(closed.counters?.tcpAccepted, 1)
+        XCTAssertEqual(closed.counters?.connectAccepted, 0)
+        XCTAssertEqual(closed.counters?.closed, 1)
+        XCTAssertEqual(closed.counters?.errorClosed, 0)
+        XCTAssertTrue(state.hosts.isEmpty)
+        XCTAssertNil(state.lastError)
+        XCTAssertEqual(state.activeConnections, 0)
+    }
+
+    private func closedRecord(_ trace: ProxyTraceRecorder) async throws -> ProbeDebugRecord {
+        for _ in 0..<200 {
+            if let closed = trace.records.last(where: { $0.connection?.phase == .closed }) { return closed }
+            try await Task.sleep(nanoseconds: 10_000_000)
+        }
+        return try XCTUnwrap(trace.records.last { $0.connection?.phase == .closed }, "Expected a final connection record")
+    }
+    #endif
 
     private func start(_ proxy: LoopbackConnectProxy) async throws -> UInt16 {
         try await withCheckedThrowingContinuation { continuation in
@@ -198,6 +361,23 @@ final class ProxyIntegrationTests: XCTestCase {
         return output
     }
 }
+
+#if DEBUG
+private final class ProxyTraceRecorder {
+    private let lock = NSLock()
+    private var stored: [ProbeDebugRecord] = []
+
+    var records: [ProbeDebugRecord] {
+        lock.lock(); defer { lock.unlock() }
+        return stored
+    }
+
+    func observe(_ record: ProbeDebugRecord) {
+        lock.lock(); defer { lock.unlock() }
+        stored.append(record)
+    }
+}
+#endif
 
 private final class EchoServer {
     private let queue = DispatchQueue(label: "probe.test.echo")

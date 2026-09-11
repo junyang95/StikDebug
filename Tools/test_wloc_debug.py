@@ -19,6 +19,117 @@ class DebugReaderTests(unittest.TestCase):
                            "resetAt": 990, "listening": True, "active": 0, "port": 1234,
                            "hosts": {"gs-loc.apple.com": {"connections": 1, "sent": 100, "received": 200}}}}
 
+    def lifecycle_record(self):
+        return {"version": 1, "at": 1000, "bundleID": "test.app.networkextension", "source": "tunnel",
+                "event": "connection", "counters": {key: 0 for key in debug.COUNTERS}, "connection": {
+                    "id": "B1000000-0000-0000-0000-000000000002",
+                    "sessionID": "B1000000-0000-0000-0000-000000000001", "resetAt": 990,
+                    "phase": "closed", "elapsedMS": 100, "sent": 20, "received": 30,
+                    "clientEOF": True, "upstreamEOF": False, "host": "gs-loc.apple.com",
+                    "reason": "transportError", "failure": {"operation": "relayRead", "side": "upstream",
+                        "network": {"domain": "posix", "code": 54}, "availableBytes": 0, "endOfStream": False}}}
+
+    def test_accepts_lifecycle_phases_and_signed_network_codes(self):
+        record = self.lifecycle_record()
+        self.assertEqual(debug.parse_line(debug.PREFIX + json.dumps(record), "test.app"), record)
+        for phase in ("accepted", "targetValidated", "upstreamReady", "relayReady"):
+            with self.subTest(phase=phase):
+                current = copy.deepcopy(record)
+                current["connection"]["phase"] = phase
+                for key in ("host", "reason", "failure"):
+                    current["connection"].pop(key)
+                self.assertTrue(debug.validate_record(current, "test.app"))
+        for domain, code in (("posix", -54), ("tls", -9806), ("dns", -65537), ("other", 0)):
+            with self.subTest(domain=domain, code=code):
+                record["connection"]["failure"]["network"] = {"domain": domain, "code": code}
+                self.assertTrue(debug.validate_record(record, "test.app"))
+        record["connection"]["failure"]["network"] = {"domain": "other"}
+        self.assertTrue(debug.validate_record(record, "test.app"))
+
+    def test_lifecycle_event_source_and_reason_are_constrained(self):
+        for change in ("app", "missing_connection", "wrong_event", "missing_reason", "early_reason"):
+            with self.subTest(change=change):
+                record = self.lifecycle_record()
+                if change == "app":
+                    record.update(source="app", bundleID="test.app")
+                elif change == "missing_connection":
+                    record.pop("connection")
+                elif change == "wrong_event":
+                    record["event"] = "snapshot"
+                elif change == "missing_reason":
+                    record["connection"].pop("reason")
+                else:
+                    record["connection"]["phase"] = "accepted"
+                self.assertFalse(debug.validate_record(record, "test.app"))
+
+    def test_lifecycle_rejects_unknown_fields_and_private_strings(self):
+        for path in ((), ("counters",), ("connection",), ("connection", "failure"),
+                     ("connection", "failure", "network")):
+            with self.subTest(path=path):
+                record = self.lifecycle_record()
+                target = record
+                for key in path:
+                    target = target[key]
+                target["payload"] = "https://private.example/?token=secret"
+                self.assertFalse(debug.validate_record(record, "test.app"))
+        cases = (("host", "unknown.example"), ("host", "https://gs-loc.apple.com/clls/wloc"),
+                 ("reason", "https://private.example/"), ("reason", "arbitrary_error"),
+                 ("phase", "unknown"), ("id", "not-a-uuid"), ("sessionID", "not-a-uuid"))
+        for key, value in cases:
+            with self.subTest(key=key, value=value):
+                record = self.lifecycle_record()
+                record["connection"][key] = value
+                self.assertFalse(debug.validate_record(record, "test.app"))
+        for key in ("operation", "side"):
+            record = self.lifecycle_record()
+            record["connection"]["failure"][key] = "https://private.example/"
+            self.assertFalse(debug.validate_record(record, "test.app"))
+        record = self.lifecycle_record()
+        record["connection"]["failure"]["network"]["domain"] = "https://private.example/"
+        self.assertFalse(debug.validate_record(record, "test.app"))
+
+    def test_lifecycle_rejects_invalid_counts_timestamps_and_boolean_types(self):
+        record = self.lifecycle_record()
+        checks = [("counters", key) for key in debug.COUNTERS]
+        checks += [("connection", key) for key in ("elapsedMS", "sent", "received")]
+        for section, key in checks:
+            for value in (-1, True, 1.5, "1"):
+                with self.subTest(section=section, key=key, value=value):
+                    current = copy.deepcopy(record)
+                    current[section][key] = value
+                    self.assertFalse(debug.validate_record(current, "test.app"))
+        for value in (-1, float("nan"), float("inf"), True, "990"):
+            current = copy.deepcopy(record)
+            current["connection"]["resetAt"] = value
+            self.assertFalse(debug.validate_record(current, "test.app"))
+        for key in ("clientEOF", "upstreamEOF"):
+            current = copy.deepcopy(record)
+            current["connection"][key] = 1
+            self.assertFalse(debug.validate_record(current, "test.app"))
+        for key, value in (("availableBytes", -1), ("availableBytes", True), ("endOfStream", 0)):
+            current = copy.deepcopy(record)
+            current["connection"]["failure"][key] = value
+            self.assertFalse(debug.validate_record(current, "test.app"))
+        for value in (True, 1.5, "-9806"):
+            current = copy.deepcopy(record)
+            current["connection"]["failure"]["network"]["code"] = value
+            self.assertFalse(debug.validate_record(current, "test.app"))
+
+    def test_counters_require_all_fields_and_preserve_old_record_compatibility(self):
+        self.assertTrue(debug.validate_record(self.record, "test.app"))
+        self.record["counters"] = {key: 0 for key in debug.COUNTERS}
+        self.assertTrue(debug.validate_record(self.record, "test.app"))
+        self.record["counters"].pop("closed")
+        self.assertFalse(debug.validate_record(self.record, "test.app"))
+
+    def test_lifecycle_records_keep_4096_byte_bound(self):
+        record = self.lifecycle_record()
+        text = json.dumps(record)
+        self.assertLessEqual(len(text.encode("utf-8")), 4096)
+        self.assertEqual(debug.parse_line(debug.PREFIX + text, "test.app"), record)
+        oversized = text[:1] + " " * 4096 + text[1:]
+        self.assertIsNone(debug.parse_line(debug.PREFIX + oversized, "test.app"))
+
     def test_accepts_only_expected_app(self):
         line = "system prefix " + debug.PREFIX + json.dumps(self.record)
         self.assertEqual(debug.parse_line(line, "test.app"), self.record)

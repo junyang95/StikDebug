@@ -54,7 +54,7 @@ struct ProbeDebugSelfTest: Codable {
 
 struct ProbeDebugRecord: Codable {
     enum Source: String, Codable { case app, tunnel }
-    enum Event: String, Codable { case ready, snapshot, reset, stopped, selfTest, command }
+    enum Event: String, Codable { case ready, snapshot, reset, stopped, selfTest, command, connection }
     enum Result: String, Codable { case ok, busy, unavailable, failed, accepted }
     enum VPNState: String, Codable { case loading, disconnected, connecting, connected, disconnecting, failed }
 
@@ -69,6 +69,8 @@ struct ProbeDebugRecord: Codable {
     var experimentEnabled: Bool?
     var requestID: UUID?
     var result: Result?
+    var counters: ProbeDebugCounters?
+    var connection: ProbeDebugConnection?
 
     func encoded() throws -> Data { try JSONEncoder().encode(self) }
 }
