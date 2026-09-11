@@ -139,3 +139,27 @@ python3 -B Tools/wloc-debug.py --bundle-id app.eclipse296.lake3160 status \
 - 下一项最小验证应针对“读取 EOF → 对侧 `.finalMessage` 提交/完成 → 状态失败”的先后关系，补充确定性半关闭/客户端复位对照；保持现有错误可见，不通过忽略 POSIX 50/54 或扩大代理范围来制造成功结果。
 - 本轮新诊断的真机观察文件为 `/private/tmp/stikdebug-trace-sign.YxLP1V/location-toggle-lifecycle.jsonl` 与 `location-toggle-followup.jsonl`。本次新增验证未重跑完整 5 分钟后台实验，之前版本的后台证据保留在前文，不混写为本次版本已通过。
 - 采集完成后 USB `stop` 成功；随后独立 `status` 确认 `experimentEnabled=false`、`mode=developerLoopback`、`listening=false`、`vpnState=connected`，实验代理已撤销并恢复普通回环模式。
+
+## 自动回归迭代：半关闭截断（2026-09-11）
+
+本轮继续阶段一；没有修改域名范围、默认路由、DNS、地图/UI、证书或坐标。本机 BSD socket 测试端点只使用 `127.0.0.1`，以确定的字节内容和 FIN/RST 顺序为对照，不依赖手机反复操作地图。
+
+### 已复现的问题与修复范围
+
+- **完整 CONNECT 与 EOF 同回调：** 提取 `ConnectHeaderReader` 重放原有决策，红测试确认原实现将合法 CONNECT + 初始字节 + EOF 判断为关闭。修复后携带 `clientReadClosed` 建链，发完 200 和初始数据再半关闭上游写方向，继续读取响应。不完整 CONNECT + EOF 仍不建链；白名单校验没有放宽。四个纯决策测试覆盖全部 header 分片边界。
+- **已提交 FIN 后的反向数据截断：** BSD 对照两种方向均完整，但旧代理把 131,089 B 响应截为 32–64 KiB、98,321 B 上传截为 32 KiB。新的时序记录确认先完成向该端的 FIN，再出现该端 `state.failed / ENETDOWN(50)`；剩余读取和 EOF 尚未处理，立即 `cancel()` 导致截断。不是只靠错误标签推断，也不等于此前手机 POSIX 54 的原因已被确认。
+- **有限排空：** 仅对 ENETDOWN 且此前已向同一端提交 FIN 的收尾情况保留现有单块读取/发送链，允许读取已缓冲内容；独立 1 秒截止时间不随传输或重复错误延长。其它错误（含 RST）不被自动降级。错误仍进入首错与最终错误记录，完整转发不被误记成“干净关闭”。不宣称所有类型的 `data+error` 已被修复。
+
+### 诊断边界
+
+关闭记录新增两侧 `readEOF`、`writeCloseSubmitted`、`writeCloseCompleted` 以及首错 `observedAt`，只记录同一串行队列内的相对次序和耗时，最多 7 个标记，不增加每块日志。最终 JSON 仍限制 4 KB，Mac 严格校验字段/类型/范围并兼容旧版本。
+
+`writeCloseCompleted` 只代表关闭前处理到了无错误发送回调，不代表对端 ACK；缺失也可能是回调晚于终止。对于同一回调的 EOF 与错误，不能由标记推导网络因果。Apple SDK 的 `nw_connection_receive_completion_t` 明确区分读关闭与整个连接关闭，也允许数据与错误同时交付；本轮修复仅覆盖已复现、可测试的半关闭窗口。[Apple 接收回调语义](https://developer.apple.com/documentation/network/nw_connection_receive_completion_t)
+
+### FIN 完成回调竞态与最终本地验证
+
+- 增加可注入的 `writeClose` 回调；默认仍为原有 Network `.finalMessage`，注入只在本机测试使用。真实发出 FIN 后模拟回调 ENETDOWN，旧逻辑把 131,101 B 延迟响应截为 0 B；不实际发送 FIN、只模拟错误时，旧逻辑约 0.00022 秒便关闭，两个红测试复现了遗漏的错误出口。
+- 修复让同一窄门槛覆盖状态、读取及 FIN 完成回调；`settledWriteCloses` 只计回调结算，不表示成功。失败 FIN 不记录 `writeCloseCompleted`，首错仍保留；两条读链的最后数据已处理、各自 FIN 回调均结算后，才能早于截止时间结束。
+- 最终 **49** 项 Debug Swift、**23** 项 Release Swift、**16** 项 Mac 工具测试通过。8 项终止场景连续 **3** 轮（24/24）通过；其中无实际 FIN 的截止分别为 1004 / 1005 / 1005 ms，排空中的 stop/reset 立即结束，旧定时器不会重复关闭或污染新 epoch。此前5项真实 BSD 场景另已连续5轮通过；没有放宽原样载荷断言。
+- Debug/Release 真机目标构建成功。Release App 包未检出诊断前缀、USB 桥或 `ProbeConnectionTrace`。保留既有 FFI 静态库链接警告，未修改这些依赖。
+- 本地验证不代表已消除手机上此前所有 POSIX 54；安装后仍需通过 USB 自测验证实际构建。本节尚未部署 CA、MITM、坐标改写或远程代理。

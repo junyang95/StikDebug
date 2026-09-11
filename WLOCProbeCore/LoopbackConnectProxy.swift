@@ -4,6 +4,7 @@ import Network
 /// TLS is never terminated here. All mutable state and connection callbacks use one queue.
 final class LoopbackConnectProxy {
     typealias UpstreamFactory = (String) -> NWConnection
+    typealias WriteClose = (NWConnection, @escaping (NWError?) -> Void) -> Void
     private let queue = DispatchQueue(label: "com.jy.stikdebug.wloc-probe")
     private var listener: NWListener?
     private var clients: [UUID: ConnectRelay] = [:]
@@ -11,6 +12,7 @@ final class LoopbackConnectProxy {
     private var startCompletion: ((Result<UInt16, Error>) -> Void)?
     private var fatalFailure: ((Error) -> Void)?
     private let upstream: UpstreamFactory
+    private let writeClose: WriteClose
     private let handshakeTimeout: TimeInterval
     private let idleTimeout: TimeInterval
     #if DEBUG
@@ -23,11 +25,16 @@ final class LoopbackConnectProxy {
     init(
         handshakeTimeout: TimeInterval = WLOCProbePolicy.handshakeTimeout,
         idleTimeout: TimeInterval = WLOCProbePolicy.idleTimeout,
-        upstream: @escaping UpstreamFactory = { NWConnection(host: NWEndpoint.Host($0), port: 443, using: .tcp) }
+        upstream: @escaping UpstreamFactory = { NWConnection(host: NWEndpoint.Host($0), port: 443, using: .tcp) },
+        writeClose: @escaping WriteClose = { connection, completion in
+            connection.send(content: nil, contentContext: .finalMessage, isComplete: true,
+                            completion: .contentProcessed(completion))
+        }
     ) {
         self.handshakeTimeout = handshakeTimeout
         self.idleTimeout = idleTimeout
         self.upstream = upstream
+        self.writeClose = writeClose
     }
 
     func start(onFailure: @escaping (Error) -> Void, completion: @escaping (Result<UInt16, Error>) -> Void) {
@@ -179,7 +186,7 @@ final class LoopbackConnectProxy {
             return
         }
         let relay = ConnectRelay(
-            client: connection, queue: queue, upstreamFactory: upstream,
+            client: connection, queue: queue, upstreamFactory: upstream, writeClose: writeClose,
             handshakeTimeout: handshakeTimeout, idleTimeout: idleTimeout,
             onAccepted: { [weak self] host in
                 guard let self else { return }
@@ -215,17 +222,24 @@ private final class ConnectRelay {
     private let client: NWConnection
     private let queue: DispatchQueue
     private let upstreamFactory: LoopbackConnectProxy.UpstreamFactory
+    private let writeClose: LoopbackConnectProxy.WriteClose
     private let handshakeTimeout: TimeInterval
     private let idleTimeout: TimeInterval
     private let onAccepted: (String) -> Void
     private let onBytes: (String, Int, Bool) -> Void
     private let onClosed: (String?) -> Void
     private var upstream: NWConnection?
-    private var parser = ConnectRequestParser()
+    private var headerReader = ConnectHeaderReader()
     private var host = ""
     private var closed = false
     private var deadline: DispatchSourceTimer?
-    private var completedDirections = 0
+    // Counts resolved FIN callbacks, not successful sends. Any tolerated failure
+    // remains in halfCloseDrainError and can never become a clean close result.
+    private var settledWriteCloses = 0
+    private var clientWriteCloseSubmitted = false
+    private var upstreamWriteCloseSubmitted = false
+    private var halfCloseDrainDeadline: DispatchSourceTimer?
+    private var halfCloseDrainError: String?
     #if DEBUG
     var debugTrace: ProbeConnectionTrace?
     var debugCloseReason: ProbeDebugConnection.Reason?
@@ -233,6 +247,7 @@ private final class ConnectRelay {
 
     init(client: NWConnection, queue: DispatchQueue,
          upstreamFactory: @escaping LoopbackConnectProxy.UpstreamFactory,
+         writeClose: @escaping LoopbackConnectProxy.WriteClose,
          handshakeTimeout: TimeInterval, idleTimeout: TimeInterval,
          onAccepted: @escaping (String) -> Void,
          onBytes: @escaping (String, Int, Bool) -> Void,
@@ -240,6 +255,7 @@ private final class ConnectRelay {
         self.client = client
         self.queue = queue
         self.upstreamFactory = upstreamFactory
+        self.writeClose = writeClose
         self.handshakeTimeout = handshakeTimeout
         self.idleTimeout = idleTimeout
         self.onAccepted = onAccepted
@@ -257,7 +273,7 @@ private final class ConnectRelay {
                 #if DEBUG
                 self.debugTrace?.failure(.clientState, side: .client, error: error)
                 #endif
-                self.close(error: "客户端连接失败")
+                self.handleStateFailure(error, clientSide: true, message: "客户端连接失败")
             case .cancelled: self.close()
             default: break
             }
@@ -278,15 +294,19 @@ private final class ConnectRelay {
             #if DEBUG
             if eof {
                 self.debugTrace?.readEOF(upload: true)
-                self.debugCloseReason = .clientEOF
             }
             #endif
             do {
-                if let data, let request = try self.parser.append(data) {
-                    if eof { self.close(); return }
-                    self.connect(request)
-                } else if eof { self.close() }
-                else { self.readHeader() }
+                switch try self.headerReader.receive(data, eof: eof) {
+                case .connect(let request, let clientReadClosed):
+                    self.connect(request, clientReadClosed: clientReadClosed)
+                case .endBeforeRequest:
+                    #if DEBUG
+                    self.debugCloseReason = .clientEOF
+                    #endif
+                    self.close()
+                case .needMore: self.readHeader()
+                }
             } catch let error as ConnectRequestError {
                 #if DEBUG
                 self.debugCloseReason = .rejected
@@ -298,7 +318,7 @@ private final class ConnectRelay {
         }
     }
 
-    private func connect(_ request: ConnectRequest) {
+    private func connect(_ request: ConnectRequest, clientReadClosed: Bool) {
         host = request.host
         #if DEBUG
         debugTrace?.targetValidated(host)
@@ -318,7 +338,7 @@ private final class ConnectRelay {
                         #if DEBUG
                         self?.debugTrace?.failure(.upstreamState, side: .upstream, error: error)
                         #endif
-                        self?.close(error: "上游连接中断")
+                        self?.handleStateFailure(error, clientSide: false, message: "上游连接中断")
                     }
                 }
                 self.client.send(content: Data("HTTP/1.1 200 Connection Established\r\n\r\n".utf8), completion: .contentProcessed { [weak self] error in
@@ -335,7 +355,8 @@ private final class ConnectRelay {
                     self.touch()
                     self.relay(from: remote, to: self.client, upload: false)
                     if request.initialPayload.isEmpty {
-                        self.relay(from: self.client, to: remote, upload: true)
+                        if clientReadClosed { self.finishDirection(remote) }
+                        else { self.relay(from: self.client, to: remote, upload: true) }
                     } else {
                         remote.send(content: request.initialPayload, completion: .contentProcessed { [weak self] error in
                             guard let self, !self.closed else { return }
@@ -349,7 +370,8 @@ private final class ConnectRelay {
                             self.debugTrace?.forwarded(request.initialPayload.count, upload: true)
                             #endif
                             self.onBytes(self.host, request.initialPayload.count, true)
-                            self.relay(from: self.client, to: remote, upload: true)
+                            if clientReadClosed { self.finishDirection(remote) }
+                            else { self.relay(from: self.client, to: remote, upload: true) }
                         })
                     }
                 })
@@ -375,13 +397,17 @@ private final class ConnectRelay {
         guard !closed else { return }
         source.receive(minimumIncompleteLength: 1, maximumLength: WLOCProbePolicy.chunkBytes) { [weak self] data, _, eof, error in
             guard let self, !self.closed else { return }
-            guard error == nil else {
+            if let error {
                 #if DEBUG
                 self.debugTrace?.failure(.relayRead, side: upload ? .client : .upstream, error: error,
                                          availableBytes: data?.count ?? 0, endOfStream: eof)
                 #endif
-                self.close(error: "透传连接中断"); return
+                guard self.canDrainHalfClosedRead(error, clientSide: upload) else {
+                    self.close(error: "透传连接中断"); return
+                }
+                self.beginHalfCloseDrain(message: "透传连接中断")
             }
+            let readEnded = eof || error != nil
             #if DEBUG
             if eof { self.debugTrace?.readEOF(upload: upload) }
             #endif
@@ -400,27 +426,72 @@ private final class ConnectRelay {
                     #endif
                     self.onBytes(self.host, data.count, upload)
                     self.touch()
-                    if eof { self.finishDirection(destination) }
+                    if readEnded { self.finishDirection(destination) }
                     else { self.relay(from: source, to: destination, upload: upload) }
                 })
-            } else if eof { self.finishDirection(destination) }
+            } else if readEnded { self.finishDirection(destination) }
             else { self.relay(from: source, to: destination, upload: upload) }
         }
     }
 
+    private func canDrainHalfClosedRead(_ error: NWError, clientSide: Bool) -> Bool {
+        // Network.framework may report ENETDOWN when TCP becomes fully closed,
+        // before delivering all already-buffered reads. Only defer this observed
+        // state after we submitted FIN; RST and unrelated failures remain failures.
+        HalfCloseDrainPolicy.allows(error, writeCloseSubmitted:
+                                    clientSide ? clientWriteCloseSubmitted : upstreamWriteCloseSubmitted)
+    }
+
+    private func handleStateFailure(_ error: NWError, clientSide: Bool, message: String) {
+        guard !closed else { return }
+        guard canDrainHalfClosedRead(error, clientSide: clientSide) else {
+            close(error: message); return
+        }
+        beginHalfCloseDrain(message: message)
+        // The one outstanding read/write chain drains with existing backpressure.
+        // Do not cancel it merely because this state callback arrived first.
+    }
+
+    private func beginHalfCloseDrain(message: String) {
+        guard halfCloseDrainDeadline == nil else { return }
+        halfCloseDrainError = message
+        let timer = DispatchSource.makeTimerSource(queue: queue)
+        timer.schedule(deadline: .now() + HalfCloseDrainPolicy.maximumDuration)
+        timer.setEventHandler { [weak self] in self?.close(error: message) }
+        halfCloseDrainDeadline = timer
+        timer.resume()
+    }
+
     private func finishDirection(_ destination: NWConnection) {
-        destination.send(content: nil, contentContext: .finalMessage, isComplete: true, completion: .contentProcessed { [weak self] error in
+        if destination === client {
+            guard !clientWriteCloseSubmitted else { return }
+            clientWriteCloseSubmitted = true
+        } else {
+            guard !upstreamWriteCloseSubmitted else { return }
+            upstreamWriteCloseSubmitted = true
+        }
+        #if DEBUG
+        debugTrace?.writeCloseSubmitted(to: destination === client ? .client : .upstream)
+        #endif
+        writeClose(destination) { [weak self] error in
             guard let self, !self.closed else { return }
             if let error {
                 #if DEBUG
                 self.debugTrace?.failure(.halfClose, side: destination === self.client ? .client : .upstream, error: error)
                 self.debugCloseReason = .transportError
                 #endif
-                self.close(); return
+                guard self.canDrainHalfClosedRead(error, clientSide: destination === self.client) else {
+                    self.close(error: "透传发送失败"); return
+                }
+                self.beginHalfCloseDrain(message: "透传发送失败")
+            } else {
+                #if DEBUG
+                self.debugTrace?.writeCloseCompleted(to: destination === self.client ? .client : .upstream)
+                #endif
             }
-            self.completedDirections += 1
-            if self.completedDirections == 2 { self.close() }
-        })
+            self.settledWriteCloses += 1
+            if self.settledWriteCloses == 2 { self.close() }
+        }
     }
 
     private func touch() { armTimeout(idleTimeout, message: "透传连接空闲超时") }
@@ -443,16 +514,19 @@ private final class ConnectRelay {
     func close(error: String? = nil) {
         guard !closed else { return }
         closed = true
+        let terminalError = error ?? halfCloseDrainError
         #if DEBUG
-        debugTrace?.finish(debugCloseReason ?? (error != nil ? .transportError :
-                                                (completedDirections == 2 ? .completeEOF : .cancelled)))
+        debugTrace?.finish(debugCloseReason ?? (terminalError != nil ? .transportError :
+                                                (settledWriteCloses == 2 ? .completeEOF : .cancelled)))
         #endif
         deadline?.cancel()
         deadline = nil
+        halfCloseDrainDeadline?.cancel()
+        halfCloseDrainDeadline = nil
         client.stateUpdateHandler = nil
         upstream?.stateUpdateHandler = nil
         client.cancel()
         upstream?.cancel()
-        onClosed(error)
+        onClosed(terminalError)
     }
 }

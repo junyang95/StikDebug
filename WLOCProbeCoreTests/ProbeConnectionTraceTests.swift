@@ -5,6 +5,68 @@ import XCTest
 @testable import WLOCProbeCore
 
 final class ProbeConnectionTraceTests: XCTestCase {
+    func testTerminationOrdersEOFSubmissionCompletionAndFirstFailureWithoutExtraEvents() throws {
+        var records: [ProbeDebugConnection] = []
+        let trace = makeTrace { records.append($0) }
+        trace.begin()
+        trace.readEOF(upload: true)
+        trace.readEOF(upload: true)
+        trace.writeCloseCompleted(to: .upstream) // A callback without submission is invalid.
+        trace.writeCloseSubmitted(to: .upstream)
+        trace.writeCloseSubmitted(to: .upstream)
+        trace.writeCloseCompleted(to: .upstream)
+        trace.writeCloseCompleted(to: .upstream)
+        trace.failure(.clientState, side: .client, error: .posix(.ECONNRESET))
+        trace.failure(.upstreamState, side: .upstream, error: .posix(.ENETDOWN))
+        XCTAssertEqual(records.count, 1)
+        trace.finish(.transportError)
+        trace.readEOF(upload: false)
+        trace.writeCloseSubmitted(to: .client)
+        trace.writeCloseCompleted(to: .client)
+
+        let closed = try XCTUnwrap(records.last)
+        XCTAssertEqual(records.count, 2)
+        XCTAssertEqual(closed.termination?.client.readEOF?.order, 1)
+        XCTAssertEqual(closed.termination?.upstream.writeCloseSubmitted?.order, 2)
+        XCTAssertEqual(closed.termination?.upstream.writeCloseCompleted?.order, 3)
+        XCTAssertEqual(closed.failure?.observedAt?.order, 4)
+        XCTAssertNil(closed.termination?.upstream.readEOF)
+        XCTAssertNil(closed.termination?.client.writeCloseSubmitted)
+        XCTAssertNil(closed.termination?.client.writeCloseCompleted)
+    }
+
+    func testFullTerminationRecordRoundTripRemainsBelowLogBound() throws {
+        var now: TimeInterval = 100
+        var records: [ProbeDebugConnection] = []
+        let trace = makeTrace(clock: { now }) { records.append($0) }
+        trace.begin()
+        trace.targetValidated("gs-loc.apple.com")
+        trace.upstreamReady()
+        trace.relayReady()
+        now += 0.125
+        trace.readEOF(upload: false)
+        trace.writeCloseSubmitted(to: .client)
+        trace.writeCloseCompleted(to: .client)
+        now += 0.125
+        trace.readEOF(upload: true)
+        trace.writeCloseSubmitted(to: .upstream)
+        trace.writeCloseCompleted(to: .upstream)
+        trace.failure(.upstreamState, side: .upstream, error: .posix(.ENETDOWN))
+        trace.finish(.transportError)
+        let closed = try XCTUnwrap(records.last)
+        XCTAssertEqual(closed.termination?.upstream.readEOF?.elapsedMS, 125)
+        XCTAssertEqual(closed.termination?.client.readEOF?.elapsedMS, 250)
+        XCTAssertEqual(closed.failure?.observedAt?.order, 7)
+        let record = ProbeDebugRecord(source: .tunnel, event: .connection,
+                                     counters: ProbeDebugCounters(), connection: closed)
+        let data = try JSONEncoder().encode(record)
+        XCTAssertLessThan(data.count, 4096)
+        let decoded = try JSONDecoder().decode(ProbeDebugRecord.self, from: data)
+        XCTAssertEqual(decoded.connection?.termination?.client.writeCloseCompleted?.order, 3)
+        XCTAssertEqual(decoded.connection?.termination?.upstream.writeCloseCompleted?.order, 6)
+        XCTAssertEqual(decoded.connection?.failure?.observedAt?.order, 7)
+    }
+
     func testLifecycleEmitsEachPhaseAndCloseOnlyOnce() {
         var records: [ProbeDebugConnection] = []
         let trace = makeTrace { records.append($0) }

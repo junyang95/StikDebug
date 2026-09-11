@@ -46,8 +46,27 @@ def identifier(value):
         return False
 
 
+def validate_mark(mark):
+    return (fields(mark, {"order", "elapsedMS"}) and integer(mark["order"])
+            and 1 <= mark["order"] <= 7 and integer(mark["elapsedMS"]))
+
+
+def validate_termination(termination):
+    if not fields(termination, {"client", "upstream"}):
+        return False
+    for direction in termination.values():
+        if (not fields(direction, (), {"readEOF", "writeCloseSubmitted", "writeCloseCompleted"})
+                or not all(validate_mark(mark) for mark in direction.values())):
+            return False
+        if "writeCloseCompleted" in direction:
+            if ("writeCloseSubmitted" not in direction
+                    or direction["writeCloseCompleted"]["order"] <= direction["writeCloseSubmitted"]["order"]):
+                return False
+    return True
+
+
 def validate_failure(failure):
-    if not fields(failure, {"operation", "side"}, {"network", "availableBytes", "endOfStream"}):
+    if not fields(failure, {"operation", "side"}, {"network", "availableBytes", "endOfStream", "observedAt"}):
         return False
     if (failure["operation"] not in ("clientState", "headerRead", "upstreamConnect", "upstreamWaiting",
                                     "upstreamState", "connectReply", "initialUpload", "relayRead",
@@ -64,12 +83,12 @@ def validate_failure(failure):
         return False
     if "endOfStream" in failure and type(failure["endOfStream"]) is not bool:
         return False
-    return True
+    return "observedAt" not in failure or validate_mark(failure["observedAt"])
 
 
 def validate_connection(connection):
     if not fields(connection, {"id", "sessionID", "resetAt", "phase", "elapsedMS", "sent", "received",
-                               "clientEOF", "upstreamEOF"}, {"host", "reason", "failure"}):
+                               "clientEOF", "upstreamEOF"}, {"host", "reason", "failure", "termination"}):
         return False
     if (not identifier(connection["id"]) or not identifier(connection["sessionID"])
             or not number(connection["resetAt"])
@@ -85,6 +104,17 @@ def validate_connection(connection):
             "completeEOF", "clientEOF", "cancelled", "rejected", "transportError", "handshakeTimeout",
             "idleTimeout", "reset", "stop", "connectionLimit"):
         return False
+    if "termination" in connection:
+        if connection["phase"] != "closed" or not validate_termination(connection["termination"]):
+            return False
+        marks = [mark for direction in connection["termination"].values() for mark in direction.values()]
+        failure = connection.get("failure")
+        if isinstance(failure, dict) and "observedAt" in failure:
+            marks.append(failure["observedAt"])
+        if not all(validate_mark(mark) for mark in marks):
+            return False
+        if len({mark["order"] for mark in marks}) != len(marks):
+            return False
     return "failure" not in connection or validate_failure(connection["failure"])
 
 

@@ -15,6 +15,20 @@ struct ProbeDebugConnection: Codable {
             }
         }
     }
+    /// Queue-local ordering, not packet timestamps or delivery acknowledgements.
+    struct Mark: Codable {
+        let order: Int
+        let elapsedMS: Int
+    }
+    struct Termination: Codable {
+        struct Direction: Codable {
+            var readEOF: Mark?
+            var writeCloseSubmitted: Mark?
+            var writeCloseCompleted: Mark?
+        }
+        var client = Direction()
+        var upstream = Direction()
+    }
     struct Failure: Codable {
         enum Operation: String, Codable {
             case clientState, headerRead, upstreamConnect, upstreamWaiting, upstreamState
@@ -39,6 +53,7 @@ struct ProbeDebugConnection: Codable {
         let network: NetworkCode?
         let availableBytes: Int?
         let endOfStream: Bool?
+        var observedAt: Mark?
     }
     let id: UUID
     let sessionID: UUID
@@ -52,6 +67,7 @@ struct ProbeDebugConnection: Codable {
     var host: String?
     var reason: Reason?
     var failure: Failure?
+    var termination: Termination?
 }
 
 struct ProbeDebugCounters: Codable {
@@ -87,6 +103,8 @@ final class ProbeConnectionTrace {
     private let emit: (ProbeDebugConnection) -> Void
     private var started = false
     private var closed = false
+    private var termination = ProbeDebugConnection.Termination()
+    private var order = 0
 
     init(id: UUID, sessionID: UUID, resetAt: TimeInterval,
          clock: @escaping () -> TimeInterval = { ProcessInfo.processInfo.systemUptime },
@@ -126,7 +144,41 @@ final class ProbeConnectionTrace {
 
     func readEOF(upload: Bool) {
         guard !closed else { return }
-        if upload { value.clientEOF = true } else { value.upstreamEOF = true }
+        if upload {
+            guard !value.clientEOF else { return }
+            value.clientEOF = true
+            termination.client.readEOF = mark()
+        } else {
+            guard !value.upstreamEOF else { return }
+            value.upstreamEOF = true
+            termination.upstream.readEOF = mark()
+        }
+    }
+
+    func writeCloseSubmitted(to side: ProbeDebugConnection.Failure.Side) {
+        guard !closed else { return }
+        switch side {
+        case .client:
+            guard termination.client.writeCloseSubmitted == nil else { return }
+            termination.client.writeCloseSubmitted = mark()
+        case .upstream:
+            guard termination.upstream.writeCloseSubmitted == nil else { return }
+            termination.upstream.writeCloseSubmitted = mark()
+        }
+    }
+
+    func writeCloseCompleted(to side: ProbeDebugConnection.Failure.Side) {
+        guard !closed else { return }
+        switch side {
+        case .client:
+            guard termination.client.writeCloseSubmitted != nil,
+                  termination.client.writeCloseCompleted == nil else { return }
+            termination.client.writeCloseCompleted = mark()
+        case .upstream:
+            guard termination.upstream.writeCloseSubmitted != nil,
+                  termination.upstream.writeCloseCompleted == nil else { return }
+            termination.upstream.writeCloseCompleted = mark()
+        }
     }
 
     func failure(_ operation: ProbeDebugConnection.Failure.Operation,
@@ -135,21 +187,32 @@ final class ProbeConnectionTrace {
         guard !closed, value.failure == nil else { return }
         // Preserve the first failure if a later timeout/cancel finishes the relay.
         value.failure = .init(operation: operation, side: side, network: error.map { .init($0) },
-                              availableBytes: availableBytes.map { max(0, $0) }, endOfStream: endOfStream)
+                              availableBytes: availableBytes.map { max(0, $0) }, endOfStream: endOfStream,
+                              observedAt: mark())
     }
 
     func finish(_ reason: ProbeDebugConnection.Reason) {
         guard started, !closed else { return }
         closed = true
         value.reason = reason
+        value.termination = termination
         publish(.closed)
+    }
+
+    private func elapsedMS() -> Int {
+        let milliseconds = (clock() - startedAt) * 1000
+        // Monotonic production clock; clamp injected/pathological values defensively.
+        return milliseconds.isFinite ? Int(max(0, min(milliseconds, Double(Int.max / 2)))) : 0
+    }
+
+    private func mark() -> ProbeDebugConnection.Mark {
+        order += 1
+        return .init(order: order, elapsedMS: elapsedMS())
     }
 
     private func publish(_ phase: ProbeDebugConnection.Phase) {
         value.phase = phase
-        let milliseconds = (clock() - startedAt) * 1000
-        // Monotonic production clock; clamp injected/pathological values defensively.
-        value.elapsedMS = milliseconds.isFinite ? Int(max(0, min(milliseconds, Double(Int.max / 2)))) : 0
+        value.elapsedMS = elapsedMS()
         emit(value)
     }
 }

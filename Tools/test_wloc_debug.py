@@ -46,6 +46,47 @@ class DebugReaderTests(unittest.TestCase):
         record["connection"]["failure"]["network"] = {"domain": "other"}
         self.assertTrue(debug.validate_record(record, "test.app"))
 
+    def test_termination_order_records_and_legacy_records_are_accepted(self):
+        record = self.lifecycle_record()
+        self.assertTrue(debug.validate_record(record, "test.app"))
+        record["connection"]["termination"] = {
+            "client": {"readEOF": {"order": 1, "elapsedMS": 20}},
+            "upstream": {"writeCloseSubmitted": {"order": 2, "elapsedMS": 20},
+                         "writeCloseCompleted": {"order": 3, "elapsedMS": 21}}}
+        record["connection"]["failure"]["observedAt"] = {"order": 4, "elapsedMS": 22}
+        self.assertEqual(debug.parse_line(debug.PREFIX + json.dumps(record), "test.app"), record)
+
+    def test_termination_rejects_unknown_fields_bad_types_and_impossible_orders(self):
+        base = self.lifecycle_record()
+        base["connection"]["termination"] = {
+            "client": {"readEOF": {"order": 1, "elapsedMS": 20}},
+            "upstream": {"writeCloseSubmitted": {"order": 2, "elapsedMS": 20},
+                         "writeCloseCompleted": {"order": 3, "elapsedMS": 21}}}
+        for value in (0, 8, True, "1", -1):
+            record = copy.deepcopy(base)
+            record["connection"]["termination"]["client"]["readEOF"]["order"] = value
+            self.assertFalse(debug.validate_record(record, "test.app"))
+        for value in (True, -1, "20", 0.5):
+            record = copy.deepcopy(base)
+            record["connection"]["termination"]["client"]["readEOF"]["elapsedMS"] = value
+            self.assertFalse(debug.validate_record(record, "test.app"))
+        for path in ((), ("client",), ("client", "readEOF")):
+            record = copy.deepcopy(base)
+            target = record["connection"]["termination"]
+            for key in path:
+                target = target[key]
+            target["payload"] = "private"
+            self.assertFalse(debug.validate_record(record, "test.app"))
+        record = copy.deepcopy(base)
+        record["connection"]["failure"]["observedAt"] = {"order": 1, "elapsedMS": 22}
+        self.assertFalse(debug.validate_record(record, "test.app"))
+        record = copy.deepcopy(base)
+        record["connection"]["termination"]["upstream"].pop("writeCloseSubmitted")
+        self.assertFalse(debug.validate_record(record, "test.app"))
+        record = copy.deepcopy(base)
+        record["connection"]["termination"]["upstream"]["writeCloseCompleted"]["order"] = 1
+        self.assertFalse(debug.validate_record(record, "test.app"))
+
     def test_lifecycle_event_source_and_reason_are_constrained(self):
         for change in ("app", "missing_connection", "wrong_event", "missing_reason", "early_reason"):
             with self.subTest(change=change):
