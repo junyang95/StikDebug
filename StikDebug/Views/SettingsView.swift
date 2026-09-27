@@ -242,32 +242,22 @@ struct SettingsView: View {
     }
 
     private func handleAudioKeepAliveChange(_ enabled: Bool) {
-        if enabled {
-            BackgroundAudioManager.shared.start()
-            BackgroundLocationManager.shared.stop()
-            return
-        }
-
-        if !keepAliveLocation {
+        if !enabled, !keepAliveLocation {
             keepAliveLocation = true
+            BackgroundLocationManager.shared.requestAuthorizationIfNeeded()
         }
-        BackgroundAudioManager.shared.stop()
-        BackgroundLocationManager.shared.start()
+        BackgroundAudioManager.shared.configurationDidChange()
+        BackgroundLocationManager.shared.configurationDidChange()
     }
 
     private func handleLocationKeepAliveChange(_ enabled: Bool) {
         if enabled {
-            if !keepAliveAudio {
-                BackgroundLocationManager.shared.start()
-            }
-            return
-        }
-
-        BackgroundLocationManager.shared.stop()
-        if !keepAliveAudio {
+            BackgroundLocationManager.shared.requestAuthorizationIfNeeded()
+        } else if !keepAliveAudio {
             keepAliveAudio = true
-            BackgroundAudioManager.shared.start()
         }
+        BackgroundAudioManager.shared.configurationDidChange()
+        BackgroundLocationManager.shared.configurationDidChange()
     }
 
     // MARK: - Business Logic

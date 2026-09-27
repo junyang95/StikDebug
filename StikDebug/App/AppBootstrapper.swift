@@ -11,7 +11,7 @@ enum AppBootstrapper {
     static func configure() {
         IdeviceLogFileManager.shared.prepareForLogging()
         registerDefaultSettings()
-        startConfiguredKeepAliveServices()
+        ensureKeepAliveSelection()
         applyDocumentPickerCopyWorkaround()
     }
 
@@ -28,15 +28,10 @@ enum AppBootstrapper {
         ])
     }
 
-    private static func startConfiguredKeepAliveServices() {
+    private static func ensureKeepAliveSelection() {
         let defaults = UserDefaults.standard
-        if defaults.bool(forKey: "keepAliveAudio") {
-            BackgroundAudioManager.shared.start()
-        } else if defaults.bool(forKey: "keepAliveLocation") {
-            BackgroundLocationManager.shared.start()
-        } else {
+        if !defaults.bool(forKey: "keepAliveAudio"), !defaults.bool(forKey: "keepAliveLocation") {
             defaults.set(true, forKey: "keepAliveAudio")
-            BackgroundAudioManager.shared.start()
         }
     }
 
