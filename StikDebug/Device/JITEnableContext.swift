@@ -82,11 +82,7 @@ final class JITEnableContext {
     var handshakeHandle: OpaquePointer? { handshake }
 
     private init() {
-        let logURL = FileManager.default
-            .urls(for: .documentDirectory, in: .userDomainMask)[0]
-            .appendingPathComponent("idevice_log.txt")
-
-        var path = Array(logURL.path.utf8CString)
+        var path = Array(IdeviceLogFileManager.logURL.path.utf8CString)
         path.withUnsafeMutableBufferPointer { buffer in
             _ = idevice_init_logger(Info, Debug, buffer.baseAddress)
         }
