@@ -16,6 +16,9 @@ enum SynchronousDDIDownloader {
             try download(item, session: session)
             progress(Double(index + 1) / total, "\(item.name) ready")
         }
+        if DDIMountMethod.current == .personalized {
+            try paths.removeCryptexOnlyFiles()
+        }
     }
 
     private static func download(_ item: DDIDownloadItem, session: URLSession) throws {

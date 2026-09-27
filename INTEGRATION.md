@@ -209,7 +209,7 @@ let paths = DDIPaths.default(
 )
 ```
 
-Use the same `DDIPaths` for preparation, JIT enablement, and cache reset. The cache contains the image, trust cache, build manifest, cryptex info, and root hash. Do not validate cached DDI versions or contents yourself; StikJIT reuses readable, nonempty files and lets the device's cryptex service decide whether they work.
+Use the same `DDIPaths` for preparation, JIT enablement, and cache reset. Before iOS 26.4, StikJIT downloads and mounts the three-file personalized DDI. On iOS 26.4 and newer, it downloads and installs the five-file cryptex DDI, which additionally includes cryptex info and a root hash. Do not validate cached DDI versions or contents yourself; StikJIT selects and replaces the cache format required by the running OS.
 
 A successful DDI mount persists until the device reboots, so it normally needs to be mounted only once per boot.
 
@@ -276,7 +276,7 @@ Provide a **Reset Developer Disk Image** action that calls:
 try StikJIT.resetCachedDDI(at: paths)
 ```
 
-This removes only the five cached DDI files. The next preparation downloads them again if mounting is necessary.
+This removes only the five possible cached DDI files. The next preparation downloads the three-file personalized DDI or five-file cryptex DDI required by the running OS if mounting is necessary.
 
 ## Configure the JIT methods
 

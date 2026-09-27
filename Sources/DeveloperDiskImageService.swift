@@ -33,7 +33,8 @@ public struct DDIPaths: Sendable {
 
     var allFilesUsable: Bool {
         let fileManager = FileManager.default
-        return allPaths.allSatisfy { path in
+        let requiredPaths = DDIMountMethod.current == .cryptex ? allPaths : personalizedPaths
+        let requiredFilesUsable = requiredPaths.allSatisfy { path in
             guard fileManager.isReadableFile(atPath: path),
                   let attributes = try? fileManager.attributesOfItem(atPath: path),
                   attributes[.type] as? FileAttributeType == .typeRegular,
@@ -42,10 +43,22 @@ public struct DDIPaths: Sendable {
             }
             return size.int64Value > 0
         }
+        if DDIMountMethod.current == .personalized {
+            return requiredFilesUsable && cryptexOnlyPaths.allSatisfy { !fileManager.fileExists(atPath: $0) }
+        }
+        return requiredFilesUsable
     }
 
     var allPaths: [String] {
-        [imagePath, trustcachePath, manifestPath, cryptexInfoPath, rootHashPath]
+        personalizedPaths + cryptexOnlyPaths
+    }
+
+    var personalizedPaths: [String] {
+        [imagePath, trustcachePath, manifestPath]
+    }
+
+    var cryptexOnlyPaths: [String] {
+        [cryptexInfoPath, rootHashPath]
     }
 
     func removeCachedFiles() throws {
@@ -53,6 +66,25 @@ public struct DDIPaths: Sendable {
         for path in Set(allPaths) where fileManager.fileExists(atPath: path) {
             try fileManager.removeItem(atPath: path)
         }
+    }
+
+    func removeCryptexOnlyFiles() throws {
+        let fileManager = FileManager.default
+        for path in Set(cryptexOnlyPaths) where fileManager.fileExists(atPath: path) {
+            try fileManager.removeItem(atPath: path)
+        }
+    }
+}
+
+enum DDIMountMethod: String {
+    case cryptex
+    case personalized
+
+    static var current: DDIMountMethod {
+        let version = ProcessInfo.processInfo.operatingSystemVersion
+        return version.majorVersion > 26 || (version.majorVersion == 26 && version.minorVersion >= 4)
+            ? .cryptex
+            : .personalized
     }
 }
 
@@ -63,16 +95,19 @@ struct DDIDownloadItem {
 }
 
 enum DDIDownloadCatalog {
-    private static let baseURL = URL(string: "https://github.com/doronz88/DeveloperDiskImage/raw/refs/heads/main/PersonalizedImages/Xcode_iOS_DDI_Cryptex")!
-
     static func items(for paths: DDIPaths) -> [DDIDownloadItem] {
-        [
+        let directory = DDIMountMethod.current == .cryptex ? "Xcode_iOS_DDI_Cryptex" : "Xcode_iOS_DDI_Personalized"
+        let baseURL = URL(string: "https://github.com/doronz88/DeveloperDiskImage/raw/refs/heads/main/PersonalizedImages/\(directory)")!
+        var items = [
             DDIDownloadItem(name: "BuildManifest.plist", destinationPath: paths.manifestPath, url: baseURL.appendingPathComponent("BuildManifest.plist")),
             DDIDownloadItem(name: "Image.dmg", destinationPath: paths.imagePath, url: baseURL.appendingPathComponent("Image.dmg")),
             DDIDownloadItem(name: "Image.dmg.trustcache", destinationPath: paths.trustcachePath, url: baseURL.appendingPathComponent("Image.dmg.trustcache")),
-            DDIDownloadItem(name: "Image.dmg.cryptex_info", destinationPath: paths.cryptexInfoPath, url: baseURL.appendingPathComponent("Image.dmg.cryptex_info")),
-            DDIDownloadItem(name: "Image.dmg.root_hash", destinationPath: paths.rootHashPath, url: baseURL.appendingPathComponent("Image.dmg.root_hash")),
         ]
+        if DDIMountMethod.current == .cryptex {
+            items.append(DDIDownloadItem(name: "Image.dmg.cryptex_info", destinationPath: paths.cryptexInfoPath, url: baseURL.appendingPathComponent("Image.dmg.cryptex_info")))
+            items.append(DDIDownloadItem(name: "Image.dmg.root_hash", destinationPath: paths.rootHashPath, url: baseURL.appendingPathComponent("Image.dmg.root_hash")))
+        }
+        return items
     }
 }
 
@@ -102,6 +137,9 @@ public actor DeveloperDiskImageService {
             progress(Double(index) / total, "Downloading \(item.name)...")
             try await downloadFile(from: item.url, to: URL(fileURLWithPath: item.destinationPath))
             progress(Double(index + 1) / total, "\(item.name) ready")
+        }
+        if DDIMountMethod.current == .personalized {
+            try paths.removeCryptexOnlyFiles()
         }
     }
 
