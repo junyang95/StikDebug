@@ -12,8 +12,6 @@ struct HomeView: View {
     @AppStorage("bundleID") private var bundleID: String = ""
     @AppStorage(UserDefaults.Keys.confirmExternalJITRequests) private var confirmExternalJITRequests = true
 
-    @ObservedObject private var mounting = MountingProgress.shared
-
     @State private var hasAppeared = false
     @State private var pendingJITEnableConfiguration: JITEnableConfiguration?
     @State private var isShowingPairingFilePicker = false
@@ -21,8 +19,6 @@ struct HomeView: View {
     @State private var pendingExternalURLAction: HomeExternalAction?
     @State private var pendingLiveContainerApp: LiveContainerApp?
     @State private var scriptRunModel: RunJSViewModel?
-
-    private let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
 
     private struct DebugFeedback: Identifiable {
         let id = UUID()
@@ -53,9 +49,6 @@ struct HomeView: View {
         }
         .onAppear(perform: handleAppear)
         .onReceive(NotificationCenter.default.publisher(for: .intentJSScriptReady), perform: handleScriptReadyNotification)
-        .onReceive(timer) { _ in
-            refreshMountStatusIfNeeded()
-        }
         .onOpenURL { url in
             handleExternalURL(url)
         }
@@ -130,7 +123,6 @@ struct HomeView: View {
 
     private func handleAppear() {
         startTunnelInBackground()
-        MountingProgress.shared.checkforMounted()
         hasAppeared = true
 
         if let config = pendingJITEnableConfiguration {
@@ -151,13 +143,6 @@ struct HomeView: View {
         }
 
         scriptRunModel = model
-    }
-
-    private func refreshMountStatusIfNeeded() {
-        guard mounting.mountingThread == nil, !mounting.coolisMounted else {
-            return
-        }
-        MountingProgress.shared.checkforMounted()
     }
 
     private func importPairingFile(_ result: Result<URL, Error>) {
