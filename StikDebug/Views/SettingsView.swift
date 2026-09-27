@@ -95,8 +95,7 @@ struct SettingsView: View {
                         }
                     }
                     .onChange(of: keepAliveAudio) { _, enabled in
-                        if enabled { BackgroundAudioManager.shared.start() }
-                        else { BackgroundAudioManager.shared.stop() }
+                        handleAudioKeepAliveChange(enabled)
                     }
 
                     Toggle(isOn: $keepAliveLocation) {
@@ -107,7 +106,7 @@ struct SettingsView: View {
                         }
                     }
                     .onChange(of: keepAliveLocation) { _, enabled in
-                        if !enabled { BackgroundLocationManager.shared.stop() }
+                        handleLocationKeepAliveChange(enabled)
                     }
 
                 } header: {
@@ -240,6 +239,35 @@ struct SettingsView: View {
             txmLabel = processInfo.hasTXM ? "TXM" : "Non TXM"
         }
         return "Version \(appVersion) • iOS \(UIDevice.current.systemVersion) • \(txmLabel)"
+    }
+
+    private func handleAudioKeepAliveChange(_ enabled: Bool) {
+        if enabled {
+            BackgroundAudioManager.shared.start()
+            BackgroundLocationManager.shared.stop()
+            return
+        }
+
+        if !keepAliveLocation {
+            keepAliveLocation = true
+        }
+        BackgroundAudioManager.shared.stop()
+        BackgroundLocationManager.shared.start()
+    }
+
+    private func handleLocationKeepAliveChange(_ enabled: Bool) {
+        if enabled {
+            if !keepAliveAudio {
+                BackgroundLocationManager.shared.start()
+            }
+            return
+        }
+
+        BackgroundLocationManager.shared.stop()
+        if !keepAliveAudio {
+            keepAliveAudio = true
+            BackgroundAudioManager.shared.start()
+        }
     }
 
     // MARK: - Business Logic

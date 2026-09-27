@@ -29,10 +29,15 @@ enum AppBootstrapper {
     }
 
     private static func startConfiguredKeepAliveServices() {
-        guard UserDefaults.standard.bool(forKey: "keepAliveAudio") else {
-            return
+        let defaults = UserDefaults.standard
+        if defaults.bool(forKey: "keepAliveAudio") {
+            BackgroundAudioManager.shared.start()
+        } else if defaults.bool(forKey: "keepAliveLocation") {
+            BackgroundLocationManager.shared.start()
+        } else {
+            defaults.set(true, forKey: "keepAliveAudio")
+            BackgroundAudioManager.shared.start()
         }
-        BackgroundAudioManager.shared.start()
     }
 
     private static func applyDocumentPickerCopyWorkaround() {

@@ -10,6 +10,7 @@ final class BackgroundLocationManager: NSObject, CLLocationManagerDelegate {
 
     private let locationManager = CLLocationManager()
     private var isRunning = false
+    private var persistentEnabled = false
     private var activityCount = 0
 
     private override init() {
@@ -22,7 +23,35 @@ final class BackgroundLocationManager: NSObject, CLLocationManagerDelegate {
     }
 
     func start() {
-        isRunning = true
+        persistentEnabled = true
+        refreshRunningState()
+    }
+
+    func stop() {
+        persistentEnabled = false
+        refreshRunningState()
+    }
+
+    func requestStart() {
+        activityCount += 1
+        refreshRunningState()
+    }
+
+    func requestStop() {
+        activityCount = max(activityCount - 1, 0)
+        refreshRunningState()
+    }
+
+    private func refreshRunningState() {
+        let shouldRun = persistentEnabled || (activityCount > 0 && UserDefaults.standard.bool(forKey: "keepAliveLocation"))
+        guard shouldRun != isRunning else { return }
+
+        isRunning = shouldRun
+        guard shouldRun else {
+            locationManager.stopUpdatingLocation()
+            return
+        }
+
         switch locationManager.authorizationStatus {
         case .authorizedAlways:
             locationManager.startUpdatingLocation()
@@ -30,27 +59,10 @@ final class BackgroundLocationManager: NSObject, CLLocationManagerDelegate {
             locationManager.requestAlwaysAuthorization()
         case .notDetermined:
             locationManager.requestAlwaysAuthorization()
-        default:
-            break
-        }
-    }
-
-    func stop() {
-        isRunning = false
-        locationManager.stopUpdatingLocation()
-    }
-
-    func requestStart() {
-        activityCount += 1
-        if activityCount == 1, UserDefaults.standard.bool(forKey: "keepAliveLocation") {
-            start()
-        }
-    }
-
-    func requestStop() {
-        activityCount = max(activityCount - 1, 0)
-        if activityCount == 0 {
-            stop()
+        case .denied, .restricted:
+            restoreAudioFallback()
+        @unknown default:
+            restoreAudioFallback()
         }
     }
 
@@ -59,9 +71,20 @@ final class BackgroundLocationManager: NSObject, CLLocationManagerDelegate {
         switch manager.authorizationStatus {
         case .authorizedAlways, .authorizedWhenInUse:
             manager.startUpdatingLocation()
-        default:
-            break
+        case .denied, .restricted:
+            restoreAudioFallback()
+        case .notDetermined:
+            return
+        @unknown default:
+            restoreAudioFallback()
         }
+    }
+
+    private func restoreAudioFallback() {
+        persistentEnabled = false
+        isRunning = activityCount > 0 && UserDefaults.standard.bool(forKey: "keepAliveLocation")
+        UserDefaults.standard.set(true, forKey: "keepAliveAudio")
+        BackgroundAudioManager.shared.start()
     }
 
     func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
