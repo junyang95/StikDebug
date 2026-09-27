@@ -44,6 +44,35 @@ private enum IdeviceBridge {
         return makeError(domain: domain, code: code, message: message)
     }
 
+    static func mappedFileData(atPath path: String, description: String) throws -> Data {
+        let url = URL(fileURLWithPath: path)
+
+        do {
+            let data = try Data(contentsOf: url, options: .mappedIfSafe)
+            guard !data.isEmpty else {
+                throw makeError(message: "\(description) is empty")
+            }
+            return data
+        } catch let error as NSError {
+            throw makeError(code: error.code, message: "Failed to read \(description): \(error.localizedDescription)")
+        }
+    }
+
+    static func uint64Value(from plist: plist_t?, fieldName: String) throws -> UInt64 {
+        guard let plist else {
+            throw makeError(message: "\(fieldName) was not returned by lockdownd")
+        }
+
+        var value: UInt64 = 0
+        plist_get_uint_val(plist, &value)
+
+        guard value != 0 else {
+            throw makeError(message: "Failed to decode \(fieldName)")
+        }
+
+        return value
+    }
+
     static func withTunnelHandles<T>(
         for context: JITEnableContext,
         _ body: (OpaquePointer, OpaquePointer) throws -> T
@@ -291,6 +320,59 @@ extension JITEnableContext {
         try IdeviceBridge.withTunnelHandles(for: self) { adapter, handshake in
             if let ffiError = cryptexd_install_ddi(adapter, handshake, assets, nil) {
                 throw IdeviceBridge.consumeFFIError(ffiError, fallback: "Failed to install DDI cryptex")
+            }
+        }
+    }
+
+    func mountPersonalDDI(withImagePath imagePath: String, trustcachePath: String, manifestPath: String) throws {
+        let imageData = try IdeviceBridge.mappedFileData(atPath: imagePath, description: "developer disk image")
+        let trustcacheData = try IdeviceBridge.mappedFileData(atPath: trustcachePath, description: "developer disk image trust cache")
+        let manifestData = try IdeviceBridge.mappedFileData(atPath: manifestPath, description: "developer disk image manifest")
+
+        try IdeviceBridge.withTunnelHandles(for: self) { adapter, handshake in
+            let uniqueChipID = try IdeviceBridge.withConnectedClient(
+                fallback: "Failed to connect to lockdownd",
+                missingClientMessage: "Lockdownd client was not created",
+                connect: { lockdownd_connect_rsd(adapter, handshake, $0) },
+                cleanup: { lockdownd_client_free($0) }
+            ) { lockdownClient in
+                var uniqueChipIDPlist: plist_t?
+                if let ffiError = lockdownd_get_value(lockdownClient, "UniqueChipID", nil, &uniqueChipIDPlist) {
+                    throw IdeviceBridge.consumeFFIError(ffiError, fallback: "Failed to query UniqueChipID")
+                }
+                defer { plist_free(uniqueChipIDPlist) }
+                return try IdeviceBridge.uint64Value(from: uniqueChipIDPlist, fieldName: "UniqueChipID")
+            }
+
+            try IdeviceBridge.withConnectedClient(
+                fallback: "Failed to connect to image mounter",
+                missingClientMessage: "Image mounter client was not created",
+                connect: { image_mounter_connect_rsd(adapter, handshake, $0) },
+                cleanup: { image_mounter_free($0) }
+            ) { imageMounterClient in
+                let ffiError = imageData.withUnsafeBytes { imageBuffer in
+                    trustcacheData.withUnsafeBytes { trustcacheBuffer in
+                        manifestData.withUnsafeBytes { manifestBuffer in
+                            image_mounter_mount_personalized_rsd(
+                                imageMounterClient,
+                                adapter,
+                                handshake,
+                                imageBuffer.bindMemory(to: UInt8.self).baseAddress,
+                                imageData.count,
+                                trustcacheBuffer.bindMemory(to: UInt8.self).baseAddress,
+                                trustcacheData.count,
+                                manifestBuffer.bindMemory(to: UInt8.self).baseAddress,
+                                manifestData.count,
+                                nil,
+                                uniqueChipID
+                            )
+                        }
+                    }
+                }
+
+                if let ffiError {
+                    throw IdeviceBridge.consumeFFIError(ffiError, fallback: "Failed to mount personalized DDI")
+                }
             }
         }
     }

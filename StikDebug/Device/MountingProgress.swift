@@ -93,7 +93,7 @@ final class MountingProgress: ObservableObject {
                 self.coolisMounted = true
                 self.checkforMounted()
             } else if let mountError {
-                LogManager.shared.addErrorLog("Failed to install DDI cryptex: \(mountError)")
+                LogManager.shared.addErrorLog("Failed to mount DDI: \(mountError)")
                 showAlert(title: "DDI Mount Failed", message: mountError, showOk: true, showTryAgain: true) { shouldTryAgain in
                     if shouldTryAgain {
                         self.pubMount()

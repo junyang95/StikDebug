@@ -33,7 +33,15 @@ func checkMountStatus() -> MountCheckResult {
 
 func mountDeveloperDiskImage(from directoryPath: String) -> String? {
     do {
-        try JITEnableContext.shared.installCryptexDDI(from: directoryPath)
+        if DeveloperDiskImageService.usesCryptexDDI {
+            try JITEnableContext.shared.installCryptexDDI(from: directoryPath)
+        } else {
+            try JITEnableContext.shared.mountPersonalDDI(
+                withImagePath: URL(fileURLWithPath: directoryPath).appendingPathComponent("Image.dmg").path,
+                trustcachePath: URL(fileURLWithPath: directoryPath).appendingPathComponent("Image.dmg.trustcache").path,
+                manifestPath: URL(fileURLWithPath: directoryPath).appendingPathComponent("BuildManifest.plist").path
+            )
+        }
     } catch {
         return error.localizedDescription
     }
