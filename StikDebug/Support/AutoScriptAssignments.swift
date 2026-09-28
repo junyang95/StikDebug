@@ -15,7 +15,7 @@ extension ScriptStore {
                 "Amethyst",
                 "MeloNX",
                 "XeniOS",
-                "MeloCafe",
+                "MeloCafé",
                 "Manic EMU",
                 "DukeX",
                 "TachyonU",
@@ -23,8 +23,7 @@ extension ScriptStore {
                 "HyperHLE",
                 "Applesauce",
                 "RPCS3",
-                "AetherPS4",
-                "MeloCafe"
+                "AetherPS4"
             ],
             resource: ScriptResource(resourceName: "universal", fileName: "universal.js")
         ),
