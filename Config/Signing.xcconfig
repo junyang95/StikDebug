@@ -1,6 +1,6 @@
-// Use your own registered bundle identifier and team for device installation.
+// Preserve the existing app identifier for replacement uploads. Set the signing team for installation.
 // Put overrides in Signing.local.xcconfig (not committed), or pass build settings
 // directly to xcodebuild. The extension ID follows JIT_LAUNCHER_BUNDLE_ID.
-JIT_LAUNCHER_BUNDLE_ID = com.stik.JITLauncher
+JIT_LAUNCHER_BUNDLE_ID = com.stik.StikPair
 CODE_SIGN_STYLE = Automatic
 #include? "Signing.local.xcconfig"
