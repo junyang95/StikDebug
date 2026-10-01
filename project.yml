@@ -102,6 +102,7 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.stik.StikJIT
         PRODUCT_NAME: StikJIT
+        GENERATE_INFOPLIST_FILE: YES
         DEFINES_MODULE: YES
         BUILD_LIBRARY_FOR_DISTRIBUTION: YES
         # The application embeds this framework. Keep it out of the archive's
