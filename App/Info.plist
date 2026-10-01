@@ -26,6 +26,13 @@
         <string>zh-Hans</string>
         <string>zh-Hant</string>
     </array>
+    <key>CFBundleURLTypes</key>
+    <array>
+        <dict>
+            <key>CFBundleURLName</key><string>$(PRODUCT_BUNDLE_IDENTIFIER).actions</string>
+            <key>CFBundleURLSchemes</key><array><string>jitlauncher</string><string>stikpair</string></array>
+        </dict>
+    </array>
     <key>LSRequiresIPhoneOS</key>
     <true/>
     <key>NSLocalNetworkUsageDescription</key>

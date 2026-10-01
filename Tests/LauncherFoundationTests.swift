@@ -55,6 +55,11 @@ enum LauncherFoundationTests {
         return dictionary
     }
 
+    static func externalRequest(_ text: String) -> LauncherExternalRequest? {
+        guard let url = URL(string: text) else { return nil }
+        return LauncherExternalRequest(url: url)
+    }
+
     static func main() {
         let tests: [(String, () throws -> Void)] = [
             ("Import stages a private copy before committing", {
@@ -325,6 +330,154 @@ enum LauncherFoundationTests {
                         _ = try TargetPIDValidator.validate(input, ownPID: 99)
                     }
                 }
+            }),
+            ("Location coordinates accept pole and antimeridian boundaries", {
+                for (latitude, longitude) in [("90", "180"), ("-90", "-180"), ("0", "0")] {
+                    let point = LauncherInput.coordinate(latitude, longitude)
+                    try expect(point?.0 == Double(latitude) && point?.1 == Double(longitude),
+                               "Valid geographic boundary was rejected or changed")
+                }
+            }),
+            ("Location coordinates preserve decimal precision and trim input whitespace", {
+                let point = LauncherInput.coordinate(" 37.334900\n", "\t-122.009020 ")
+                try expect(point?.0 == 37.3349 && point?.1 == -122.00902,
+                           "Trimmed decimal coordinates changed")
+                let zero = LauncherInput.coordinate("-0.0", "+0.0")
+                try expect(zero?.0 == 0 && zero?.1 == 0, "Signed geographic zero was rejected")
+            }),
+            ("Location coordinates reject values outside latitude and longitude bounds", {
+                for (latitude, longitude) in [("90.000001", "0"), ("-90.000001", "0"),
+                                               ("0", "180.000001"), ("0", "-180.000001"),
+                                               ("100", "100"), ("1e20", "0"), ("0", "-1e20")] {
+                    try expect(LauncherInput.coordinate(latitude, longitude) == nil,
+                               "Out-of-range location was accepted: \(latitude), \(longitude)")
+                }
+            }),
+            ("Location coordinates reject non-finite values in either component", {
+                for value in ["nan", "NaN", "inf", "-inf", "+infinity", "-infinity", "1e309"] {
+                    try expect(LauncherInput.coordinate(value, "0") == nil,
+                               "Non-finite latitude was accepted")
+                    try expect(LauncherInput.coordinate("0", value) == nil,
+                               "Non-finite longitude was accepted")
+                }
+            }),
+            ("Location coordinates reject malformed and ambiguous input", {
+                for value in ["", " \n", "12 34", "37,3349", "37°", "north", "１２", "1.2.3", "0\0"] {
+                    try expect(LauncherInput.coordinate(value, "0") == nil,
+                               "Malformed latitude was accepted: \(value.debugDescription)")
+                    try expect(LauncherInput.coordinate("0", value) == nil,
+                               "Malformed longitude was accepted: \(value.debugDescription)")
+                }
+            }),
+            ("External links map registered schemes and exact actions to requests", {
+                for scheme in ["jitlauncher", "stikpair", "JITLAUNCHER", "STIKPAIR"] {
+                    try expect(externalRequest("\(scheme)://enable-jit?bundle-id=com.example.App") == .enableJIT("com.example.App"),
+                               "JIT action or registered scheme mapped incorrectly")
+                    try expect(externalRequest("\(scheme)://launch-app/?bundle-id=com.example.App") == .launch("com.example.App"),
+                               "App launch action mapped incorrectly")
+                    try expect(externalRequest("\(scheme)://kill-process?pid=1234") == .terminate(1234),
+                               "Termination action mapped incorrectly")
+                }
+            }),
+            ("External links reject unregistered schemes and unknown actions", {
+                for link in ["https://enable-jit?bundle-id=com.example.App",
+                             "stikdebug://enable-jit?bundle-id=com.example.App",
+                             "otherapp://launch-app?bundle-id=com.example.App",
+                             "jitlauncher://execute?bundle-id=com.example.App",
+                             "jitlauncher://launch?bundle-id=com.example.App",
+                             "jitlauncher://?bundle-id=com.example.App"] {
+                    try expect(externalRequest(link) == nil, "Unsupported link was accepted: \(link)")
+                }
+            }),
+            ("External actions require their own exact parameter name", {
+                for link in ["jitlauncher://kill-process?bundle-id=com.example.App",
+                             "jitlauncher://enable-jit?pid=1234", "jitlauncher://launch-app?pid=1234",
+                             "jitlauncher://enable-jit?bundleID=com.example.App",
+                             "jitlauncher://enable-jit?Bundle-id=com.example.App",
+                             "jitlauncher://kill-process?PID=1234",
+                             "jitlauncher://enable-jit", "jitlauncher://enable-jit?bundle-id",
+                             "jitlauncher://kill-process?pid="] {
+                    try expect(externalRequest(link) == nil, "Mismatched or missing action parameter was accepted")
+                }
+            }),
+            ("External links reject duplicate and unknown additional parameters", {
+                for query in ["bundle-id=com.example.App&bundle-id=com.other.App",
+                              "bundle-id=com.example.App&bundle-id=com.example.App",
+                              "bundle-id=com.example.App&pid=1234",
+                              "bundle-id=com.example.App&unknown=value",
+                              "bundle-id=com.example.App&",
+                              "unknown=com.example.App"] {
+                    try expect(externalRequest("jitlauncher://enable-jit?" + query) == nil,
+                               "Ambiguous or unknown query was accepted: \(query)")
+                }
+                try expect(externalRequest("jitlauncher://kill-process?pid=1&pid=2") == nil,
+                           "Duplicate PIDs were accepted")
+            }),
+            ("External links cannot provide scripts or bypass confirmation", {
+                for key in ["script", "script-data", "script-base64", "script-url", "url", "callback", "confirm"] {
+                    let link = "jitlauncher://enable-jit?bundle-id=com.example.App&\(key)=ZXZhbCgp"
+                    try expect(externalRequest(link) == nil, "External script/control parameter was accepted")
+                }
+                for action in ["run-script", "execute-script", "import-script"] {
+                    try expect(externalRequest("jitlauncher://\(action)?bundle-id=com.example.App") == nil,
+                               "External script action was accepted")
+                }
+            }),
+            ("External links reject userinfo, ports, fragments, and action paths", {
+                for link in ["jitlauncher://user@enable-jit?bundle-id=com.example.App",
+                             "jitlauncher://user:password@enable-jit?bundle-id=com.example.App",
+                             "jitlauncher://enable-jit:123?bundle-id=com.example.App",
+                             "jitlauncher://enable-jit?bundle-id=com.example.App#fragment",
+                             "jitlauncher://enable-jit/extra?bundle-id=com.example.App",
+                             "jitlauncher://enable-jit//?bundle-id=com.example.App"] {
+                    try expect(externalRequest(link) == nil, "Malformed action URL was accepted")
+                }
+            }),
+            ("External bundle identifiers enforce length, segments, and ASCII characters", {
+                let maximum = "com." + String(repeating: "a", count: 251)
+                try expect(externalRequest("jitlauncher://launch-app?bundle-id=" + maximum) == .launch(maximum),
+                           "Maximum-length bundle ID was rejected")
+                try expect(externalRequest("jitlauncher://launch-app?bundle-id=com.example.my-App2") == .launch("com.example.my-App2"),
+                           "Valid mixed-case, numeric or hyphenated bundle ID rejected")
+                for identifier in [maximum + "a", "", "single", ".com.app", "com..app", "com.app.",
+                                   "com.example_app", "com.example/app", "com.应用", "com.éxample", " com.app", "com.app "] {
+                    var parts = URLComponents()
+                    parts.scheme = "jitlauncher"; parts.host = "launch-app"
+                    parts.queryItems = [URLQueryItem(name: "bundle-id", value: identifier)]
+                    try expect(parts.url.flatMap(LauncherExternalRequest.init(url:)) == nil,
+                               "Malformed bundle ID was accepted: \(identifier.debugDescription)")
+                }
+            }),
+            ("External links validate percent-decoded values and reject invalid UTF-8 or NUL", {
+                try expect(externalRequest("jitlauncher://enable-jit?bundle-id=com%2Eexample%2EApp") == .enableJIT("com.example.App"),
+                           "Ordinary percent-encoded identifier failed to decode")
+                for value in ["com.example.App%00", "com.%00example.App", "com.example.%FF", "com.example.%C0%AF",
+                              "com.example.%E4%B8%AD", "com.example.App%0A", "com.example.App%2500"] {
+                    try expect(externalRequest("jitlauncher://enable-jit?bundle-id=" + value) == nil,
+                               "Encoded invalid bundle ID was accepted")
+                }
+                for value in ["123%00", "%00123", "123%0A", "%FF", "123%2500"] {
+                    try expect(externalRequest("jitlauncher://kill-process?pid=" + value) == nil,
+                               "Encoded invalid PID was accepted")
+                }
+            }),
+            ("External process IDs accept only positive Int32 decimal values", {
+                for (text, pid) in [("1", Int32(1)), ("00123", Int32(123)), ("2147483647", Int32.max)] {
+                    try expect(externalRequest("jitlauncher://kill-process?pid=" + text) == .terminate(pid),
+                               "Valid process ID was rejected")
+                }
+                for pid in ["0", "-1", "+1", "2147483648", "9999999999999999", "1.0", "1e3", "１２３", "123%20", "%20123"] {
+                    try expect(externalRequest("jitlauncher://kill-process?pid=" + pid) == nil,
+                               "Invalid process ID was accepted: \(pid)")
+                }
+            }),
+            ("External parser leaves own-process authorization to execution validation", {
+                let ownPID = ProcessInfo.processInfo.processIdentifier
+                try expect(externalRequest("jitlauncher://kill-process?pid=\(ownPID)") == .terminate(ownPID),
+                           "Parser unexpectedly performed process authorization")
+                try expectError("Execution PID validator must protect launcher", matches: {
+                    if case TargetPIDValidator.ValidationError.ownProcess = $0 { return true }; return false
+                }) { _ = try TargetPIDValidator.validate(String(ownPID), ownPID: ownPID) }
             }),
             ("Default VPN pair routes only to the developer endpoint", {
                 let pair = try CIDRValidator.shared.validatePair(tunnelIfaceInput: TunnelConstants.defaultIfaceIP,

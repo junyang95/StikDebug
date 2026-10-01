@@ -93,7 +93,7 @@
 "settings.language_open" = "在系统设置中选择语言";
 "settings.language_hint" = "支持英文、简体中文和繁体中文，默认跟随系统语言。可在本应用的系统设置中选择语言；若未显示此选项，请先在「设置 → 通用 → 语言与地区」中添加所需语言。";
 "settings.about" = "关于";
-"settings.about_body" = "JIT启动器使用了 StikJIT（StikDebug 贡献者）与 LocalDevVPN（jkcoxson、Stossy11、SideStore Team、Coxson Engineering 及其他贡献者）的代码，将 JIT 准备与本地 VPN 整合到同一个应用中。";
+"settings.about_body" = "JIT启动器将 StikDebug 的应用启动与设备工具、本机配对、StikJIT 引擎及 LocalDevVPN 集成在一个 App 中。感谢 StikDebug、StikJIT、idevice 与 LocalDevVPN 的贡献者。";
 "settings.stikjit_source" = "StikJIT 源代码";
 "settings.localdevvpn_source" = "LocalDevVPN 源代码";
 "settings.idevice_source" = "idevice 源代码";
@@ -165,3 +165,25 @@
 "pairing.on_device.save_failed" = "无法保存配对记录。请检查设备可用存储空间，再重新开始配对。";
 "pairing.manual.title" = "通过文件导入配对";
 "pairing.manual.instructions" = "较早的 iOS 版本或无法使用本机配对时，可导入在电脑上为本设备生成的远程配对文件。";
+
+// Integrated device tools
+"progress.loading_apps" = "正在读取已安装应用…";
+"progress.launching_app" = "正在启动应用…";
+"progress.device_details" = "正在读取设备信息…";
+"progress.profiles" = "正在读取或更新描述文件…";
+"progress.process_control" = "正在操作进程…";
+"progress.location" = "正在更新模拟定位…";
+"error.apps_failed" = "无法读取已安装应用。";
+"error.app_not_debuggable" = "此应用没有 get-task-allow 权限，可以普通启动，无法通过调试启用 JIT。";
+"error.launch_failed" = "无法启动应用或完成其 JIT 脚本。";
+"error.tool_failed" = "设备操作失败。";
+"error.coordinates" = "请输入有效纬度（−90 至 90）和经度（−180 至 180）。";
+"error.app_not_found" = "在已配对设备上未找到指定应用。";
+"error.restore_location_first" = "请先恢复真实定位，再更换配对记录。";
+"success.app_launched" = "应用已启动。";
+"success.location_set" = "定位模拟已启用。";
+"success.location_reset" = "已恢复真实定位。";
+"Enable app JIT" = "启用应用 JIT";
+"App Bundle ID" = "应用 Bundle ID";
+"Open JIT Launcher and confirm a JIT request for an installed app." = "打开 JIT启动器，确认对已安装应用启用 JIT。";
+"error.operation_busy" = "另一项操作仍在进行，请等待完成后重新发起此请求。";

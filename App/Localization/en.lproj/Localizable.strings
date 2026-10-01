@@ -93,7 +93,7 @@
 "settings.language_open" = "App language in Settings";
 "settings.language_hint" = "English, Simplified Chinese and Traditional Chinese are supported. The app follows your preferred language. Use the Language option in this app’s system settings to choose another; if it is missing, add that language under Settings → General → Language & Region.";
 "settings.about" = "About";
-"settings.about_body" = "JIT Launcher uses code from StikJIT (StikDebug contributors) and LocalDevVPN (jkcoxson, Stossy11, SideStore Team, Coxson Engineering and contributors). It combines JIT setup and a local VPN in one app.";
+"settings.about_body" = "JIT Launcher combines StikDebug app launching and device tools, on-device pairing, the StikJIT engine, and LocalDevVPN in one app. Thanks to the StikDebug, StikJIT, idevice and LocalDevVPN contributors.";
 "settings.stikjit_source" = "StikJIT source code";
 "settings.localdevvpn_source" = "LocalDevVPN source code";
 "settings.idevice_source" = "idevice source code";
@@ -165,3 +165,25 @@
 "pairing.on_device.save_failed" = "Could not save the pairing record. Check available storage, then start pairing again.";
 "pairing.manual.title" = "Import a pairing file instead";
 "pairing.manual.instructions" = "For earlier iOS versions, or if on-device pairing is unavailable, import a remote pairing file created for this device on your computer.";
+
+// Integrated device tools
+"progress.loading_apps" = "Reading installed apps…";
+"progress.launching_app" = "Launching app…";
+"progress.device_details" = "Reading device information…";
+"progress.profiles" = "Updating provisioning profiles…";
+"progress.process_control" = "Updating process…";
+"progress.location" = "Updating simulated location…";
+"error.apps_failed" = "Could not read installed apps.";
+"error.app_not_debuggable" = "This app does not have get-task-allow permission. You can open it without JIT.";
+"error.launch_failed" = "Could not launch the app or complete its JIT script.";
+"error.tool_failed" = "The device operation failed.";
+"error.coordinates" = "Enter a valid latitude (−90…90) and longitude (−180…180).";
+"error.app_not_found" = "The requested app is not installed on this paired device.";
+"error.restore_location_first" = "Restore real location before replacing the pairing record.";
+"success.app_launched" = "App opened.";
+"success.location_set" = "Location simulation enabled.";
+"success.location_reset" = "Real location restored.";
+"Enable app JIT" = "Enable app JIT";
+"App Bundle ID" = "App Bundle ID";
+"Open JIT Launcher and confirm a JIT request for an installed app." = "Open JIT Launcher and confirm a JIT request for an installed app.";
+"error.operation_busy" = "Another operation is still running. Wait for it to finish, then try this request again.";

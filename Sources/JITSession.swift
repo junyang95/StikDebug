@@ -102,7 +102,14 @@ final class JITSession {
 
         switch (forceScript, txmPresence) {
         case (true, _), (false, .present):
-            let runner = ScriptRunner(targetPID: targetPID, debugProxy: debugProxy, script: script, progress: progress)
+            // Current StikDebug keeps the paired device awake while a TXM script
+            // waits for the target app's breakpoints. Give that service its own
+            // tunnel and thread; it must never share the debugger's FFI handles.
+            let heartbeat = DebugHeartbeatSession(pairingFilePath: pairingFilePath, configuration: configuration, progress: progress)
+            do { try heartbeat.start() }
+            catch { progress("Heartbeat unavailable: \(error.localizedDescription)") }
+            defer { heartbeat.stop() }
+            let runner = ScriptRunner(targetPID: targetPID, debugProxy: debugProxy, script: script, txmPresence: txmPresence, progress: progress)
             try withExtendedLifetime(runner) { try runner.run() }
         case (false, .absent):
             try attachWithoutScript(targetPID: targetPID, debugProxy: debugProxy, progress: progress)
@@ -142,7 +149,7 @@ final class JITSession {
         return handle
     }
 
-    private func makeTunnel() throws -> Tunnel {
+    func makeTunnel() throws -> Tunnel {
         let pairing = try openPairingFile()
         defer { rp_pairing_file_free(pairing) }
 

@@ -11,15 +11,17 @@ final class ScriptRunner {
     private let targetPID: Int32
     private let debugProxy: OpaquePointer
     private let script: StikJIT.Script
+    private let txmPresence: TXMPresence
     private let progress: (String) -> Void
     private var context: JSContext?
     private var executionError: StikJITError?
-    private var targetAttached = false
+    private var completion = ScriptCompletionState()
 
-    init(targetPID: Int32, debugProxy: OpaquePointer, script: StikJIT.Script, progress: @escaping (String) -> Void) {
+    init(targetPID: Int32, debugProxy: OpaquePointer, script: StikJIT.Script, txmPresence: TXMPresence, progress: @escaping (String) -> Void) {
         self.targetPID = targetPID
         self.debugProxy = debugProxy
         self.script = script
+        self.txmPresence = txmPresence
         self.progress = progress
     }
 
@@ -29,7 +31,7 @@ final class ScriptRunner {
         guard let context = JSContext() else { throw StikJITError.scriptUnavailable }
         self.context = context
         defer {
-            if targetAttached {
+            if completion.isAttached {
                 // A protocol/JavaScript failure must not leave the target stopped.
                 _ = sendCommand("D", raiseOnFailure: false)
             }
@@ -68,19 +70,47 @@ final class ScriptRunner {
         let log: @convention(block) (JSValue?) -> Void = { [weak self] value in
             self?.progress(value?.toString() ?? "")
         }
+        let hasTXM: @convention(block) () -> Bool = { [weak self] in
+            guard let self else { return false }
+            guard let present = self.txmPresence.isPresent else {
+                // Unknown must not silently look like a non-TXM device.
+                self.fail(.txmDetectionUnavailable)
+                return false
+            }
+            return present
+        }
+        let resumeApp: @convention(block) () -> String = { [weak self] in
+            self?.fail(.scriptExecution("resume_app() is not supported by this launcher script runtime. It requires a foreground app-launch callback; sending a process signal is not an equivalent operation."))
+            return ""
+        }
+        let takeScreenshot: @convention(block) (String?) -> String = { [weak self] _ in
+            self?.fail(.scriptExecution("take_screenshot() is not supported by this launcher script runtime."))
+            return ""
+        }
 
         context.setObject(getPID,  forKeyedSubscript: "get_pid" as NSString)
         context.setObject(send,    forKeyedSubscript: "send_command" as NSString)
         context.setObject(prepare, forKeyedSubscript: "prepare_memory_region" as NSString)
         context.setObject(log,     forKeyedSubscript: "log" as NSString)
+        context.setObject(hasTXM,  forKeyedSubscript: "hasTXM" as NSString)
+        context.setObject(resumeApp, forKeyedSubscript: "resume_app" as NSString)
+        context.setObject(takeScreenshot, forKeyedSubscript: "take_screenshot" as NSString)
 
         progress("Running \(script.name) against pid \(targetPID)…")
         context.evaluateScript(source)
         if let executionError { throw executionError }
-        progress("JIT script finished (region blessed, detached).")
+        // This must precede defer's best-effort cleanup: cleanup cannot turn an
+        // incomplete or no-op script into a successfully completed JIT session.
+        try completion.validateCompletion()
+        progress("JIT script completed: memory preparation and detachment confirmed.")
     }
 
     private func sendCommand(_ command: String, raiseOnFailure: Bool = true) -> String? {
+        if command.hasPrefix("vAttach;"),
+           Int32(command.dropFirst("vAttach;".count), radix: 16) != targetPID {
+            fail(.scriptExecution("The script tried to attach to a process other than the selected target."), raiseException: raiseOnFailure)
+            return nil
+        }
         guard let handle = command.withCString({ debugserver_command_new($0, nil, 0) }) else {
             fail(.scriptExecution("Failed to create debugger command."), raiseException: raiseOnFailure)
             return nil
@@ -94,13 +124,11 @@ final class ScriptRunner {
         }
         let reply = response.map { String(cString: $0) }
         do {
-            try DebugAttachResponse.validateScriptCommand(command, response: reply)
+            try completion.recordCommand(command, response: reply)
         } catch {
             fail(error as? StikJITError ?? .scriptExecution(error.localizedDescription), raiseException: raiseOnFailure)
             return nil
         }
-        if command.hasPrefix("vAttach;") { targetAttached = true }
-        if command == "D" { targetAttached = false }
         return reply ?? ""
     }
 
@@ -144,6 +172,7 @@ final class ScriptRunner {
             }
         }
 
+        completion.recordMemoryPreparation(length: length)
         progress("Blessed \(pageCount) JIT page(s) at 0x\(String(address, radix: 16))")
         return "OK"
     }

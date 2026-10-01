@@ -4,6 +4,7 @@ struct LauncherSettingsView: View {
     @ObservedObject var model: LauncherModel
     @ObservedObject private var vpn: LocalVPNManager
     @ObservedObject private var pairing: OnDevicePairingManager
+    @ObservedObject private var console: LauncherConsole
     let openSetup: () -> Void
     @Environment(\.openURL) private var openURL
     @State private var confirmingRemoval = false
@@ -12,6 +13,7 @@ struct LauncherSettingsView: View {
         self.model = model
         self.vpn = model.vpn
         self.pairing = model.pairing
+        self.console = model.console
         self.openSetup = openSetup
     }
 
@@ -45,7 +47,7 @@ struct LauncherSettingsView: View {
                     Button("pairing.remove", role: .destructive) {
                         confirmingRemoval = true
                     }
-                    .disabled(model.isBusy || pairing.isRunning)
+                    .disabled(model.isBusy || pairing.isRunning || console.isRunning)
                 } else {
                     Text("settings.no_pairing")
                         .foregroundStyle(.secondary)
@@ -79,6 +81,7 @@ struct LauncherSettingsView: View {
                         .foregroundStyle(.secondary)
                 }
                 .padding(.vertical, 4)
+                Link("StikDebug", destination: URL(string: "https://github.com/StikDebug/StikDebug")!)
                 Link("settings.stikjit_source", destination: URL(string: "https://github.com/StikDebug/StikJIT")!)
                 Link("settings.localdevvpn_source", destination: URL(string: "https://github.com/jkcoxson/LocalDevVPN")!)
                 Link("settings.idevice_source", destination: URL(string: "https://github.com/jkcoxson/idevice")!)
@@ -102,6 +105,11 @@ struct LauncherSettingsView: View {
 private struct LauncherLicensesView: View {
     var body: some View {
         List {
+            Section("StikDebug") {
+                Text("GNU Affero General Public License 3.0")
+                NavigationLink("settings.read_license") { BundledLicenseView(project: "StikDebug") }
+                Link("settings.view_license", destination: URL(string: "https://github.com/StikDebug/StikDebug/blob/main/LICENSE")!)
+            }
             Section("StikJIT") {
                 Text("Mozilla Public License 2.0")
                 NavigationLink("settings.read_license") {

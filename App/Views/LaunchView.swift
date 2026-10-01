@@ -6,6 +6,7 @@ struct LaunchView: View {
     @ObservedObject private var pairing: OnDevicePairingManager
     let openSetup: () -> Void
     @State private var searchText = ""
+    @State private var terminating: LauncherProcess?
     @FocusState private var pidFocused: Bool
 
     init(model: LauncherModel, openSetup: @escaping () -> Void) {
@@ -97,6 +98,15 @@ struct LaunchView: View {
                         .disabled(model.isBusy || pairing.isRunning)
                         .accessibilityAddTraits(model.targetPID == String(process.id) ? .isSelected : [])
                         .accessibilityHint("launch.select_process_hint")
+                        .contextMenu {
+                            Button(toolsString("process.terminate"), role: .destructive) { terminating = process }
+                                .disabled(model.isBusy || pairing.isRunning)
+                        }
+                        .swipeActions {
+                            Button(role: .destructive) { terminating = process } label: {
+                                Label(toolsString("process.terminate"), systemImage: "stop.circle")
+                            }.disabled(model.isBusy || pairing.isRunning)
+                        }
                     }
                 }
             } header: {
@@ -120,7 +130,15 @@ struct LaunchView: View {
                 Section { LauncherMessage(message: message) }
             }
         }
-        .navigationTitle("launch.title")
+        .navigationTitle(toolsString("tools.processes"))
+        .confirmationDialog(toolsString("process.confirm"), isPresented: Binding(
+            get: { terminating != nil }, set: { if !$0 { terminating = nil } }
+        ), titleVisibility: .visible) {
+            Button(toolsString("process.terminate"), role: .destructive) {
+                if let terminating { model.terminateProcess(terminating) }
+                terminating = nil
+            }
+        } message: { Text(toolsString("process.warning")) }
         .searchable(text: $searchText, prompt: "launch.search")
         .scrollDismissesKeyboard(.interactively)
         .safeAreaInset(edge: .bottom) {

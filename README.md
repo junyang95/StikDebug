@@ -2,14 +2,21 @@
 
 ## JIT启动器 — integrated iOS app
 
-This branch adds **JIT启动器**, a standalone SwiftUI launcher that combines StikJIT
-with the local packet tunnel from [LocalDevVPN](https://github.com/jkcoxson/LocalDevVPN).
-The launcher has a seven-step on-device pairing guide, an integrated VPN
-connect/disconnect control, running-process selection, and English, Simplified
-Chinese, and Traditional Chinese interfaces. A separate LocalDevVPN installation
-is not required. On-device pairing requires iOS/iPadOS 27 or later; on earlier
-supported versions, import a Remote pairing / RPPairing record from a computer.
-The launcher and JIT framework continue to support iOS/iPadOS 17.4 or later.
+This branch adds **JIT启动器** (2.0.0), a standalone SwiftUI app integrating
+StikDebug's installed-app launch/JIT workflow and device tools, on-device pairing,
+the StikJIT engine, and [LocalDevVPN](https://github.com/jkcoxson/LocalDevVPN).
+Four tabs cover applications, the seven-step pairing guide, debugging tools, and
+settings. Features include app search/favorites/recent history, per-app script
+selection, four bundled upstream scripts, custom script import/editing, process
+control, device logs, device information, provisioning profiles, location
+simulation, and confirmed Shortcut/URL requests. English, Simplified Chinese and
+Traditional Chinese are included. The app identifier remains **com.stik.StikPair**.
+
+A separate StikDebug, StikPair or LocalDevVPN app is not needed for these integrated
+workflows. On-device pairing requires iOS/iPadOS 27 or later; on earlier supported
+versions, import a Remote pairing / RPPairing record from a computer. The launcher
+and framework support iOS/iPadOS 17.4 or later. JIT still requires a compatible,
+properly signed target app; integration does not remove platform requirements.
 
 The pairing guide follows this sequence: start on-device pairing, keep Wi-Fi on,
 open Settings, enter Privacy & Security, open Developer Mode, select Pair with
@@ -24,6 +31,14 @@ setup, validation, simulator preview, and known platform requirements.
 The original StikJIT framework and its scheme remain available below.
 
 ### Attribution
+
+StikDebug features and scripts are adapted from main commit
+`4bdfc92aa7cebd7a534f1e1ef56415f5727402de` (3.1.13, fetched 2026-10-01).
+The combined launcher and StikDebug-derived additions are distributed under
+AGPL-3.0 with corresponding source. See
+[`ThirdParty/StikDebug`](ThirdParty/StikDebug) for attribution and scope.
+The pairing guide also draws on the user's `codex/pikmin-helper` working tree,
+without modifying that branch or importing its unrelated product features.
 
 The integrated VPN **uses code from LocalDevVPN**, based on StosVPN by the SideStore
 Team and contributors. It is an independently named integration, not an official
