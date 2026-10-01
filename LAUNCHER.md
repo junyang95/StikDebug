@@ -12,6 +12,25 @@ The display name is **JIT启动器**, or **JIT啟動器** in Traditional Chinese
 Simplified Chinese, and Traditional Chinese interfaces follow the system or the
 app's language preference in iOS Settings.
 
+## Application-list compatibility fix (2.0.1)
+
+Installed-app refresh now reads the Bundle ID, display/fallback name, and
+`get-task-allow` directly from typed libplist nodes. It no longer serializes the
+entire installation-proxy record and reparses it with Foundation. Unrelated
+metadata rejected by Foundation therefore cannot prevent an otherwise valid app
+from appearing. Invalid required records are skipped individually; a nonempty
+response with no readable application identifiers reports an explicit error.
+Service/connection errors are still propagated.
+
+Run `scripts/test-installed-applications.sh` on a Mac with host libplist and
+pkg-config available. This compiles the production reader against the real C
+API. Its regression fixture reproduces the old Foundation Cocoa 3840 failure
+with unrelated deeply nested metadata, then verifies that required fields remain
+readable and the app stays in the catalog. The fixture establishes the failure
+mechanism; the user's exact device response was not captured. The host library
+is not the device's Rust plist_ffi implementation, whose borrowed-pointer and
+node-type semantics were separately checked against version 0.1.6.
+
 ## Four-tab workflow
 
 | Tab | Current behavior |

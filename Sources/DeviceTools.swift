@@ -30,17 +30,7 @@ extension StikJIT {
                 guard count > 0 else { return [] }
                 guard let raw else { throw DeviceTools.error("Missing application list") }
                 let pointers = raw.assumingMemoryBound(to: plist_t?.self)
-                var result: [String: InstalledApplication] = [:]
-                for index in 0..<count {
-                    guard let plist = pointers[index] else { continue }
-                    let dictionary = try DeviceTools.dictionary(plist)
-                    guard let app = DeviceMetadata.application(dictionary) else { continue }
-                    result[app.bundleIdentifier] = app
-                }
-                return result.values.sorted {
-                    let order = $0.name.localizedStandardCompare($1.name)
-                    return order == .orderedSame ? $0.bundleIdentifier < $1.bundleIdentifier : order == .orderedAscending
-                }
+                return try InstalledApplicationReader.applications(count: count) { pointers[$0] }
             }
         }
     }

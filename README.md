@@ -2,7 +2,7 @@
 
 ## JIT启动器 — integrated iOS app
 
-This branch adds **JIT启动器** (2.0.0), a standalone SwiftUI app integrating
+This branch adds **JIT启动器** (2.0.1), a standalone SwiftUI app integrating
 StikDebug's installed-app launch/JIT workflow and device tools, on-device pairing,
 the StikJIT engine, and [LocalDevVPN](https://github.com/jkcoxson/LocalDevVPN).
 Four tabs cover applications, the seven-step pairing guide, debugging tools, and
