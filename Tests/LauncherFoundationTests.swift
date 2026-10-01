@@ -47,6 +47,14 @@ enum LauncherFoundationTests {
         return (attributes[.posixPermissions] as? NSNumber)?.intValue ?? -1
     }
 
+    static func readPlist(_ url: URL) throws -> [String: Any] {
+        guard let dictionary = try PropertyListSerialization.propertyList(
+            from: Data(contentsOf: url), format: nil) as? [String: Any] else {
+            throw Failure(description: "Stored property list is not a dictionary")
+        }
+        return dictionary
+    }
+
     static func main() {
         let tests: [(String, () throws -> Void)] = [
             ("Import stages a private copy before committing", {
@@ -196,6 +204,103 @@ enum LauncherFoundationTests {
                     var isDirectory: ObjCBool = false
                     try expect(FileManager.default.fileExists(atPath: store.fileURL.path, isDirectory: &isDirectory) && isDirectory.boolValue,
                                "Failed commit changed the destination")
+                }
+            }),
+            ("On-device identity and pairing record commit as one validated file", {
+                try withStore { store, root in
+                    let source = root.appendingPathComponent("source.plist")
+                    let oldIdentity = Data(repeating: 0x11, count: 16)
+                    let newIdentity = Data((0..<16).map(UInt8.init))
+                    _ = try writePlist(["Fixture": "old record"], at: source)
+                    try store.importRecord(from: source, hostAltIRK: oldIdentity) { _ in }
+                    let previous = try Data(contentsOf: store.fileURL)
+                    let original = try writePlist([
+                        "Fixture": "new record",
+                        "JITLauncherHostAltIRK": Data(repeating: 0xff, count: 16)
+                    ], at: source, format: .binary)
+                    var validatedBytes: Data?
+                    try store.importRecord(from: source, hostAltIRK: newIdentity) { temporary in
+                        try expect(temporary != source && temporary != store.fileURL, "Enriched record must be staged privately")
+                        let staged = try readPlist(temporary)
+                        try expect(staged["Fixture"] as? String == "new record", "Pairing fields changed during enrichment")
+                        try expect(staged["JITLauncherHostAltIRK"] as? Data == newIdentity,
+                                   "Validator did not receive the current host identity as plist Data")
+                        try expect(try permissions(temporary) == 0o600, "Enriched record must be owner-only")
+                        try expect(try Data(contentsOf: store.fileURL) == previous,
+                                   "Previous identity/record changed before validation finished")
+                        validatedBytes = try Data(contentsOf: temporary)
+                    }
+                    try expect(try Data(contentsOf: store.fileURL) == validatedBytes, "Commit differs from validated enriched bytes")
+                    try expect(try readPlist(store.fileURL)["JITLauncherHostAltIRK"] as? Data == newIdentity,
+                               "New host identity was not committed")
+                    try expect(try Data(contentsOf: source) == original, "Import modified the source pairing file")
+                    try expect(try permissions(store.fileURL) == 0o600, "Enriched commit lost private permissions")
+                    try expect(try remainingFiles(store) == ["pairing.plist"], "Identity was stored separately or staging leaked")
+                }
+            }),
+            ("Invalid host identity lengths preserve the existing record and identity", {
+                try withStore { store, root in
+                    let source = root.appendingPathComponent("source.plist")
+                    _ = try writePlist(["Fixture": "old record"], at: source)
+                    try store.importRecord(from: source, hostAltIRK: Data(repeating: 0x22, count: 16)) { _ in }
+                    let previous = try Data(contentsOf: store.fileURL)
+                    _ = try writePlist(["Fixture": "replacement"], at: source)
+                    for length in [0, 1, 15, 17, 32] {
+                        var called = false
+                        try expectError("Invalid host identity length \(length)", matches: {
+                            if case PairingRecordStore.StoreError.invalidHostIdentity = $0 { return true }; return false
+                        }) {
+                            try store.importRecord(from: source, hostAltIRK: Data(repeating: 0, count: length)) { _ in called = true }
+                        }
+                        try expect(!called, "Invalid host identity reached pairing validation")
+                        try expect(try Data(contentsOf: store.fileURL) == previous, "Invalid identity changed the stored record")
+                        try expect(try remainingFiles(store) == ["pairing.plist"], "Invalid identity leaked staged data")
+                    }
+                }
+            }),
+            ("Rejected on-device pairing preserves both previous keys and host identity", {
+                try withStore { store, root in
+                    let source = root.appendingPathComponent("source.plist")
+                    let oldIdentity = Data(repeating: 0x33, count: 16)
+                    let rejectedIdentity = Data(repeating: 0x44, count: 16)
+                    _ = try writePlist(["Fixture": "old record"], at: source)
+                    try store.importRecord(from: source, hostAltIRK: oldIdentity) { _ in }
+                    let previous = try Data(contentsOf: store.fileURL)
+                    _ = try writePlist(["Fixture": "rejected record"], at: source)
+                    try expectError("Rejected enriched record", matches: { $0 is RejectedRecord }) {
+                        try store.importRecord(from: source, hostAltIRK: rejectedIdentity) { temporary in
+                            try expect(try readPlist(temporary)["JITLauncherHostAltIRK"] as? Data == rejectedIdentity,
+                                       "Test did not validate the enriched replacement")
+                            throw RejectedRecord.incompatible
+                        }
+                    }
+                    try expect(try Data(contentsOf: store.fileURL) == previous, "Rejected enrichment replaced the old record")
+                    try expect(try readPlist(store.fileURL)["JITLauncherHostAltIRK"] as? Data == oldIdentity,
+                               "Rejected import separated host identity from its previous record")
+                    try expect(try remainingFiles(store) == ["pairing.plist"], "Rejected enriched temporary file leaked")
+                }
+            }),
+            ("Manual import removes the previous on-device identity with its record", {
+                try withStore { store, root in
+                    let source = root.appendingPathComponent("source.plist")
+                    _ = try writePlist(["Fixture": "on-device record"], at: source)
+                    try store.importRecord(from: source, hostAltIRK: Data(repeating: 0x55, count: 16)) { _ in }
+                    let manual = try writePlist(["Fixture": "manual record"], at: source)
+                    try store.importRecord(from: source) { _ in }
+                    try expect(try Data(contentsOf: store.fileURL) == manual, "Manual import retained previous pairing metadata")
+                    try expect(try readPlist(store.fileURL)["JITLauncherHostAltIRK"] == nil,
+                               "Old host identity leaked into a different pairing record")
+                }
+            }),
+            ("Pairing PIN accepts six ASCII digits including leading zeroes", {
+                for pin in ["000000", "000001", "012345", "123456", "999999"] {
+                    try expect(PairingPIN.isValid(pin), "Valid six-digit PIN was rejected")
+                }
+            }),
+            ("Pairing PIN rejects Unicode digits, whitespace, and incorrect lengths", {
+                for pin in ["", "12345", "1234567", "123456\n", " 123456", "123456 ", "12 456",
+                            "１２３４５６", "١٢٣٤٥٦", "12345１", "+12345", "12345a", "12345\0"] {
+                    try expect(!PairingPIN.isValid(pin), "Invalid PIN was accepted")
                 }
             }),
             ("PID accepts positive Int32 values and trims whitespace", {

@@ -3,6 +3,7 @@ import SwiftUI
 struct LauncherSettingsView: View {
     @ObservedObject var model: LauncherModel
     @ObservedObject private var vpn: LocalVPNManager
+    @ObservedObject private var pairing: OnDevicePairingManager
     let openSetup: () -> Void
     @Environment(\.openURL) private var openURL
     @State private var confirmingRemoval = false
@@ -10,6 +11,7 @@ struct LauncherSettingsView: View {
     init(model: LauncherModel, openSetup: @escaping () -> Void) {
         self.model = model
         self.vpn = model.vpn
+        self.pairing = model.pairing
         self.openSetup = openSetup
     }
 
@@ -27,7 +29,7 @@ struct LauncherSettingsView: View {
                 } label: {
                     Label(vpn.isConnected ? "vpn.disconnect" : "vpn.connect", systemImage: vpn.isConnected ? "pause.circle" : "play.circle")
                 }
-                .disabled(model.isBusy || vpn.isBusy)
+                .disabled(model.isBusy || vpn.isBusy || pairing.isRunning)
                 if let message = vpn.errorMessage {
                     LauncherMessage(message: message, isError: true)
                 }
@@ -43,7 +45,7 @@ struct LauncherSettingsView: View {
                     Button("pairing.remove", role: .destructive) {
                         confirmingRemoval = true
                     }
-                    .disabled(model.isBusy)
+                    .disabled(model.isBusy || pairing.isRunning)
                 } else {
                     Text("settings.no_pairing")
                         .foregroundStyle(.secondary)

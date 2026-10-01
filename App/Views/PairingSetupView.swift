@@ -4,6 +4,7 @@ import UniformTypeIdentifiers
 struct PairingSetupView: View {
     @ObservedObject var model: LauncherModel
     @ObservedObject private var vpn: LocalVPNManager
+    @ObservedObject private var pairing: OnDevicePairingManager
     let openLaunch: () -> Void
     @State private var importingPairing = false
     @State private var importerError: String?
@@ -11,6 +12,7 @@ struct PairingSetupView: View {
     init(model: LauncherModel, openLaunch: @escaping () -> Void) {
         self.model = model
         self.vpn = model.vpn
+        self.pairing = model.pairing
         self.openLaunch = openLaunch
     }
 
@@ -25,16 +27,10 @@ struct PairingSetupView: View {
                         .foregroundStyle(.secondary)
                 }
 
-                VStack(spacing: 0) {
-                    developerModeStep
-                    Divider().padding(.leading, 72)
-                    pairingStep
-                    Divider().padding(.leading, 72)
-                    vpnStep
-                    Divider().padding(.leading, 72)
-                    preparationStep
-                }
-                .background(Color(uiColor: .secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 20))
+                pairingGuide
+                pairingStatus
+                manualPairing
+                afterPairing
 
                 Text("setup.reuse_hint")
                     .font(.footnote)
@@ -65,64 +61,160 @@ struct PairingSetupView: View {
         }
     }
 
-    private var developerModeStep: some View {
-        SetupStep(number: 1, title: "setup.developer.title", status: model.developerModeConfirmed ? "setup.confirmed" : "setup.confirm_needed", isComplete: model.developerModeConfirmed) {
-            Text("setup.developer.instructions")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-            Toggle("setup.developer.confirm", isOn: $model.developerModeConfirmed)
-                .font(.subheadline)
-                .disabled(model.isBusy)
-                .accessibilityHint("setup.developer.confirm_hint")
-            DisclosureGroup("setup.developer.missing_title") {
-                Text("setup.developer.missing_body")
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-                    .padding(.top, 4)
+    private var pairingGuide: some View {
+        VStack(spacing: 0) {
+            PairingGuideRow(number: 1) {
+                Button {
+                    Task { await pairing.start() }
+                } label: {
+                    Label("pairing.on_device.start", systemImage: "iphone.radiowaves.left.and.right")
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 4)
+                }
+                .buttonStyle(.borderedProminent)
+                .disabled(model.isBusy || vpn.isBusy || pairing.isRunning || !pairing.isSupported)
+                .accessibilityHint("pairing.on_device.start_hint")
             }
-            .font(.subheadline)
+            ForEach(2...7, id: \.self) { number in
+                Divider().padding(.leading, 60)
+                PairingGuideRow(number: number) {
+                    Text(LocalizedStringKey("pairing.guide.step" + String(number)))
+                        .font(.body)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
         }
+        .background(Color(uiColor: .secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 20))
     }
 
-    private var pairingStep: some View {
-        SetupStep(number: 2, title: "setup.pairing.title", status: model.pairingFileName == nil ? "setup.pending" : "setup.imported", isComplete: model.pairingFileName != nil) {
-            Text("setup.pairing.instructions")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-            if let name = model.pairingFileName {
-                Label(name, systemImage: "doc.badge.gearshape")
+    private var pairingStatus: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            if !pairing.isSupported {
+                Label("pairing.on_device.unsupported", systemImage: "info.circle")
                     .font(.subheadline)
-                    .lineLimit(2)
-                    .truncationMode(.middle)
-                    .accessibilityLabel(Text("pairing.current_file \(name)"))
+                    .foregroundStyle(.secondary)
+            } else {
+                HStack(alignment: .top, spacing: 10) {
+                    if pairing.isRunning {
+                        ProgressView().controlSize(.small)
+                    } else {
+                        Image(systemName: "iphone.gen3.radiowaves.left.and.right")
+                            .foregroundStyle(.secondary)
+                    }
+                    Text(LocalizedStringKey(pairing.statusKey))
+                        .font(.subheadline)
+                }
+                if pairing.isRunning {
+                    Button("pairing.on_device.cancel") { pairing.cancel() }
+                        .buttonStyle(.bordered)
+                }
             }
-            Button {
-                importingPairing = true
-            } label: {
-                Label(model.pairingFileName == nil ? "pairing.import" : "pairing.replace", systemImage: "square.and.arrow.down")
-            }
-            .buttonStyle(.bordered)
-            .disabled(model.isBusy)
 
-            DisclosureGroup("pairing.create_title") {
-                VStack(alignment: .leading, spacing: 12) {
-                    Text("pairing.create.instructions")
-                        .foregroundStyle(.secondary)
-                    Link("pairing.create.open_tool", destination: URL(string: "https://github.com/jkcoxson/idevice_pair")!)
-                    Text("pairing.create.remote_only")
-                        .foregroundStyle(.secondary)
-                    Text("pairing.privacy")
+            if let code = pairing.pinCode {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("pairing.on_device.pin_title")
+                        .font(.subheadline.weight(.semibold))
+                    Text(verbatim: code)
+                        .font(.largeTitle.weight(.semibold).monospacedDigit())
+                        .textSelection(.enabled)
+                        .accessibilityLabel(Text("pairing.on_device.pin_accessibility \(code.map(String.init).joined(separator: " "))"))
+                    Text("pairing.on_device.pin_hint")
+                        .font(.footnote)
                         .foregroundStyle(.secondary)
                 }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(16)
+                .background(Color.accentColor.opacity(0.08), in: RoundedRectangle(cornerRadius: 12))
+            }
+
+            if let message = pairing.notificationMessage {
+                Label(message, systemImage: "bell.badge")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            }
+            if let message = pairing.errorMessage {
+                LauncherMessage(message: message, isError: true)
+            }
+            Text("pairing.on_device.guide_hint")
                 .font(.footnote)
-                .padding(.top, 6)
+                .foregroundStyle(.secondary)
+            if let name = model.pairingFileName {
+                Label {
+                    Text("pairing.current_file \(name)")
+                        .lineLimit(2)
+                        .truncationMode(.middle)
+                } icon: {
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundStyle(.green)
+                }
+                .font(.subheadline)
+            }
+        }
+        .padding(.horizontal, 4)
+    }
+
+    private var manualPairing: some View {
+        DisclosureGroup("pairing.manual.title") {
+            VStack(alignment: .leading, spacing: 12) {
+                Text("pairing.manual.instructions")
+                    .foregroundStyle(.secondary)
+                Button {
+                    importingPairing = true
+                } label: {
+                    Label(model.pairingFileName == nil ? "pairing.import" : "pairing.replace", systemImage: "square.and.arrow.down")
+                }
+                .buttonStyle(.bordered)
+                .disabled(model.isBusy || pairing.isRunning)
+                DisclosureGroup("pairing.create_title") {
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("pairing.create.instructions")
+                            .foregroundStyle(.secondary)
+                        Link("pairing.create.open_tool", destination: URL(string: "https://github.com/jkcoxson/idevice_pair")!)
+                        Text("pairing.create.remote_only")
+                            .foregroundStyle(.secondary)
+                        Text("pairing.privacy")
+                            .foregroundStyle(.secondary)
+                    }
+                    .font(.footnote)
+                    .padding(.top, 6)
+                }
             }
             .font(.subheadline)
+            .padding(.top, 12)
+        }
+        .font(.subheadline)
+        .padding(20)
+        .background(Color(uiColor: .secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 16))
+    }
+
+    private var afterPairing: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("setup.after_pairing")
+                .font(.title2.bold())
+                .accessibilityAddTraits(.isHeader)
+            VStack(alignment: .leading, spacing: 20) {
+                Toggle("setup.developer.confirm", isOn: $model.developerModeConfirmed)
+                    .font(.subheadline)
+                    .disabled(model.isBusy || pairing.isRunning)
+                    .accessibilityHint("setup.developer.confirm_hint")
+                Text("setup.developer.instructions")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                Divider()
+                vpnSection
+                Divider()
+                preparationSection
+            }
+            .padding(20)
+            .background(Color(uiColor: .secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 20))
         }
     }
 
-    private var vpnStep: some View {
-        SetupStep(number: 3, title: "setup.vpn.title", status: vpn.isConnected ? "setup.connected" : "setup.pending", isComplete: vpn.isConnected) {
+    private var vpnSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Label("setup.vpn.title", systemImage: "network.badge.shield.half.filled")
+                .font(.headline)
+                .accessibilityAddTraits(.isHeader)
             Text("setup.vpn.instructions")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
@@ -136,7 +228,7 @@ struct PairingSetupView: View {
                 }
             }
             .buttonStyle(.bordered)
-            .disabled(vpn.isBusy || vpn.isConnected || model.isBusy)
+            .disabled(vpn.isBusy || vpn.isConnected || model.isBusy || pairing.isRunning)
             if let message = vpn.errorMessage {
                 LauncherMessage(message: message, isError: true)
             }
@@ -146,8 +238,11 @@ struct PairingSetupView: View {
         }
     }
 
-    private var preparationStep: some View {
-        SetupStep(number: 4, title: "setup.prepare.title", status: model.isPrepared ? "setup.ready" : "setup.pending", isComplete: model.isPrepared) {
+    private var preparationSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Label("setup.prepare.title", systemImage: "iphone.badge.play")
+                .font(.headline)
+                .accessibilityAddTraits(.isHeader)
             Text("setup.prepare.instructions")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
@@ -157,10 +252,10 @@ struct PairingSetupView: View {
             Button {
                 model.prepareDevice()
             } label: {
-                Label(model.isPrepared ? "setup.prepare.again" : "setup.prepare.action", systemImage: "iphone.badge.play")
+                Text(model.isPrepared ? "setup.prepare.again" : "setup.prepare.action")
             }
             .buttonStyle(.borderedProminent)
-            .disabled(model.isBusy || vpn.isBusy || !model.developerModeConfirmed || model.pairingFileName == nil || !vpn.isConnected)
+            .disabled(model.isBusy || pairing.isRunning || vpn.isBusy || !model.developerModeConfirmed || model.pairingFileName == nil || !vpn.isConnected)
             if model.isPrepared {
                 Button("setup.open_launch", action: openLaunch)
                     .buttonStyle(.bordered)

@@ -68,44 +68,28 @@ struct PreparationProgress: View {
     }
 }
 
-struct SetupStep<Content: View>: View {
+/// A guide row describes a user action; only the pairing service reports completion.
+struct PairingGuideRow<Content: View>: View {
     let number: Int
-    let title: LocalizedStringKey
-    let status: LocalizedStringKey
-    let isComplete: Bool
     let content: Content
 
-    init(number: Int, title: LocalizedStringKey, status: LocalizedStringKey, isComplete: Bool, @ViewBuilder content: () -> Content) {
+    init(number: Int, @ViewBuilder content: () -> Content) {
         self.number = number
-        self.title = title
-        self.status = status
-        self.isComplete = isComplete
         self.content = content()
     }
 
     var body: some View {
-        HStack(alignment: .top, spacing: 16) {
+        HStack(alignment: .center, spacing: 12) {
             Text(number, format: .number)
-                .font(.title3.weight(.semibold).monospacedDigit())
-                .foregroundStyle(isComplete ? Color.white : Color.accentColor)
-                .frame(minWidth: 36, minHeight: 36)
-                .background(isComplete ? Color.accentColor : Color.accentColor.opacity(0.10), in: Circle())
-                .accessibilityHidden(true)
-
-            VStack(alignment: .leading, spacing: 12) {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(title)
-                        .font(.headline)
-                        .accessibilityAddTraits(.isHeader)
-                        .accessibilityLabel(Text("setup.step \(number)") + Text(". ") + Text(title))
-                    Label(status, systemImage: isComplete ? "checkmark.circle.fill" : "circle")
-                        .font(.caption)
-                        .foregroundStyle(isComplete ? Color.green : Color.secondary)
-                }
-                content
-                    .frame(maxWidth: .infinity, alignment: .leading)
-            }
+                .font(.subheadline.weight(.semibold).monospacedDigit())
+                .foregroundStyle(Color.accentColor)
+                .frame(minWidth: 28, minHeight: 28)
+                .background(Color.accentColor.opacity(0.10), in: Circle())
+                .accessibilityLabel(Text("setup.step \(number)"))
+            content
+                .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .padding(20)
+        .padding(.horizontal, 20)
+        .padding(.vertical, 12)
     }
 }

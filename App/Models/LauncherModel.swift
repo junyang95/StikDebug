@@ -30,6 +30,7 @@ final class LauncherModel: ObservableObject {
     @Published var targetPID = ""
 
     let vpn = LocalVPNManager()
+    let pairing = OnDevicePairingManager()
     private let defaults: UserDefaults
     private let store: PairingRecordStore
     private let cacheDirectory: URL
@@ -51,6 +52,23 @@ final class LauncherModel: ObservableObject {
             guard status != .connected else { return }
             self?.invalidatePreparation()
         }
+        pairing.canStart = { [weak self] in
+            guard let self else { return false }
+            return !self.isBusy && !self.vpn.isBusy
+        }
+        pairing.didComplete = { [weak self] url, hostAltIRK in
+            guard let self else { return }
+            try self.store.importRecord(from: url, hostAltIRK: hostAltIRK) { record in
+                #if !targetEnvironment(simulator)
+                try StikJIT.validatePairingFile(at: record)
+                #endif
+            }
+            self.defaults.set("pairing.plist", forKey: "pairingFileName")
+            self.pairingFileName = "pairing.plist"
+            self.developerModeConfirmed = true
+            self.invalidatePreparation()
+            self.successMessage = self.localized("pairing.on_device.complete")
+        }
     }
 
     func refreshState() async {
@@ -67,7 +85,7 @@ final class LauncherModel: ObservableObject {
     }
 
     func importPairingFile(from url: URL) {
-        guard !isBusy else { return }
+        guard !isBusy, !pairing.isRunning else { return }
         clearMessages()
         do {
             try store.importRecord(from: url) { record in
@@ -94,7 +112,7 @@ final class LauncherModel: ObservableObject {
     }
 
     func removePairingFile() {
-        guard !isBusy else { return }
+        guard !isBusy, !pairing.isRunning else { return }
         clearMessages()
         do {
             try store.removeRecord()
@@ -145,7 +163,7 @@ final class LauncherModel: ObservableObject {
     }
 
     private func preflight(requirePreparation: Bool = false) -> Bool {
-        guard !isBusy else { return false }
+        guard !isBusy, !pairing.isRunning else { return false }
         clearMessages()
         #if targetEnvironment(simulator)
         errorMessage = localized("error.device_required")

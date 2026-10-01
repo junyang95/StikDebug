@@ -4,9 +4,18 @@
 
 This branch adds **JIT启动器**, a standalone SwiftUI launcher that combines StikJIT
 with the local packet tunnel from [LocalDevVPN](https://github.com/jkcoxson/LocalDevVPN).
-The launcher has a four-step pairing guide, an integrated VPN connect/disconnect
-control, running-process selection, and English, Simplified Chinese, and Traditional
-Chinese interfaces. A separate LocalDevVPN installation is not required.
+The launcher has a seven-step on-device pairing guide, an integrated VPN
+connect/disconnect control, running-process selection, and English, Simplified
+Chinese, and Traditional Chinese interfaces. A separate LocalDevVPN installation
+is not required. On-device pairing requires iOS/iPadOS 27 or later; on earlier
+supported versions, import a Remote pairing / RPPairing record from a computer.
+The launcher and JIT framework continue to support iOS/iPadOS 17.4 or later.
+
+The pairing guide follows this sequence: start on-device pairing, keep Wi-Fi on,
+open Settings, enter Privacy & Security, open Developer Mode, select Pair with
+Host → **StikDebug**, and enter the six-digit code from the launcher's notification.
+**StikDebug** is the advertised host name; the app remains **JIT启动器**. After
+pairing, connect the built-in VPN and prepare JIT in the launcher.
 
 Run `xcodegen generate`, open `StikJIT.xcodeproj`, and select the **JITLauncher**
 scheme to build for a physical device. See [LAUNCHER.md](LAUNCHER.md) for signing,

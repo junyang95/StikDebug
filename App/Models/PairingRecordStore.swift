@@ -6,6 +6,7 @@ final class PairingRecordStore {
     enum StoreError: Error {
         case tooLarge
         case invalidPropertyList
+        case invalidHostIdentity
     }
 
     static let maximumBytes = 5 * 1024 * 1024
@@ -15,16 +16,25 @@ final class PairingRecordStore {
 
     init(directory: URL) { self.directory = directory }
 
-    func importRecord(from source: URL, validate: (URL) throws -> Void) throws {
+    func importRecord(from source: URL, hostAltIRK: Data? = nil, validate: (URL) throws -> Void) throws {
         let accessed = source.startAccessingSecurityScopedResource()
         defer { if accessed { source.stopAccessingSecurityScopedResource() } }
         if let size = try source.resourceValues(forKeys: [.fileSizeKey]).fileSize,
            size > Self.maximumBytes { throw StoreError.tooLarge }
-        let data = try Data(contentsOf: source, options: .mappedIfSafe)
+        var data = try Data(contentsOf: source, options: .mappedIfSafe)
         guard data.count <= Self.maximumBytes else { throw StoreError.tooLarge }
         guard let plist = try? PropertyListSerialization.propertyList(from: data, format: nil),
-              let dictionary = plist as? [String: Any], !dictionary.isEmpty else {
+              var dictionary = plist as? [String: Any], !dictionary.isEmpty else {
             throw StoreError.invalidPropertyList
+        }
+        if let hostAltIRK {
+            guard hostAltIRK.count == 16 else { throw StoreError.invalidHostIdentity }
+            // The RPPairing parser ignores unknown keys. Persist the host identity
+            // in the same protected transaction as its keys and peer record;
+            // FFI reserialization would discard this app-owned metadata.
+            dictionary["JITLauncherHostAltIRK"] = hostAltIRK
+            data = try PropertyListSerialization.data(fromPropertyList: dictionary, format: .xml, options: 0)
+            guard data.count <= Self.maximumBytes else { throw StoreError.tooLarge }
         }
 
         let fm = FileManager.default

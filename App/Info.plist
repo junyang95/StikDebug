@@ -30,6 +30,10 @@
     <true/>
     <key>NSLocalNetworkUsageDescription</key>
     <string>JIT启动器通过设备本地连接读取进程并启用 JIT。</string>
+    <key>NSBonjourServices</key>
+    <array>
+        <string>_remotepairing-pairable-host._tcp</string>
+    </array>
     <key>UIApplicationSceneManifest</key>
     <dict>
         <key>UIApplicationSupportsMultipleScenes</key>

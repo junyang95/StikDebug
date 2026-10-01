@@ -3,6 +3,7 @@ import SwiftUI
 struct LaunchView: View {
     @ObservedObject var model: LauncherModel
     @ObservedObject private var vpn: LocalVPNManager
+    @ObservedObject private var pairing: OnDevicePairingManager
     let openSetup: () -> Void
     @State private var searchText = ""
     @FocusState private var pidFocused: Bool
@@ -10,6 +11,7 @@ struct LaunchView: View {
     init(model: LauncherModel, openSetup: @escaping () -> Void) {
         self.model = model
         self.vpn = model.vpn
+        self.pairing = model.pairing
         self.openSetup = openSetup
     }
 
@@ -21,7 +23,7 @@ struct LaunchView: View {
     }
 
     private var canLaunch: Bool {
-        model.isPrepared && vpn.isConnected && !model.isBusy && !vpn.isBusy && Int32(model.targetPID).map { $0 > 0 } == true
+        model.isPrepared && vpn.isConnected && !model.isBusy && !vpn.isBusy && !pairing.isRunning && Int32(model.targetPID).map { $0 > 0 } == true
     }
 
     var body: some View {
@@ -47,7 +49,7 @@ struct LaunchView: View {
                         .keyboardType(.numberPad)
                         .multilineTextAlignment(.trailing)
                         .focused($pidFocused)
-                        .disabled(model.isBusy)
+                        .disabled(model.isBusy || pairing.isRunning)
                         .accessibilityLabel("launch.pid_label")
                 }
             } footer: {
@@ -92,7 +94,7 @@ struct LaunchView: View {
                             .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)
-                        .disabled(model.isBusy)
+                        .disabled(model.isBusy || pairing.isRunning)
                         .accessibilityAddTraits(model.targetPID == String(process.id) ? .isSelected : [])
                         .accessibilityHint("launch.select_process_hint")
                     }
@@ -108,7 +110,7 @@ struct LaunchView: View {
                         Label("launch.refresh", systemImage: "arrow.clockwise")
                             .labelStyle(.titleAndIcon)
                     }
-                    .disabled(!model.isPrepared || !vpn.isConnected || model.isBusy || vpn.isBusy)
+                    .disabled(!model.isPrepared || !vpn.isConnected || model.isBusy || vpn.isBusy || pairing.isRunning)
                 }
             } footer: {
                 Text("launch.compatibility")

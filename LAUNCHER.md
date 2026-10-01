@@ -42,24 +42,64 @@ xcodebuild -project StikJIT.xcodeproj -scheme JITLauncherPreview \
 uses `JIT啟動器`. Interface language follows the system or the app's preferred
 language in iOS Settings. English remains available.
 
-## Four-step setup
+## Seven-step on-device pairing
 
-1. **Developer Mode.** Enable it under Settings → Privacy & Security, complete
-   the reboot/confirmation, then confirm that step in the launcher. This toggle
-   records the user's confirmation; it is not an automatic entitlement or
-   Developer Mode check.
-2. **Pairing record.** Connect the unlocked device to a computer, trust the
-   computer, and use [idevice_pair](https://github.com/jkcoxson/idevice_pair#over-usb).
-   Select **Remote pairing / RPPairing**, create a record, and save it to a file.
-   Transfer it through Files/AirDrop and import it in the launcher. A legacy
-   Lockdown record is not accepted by this version of the StikJIT framework.
-3. **Local VPN.** Tap Connect and approve the system VPN configuration prompt.
-   The app installs and controls its own embedded packet tunnel. If another VPN
-   prevents connection, switch that VPN off in Settings and retry.
-4. **Prepare JIT.** The app checks device reachability and downloads/mounts the
-   appropriate developer disk image when needed. Initial preparation needs
-   internet access and may take time. Success is shown only after the framework
-   verifies readiness.
+On-device pairing requires **iOS/iPadOS 27 or later**, matching the
+[device-initiated pairing requirement in idevice_pair](https://github.com/jkcoxson/idevice_pair#over-wi-fi-with-iphone-or-ipad).
+This requirement applies only to starting pairing from Settings. The launcher and
+JIT framework still support iOS/iPadOS 17.4 or later with an imported RPPairing
+record.
+
+1. 点“开始本机配对” — Tap **Start on-device pairing** in the launcher.
+2. 保持 Wi-Fi 开启 — Keep **Wi-Fi** turned on.
+3. 打开“设置” — Open **Settings**.
+4. 进入“隐私与安全” — Enter **Privacy & Security**.
+5. 打开“开发者模式” — Open **Developer Mode**.
+6. 选择“与主机配对” → StikDebug — Select **Pair with Host → StikDebug**.
+7. 输入通知中的 6 位配对码 — Enter the **six-digit pairing code from the notification**.
+
+The app's display name remains **JIT启动器** (Traditional Chinese: **JIT啟動器**).
+**StikDebug** is the host name advertised to Settings so it matches step 6. The
+launcher requests local network and notification permission, advertises a
+pairable host, and delivers the actual code produced by the pairing handshake in
+a local notification. The code is entered in **Settings**, not in the launcher.
+Leading zeroes are part of the code. Pairing is complete only after the handshake
+succeeds and the resulting RPPairing record has been validated and saved.
+
+If Developer Mode is off, enable it and complete any restart and confirmation
+requested by iOS, then return to the launcher to start pairing again. The app
+cannot turn on Wi-Fi or Developer Mode, or navigate directly to those Settings
+pages. Open Settings manually and follow the guide. If notifications are denied,
+enable them in the app's Settings page and retry so the code can be seen while
+Settings is in front.
+
+The launcher requests a finite amount of background time while you switch to
+Settings. iOS controls the available time; it is not an unlimited pairing session.
+If pairing expires, or if you cancel, return to the launcher and tap **Start
+on-device pairing** again. A new attempt uses a new host identity and pairing code;
+use only the current notification. Pending and delivered pairing notifications
+are removed when the attempt ends.
+
+### Import a pairing record when needed
+
+For older supported versions, or when on-device pairing is unavailable, connect
+the unlocked device to a computer, trust it, and use
+[idevice_pair](https://github.com/jkcoxson/idevice_pair#over-usb). Select **Remote
+pairing / RPPairing**, create a record, and save it to a file. Transfer it through
+Files/AirDrop, then use the launcher's secondary **Import pairing file** action.
+A legacy Lockdown record is not accepted by this version of the StikJIT framework.
+
+### After pairing: connect VPN and prepare JIT
+
+Tap **Connect** in the local VPN section and approve the system VPN configuration
+prompt. The app installs and controls its own embedded packet tunnel. If another
+VPN prevents connection, switch that VPN off in Settings and retry.
+
+Tap **Prepare JIT**. The app checks device reachability and downloads/mounts the
+appropriate developer disk image when needed. Initial preparation needs internet
+access and may take time. Success is shown only after the framework verifies
+readiness. VPN connection and JIT preparation are separate actions after the
+seven pairing steps.
 
 Open the target app so its process exists, return to the launch tab, refresh the
 process list, select the target, and enable JIT. Manual PID entry is also available.
@@ -84,14 +124,22 @@ change; this launcher uses the universal script consistently. See
   no editable routes that could desynchronize these two components.
 - Only profiles matching this app's extension identifier are selected. The app
   does not remove or stop profiles belonging to other apps.
-- All blocking StikJIT/FFI work runs on one dedicated serial background queue.
-  The UI remains responsive. A finite iOS background task permits brief app
-  switching; it does not promise indefinite background execution.
+- Blocking StikJIT/FFI work runs off the main thread. The UI remains responsive.
+  A finite iOS background task permits brief app switching; it does not promise
+  indefinite background execution. See Apple's
+  [background execution guidance](https://developer.apple.com/documentation/uikit/extending-your-app-s-background-execution-time).
 - Disconnecting the VPN, changing/removing the pairing record, or revoking the
   Developer Mode confirmation invalidates displayed readiness and process data.
-- FFI operations cannot currently be cancelled mid-call. If iOS expires the
-  background task, the app reports that condition and prevents overlapping work
-  until the original operation returns. Reopen the launcher and prepare again.
+- On-device pairing cancellation stops advertising and shuts down the active
+  pairing socket so the handshake can return. Late callbacks from an ended
+  attempt must not update a new attempt or replace its pairing record.
+- Other JIT FFI operations cannot currently be cancelled mid-call. If iOS expires
+  their background task, the app reports that condition and prevents overlapping
+  work until the original operation returns. Reopen the launcher and prepare again.
+- The app declares the fixed `_remotepairing-pairable-host._tcp` Bonjour service
+  and its local network purpose. Fixed-service Bonjour advertisement does not
+  require adding the multicast entitlement; see
+  [Apple TN3179](https://developer.apple.com/documentation/technotes/tn3179-understanding-local-network-privacy).
 
 ## Verification
 
@@ -101,8 +149,11 @@ Visual checks should cover all three languages, dark mode, large Dynamic Type,
 and narrow iPhone/iPad layouts.
 
 Physical-device acceptance remains required for system VPN consent, signed
-extension launch, real pairing, DDI preparation, process discovery, and target JIT.
-An unsigned build or simulator preview cannot verify those behaviors.
+extension launch, Bonjour host visibility in Settings, notification delivery of
+the real pairing code, pairing cancellation/background expiry, real pairing,
+DDI preparation, process discovery, and target JIT. On-device pairing needs an
+iOS/iPadOS 27 or later device. An unsigned build or simulator preview cannot
+verify those behaviors.
 
 ## Source provenance
 

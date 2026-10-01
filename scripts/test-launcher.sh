@@ -8,6 +8,7 @@ trap 'rm -rf "$test_directory"' EXIT
 xcrun swiftc -parse-as-library \
   -module-cache-path "$test_directory/ModuleCache" \
   "$repo_root/App/Models/PairingRecordStore.swift" \
+  "$repo_root/App/Models/PairingPIN.swift" \
   "$repo_root/Shared/CIDRValidator.swift" \
   "$repo_root/Shared/TunnelConstants.swift" \
   "$repo_root/Sources/StikJITError.swift" \
