@@ -1,0 +1,3 @@
+// Copy to Signing.local.xcconfig, then replace both values.
+JIT_LAUNCHER_BUNDLE_ID = com.example.JITLauncher
+DEVELOPMENT_TEAM = YOUR_TEAM_ID

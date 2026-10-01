@@ -1,0 +1,3 @@
+"CFBundleDisplayName" = "JIT启动器";
+"CFBundleName" = "JIT启动器";
+"NSLocalNetworkUsageDescription" = "JIT Launcher uses a local connection to pair with this device and enable JIT for a compatible app.";

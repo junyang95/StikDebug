@@ -14,6 +14,7 @@ final class ScriptRunner {
     private let progress: (String) -> Void
     private var context: JSContext?
     private var executionError: StikJITError?
+    private var targetAttached = false
 
     init(targetPID: Int32, debugProxy: OpaquePointer, script: StikJIT.Script, progress: @escaping (String) -> Void) {
         self.targetPID = targetPID
@@ -27,6 +28,12 @@ final class ScriptRunner {
 
         guard let context = JSContext() else { throw StikJITError.scriptUnavailable }
         self.context = context
+        defer {
+            if targetAttached {
+                // A protocol/JavaScript failure must not leave the target stopped.
+                _ = sendCommand("D", raiseOnFailure: false)
+            }
+        }
 
         context.exceptionHandler = { [weak self] _, value in
             let detail = value?.toString() ?? "unknown JavaScript exception"
@@ -35,12 +42,28 @@ final class ScriptRunner {
 
         let getPID: @convention(block) () -> Int = { [targetPID] in Int(targetPID) }
         let send: @convention(block) (String?) -> String = { [weak self] command in
-            guard let self, let command else { return "" }
+            guard let self else { return "" }
+            if let error = self.executionError {
+                self.fail(error)
+                return ""
+            }
+            guard let command else {
+                self.fail(.scriptExecution("The debugger command must be a string."))
+                return ""
+            }
             return self.sendCommand(command) ?? ""
         }
         let prepare: @convention(block) (Double, Double) -> String = { [weak self] address, length in
             guard let self else { return "" }
-            return self.prepareMemoryRegion(UInt64(address), length: UInt64(length)) ?? ""
+            if let error = self.executionError {
+                self.fail(error)
+                return ""
+            }
+            guard let address = UInt64(exactly: address), let length = UInt64(exactly: length) else {
+                self.fail(.scriptExecution("The JIT memory address and length must be nonnegative integers in range."))
+                return ""
+            }
+            return self.prepareMemoryRegion(address, length: length) ?? ""
         }
         let log: @convention(block) (JSValue?) -> Void = { [weak self] value in
             self?.progress(value?.toString() ?? "")
@@ -57,17 +80,28 @@ final class ScriptRunner {
         progress("JIT script finished (region blessed, detached).")
     }
 
-    private func sendCommand(_ command: String) -> String? {
-        guard let handle = command.withCString({ debugserver_command_new($0, nil, 0) }) else { return nil }
-        defer { debugserver_command_free(handle) }
-        var response: UnsafeMutablePointer<CChar>?
-        if let error = debug_proxy_send_command(debugProxy, handle, &response) {
-            recordExecutionError(IdeviceFFI.consume(error, fallback: "send_command"))
+    private func sendCommand(_ command: String, raiseOnFailure: Bool = true) -> String? {
+        guard let handle = command.withCString({ debugserver_command_new($0, nil, 0) }) else {
+            fail(.scriptExecution("Failed to create debugger command."), raiseException: raiseOnFailure)
             return nil
         }
-        guard let response else { return "" }
-        defer { idevice_string_free(response) }
-        return String(cString: response)
+        defer { debugserver_command_free(handle) }
+        var response: UnsafeMutablePointer<CChar>?
+        defer { if let response { idevice_string_free(response) } }
+        if let error = debug_proxy_send_command(debugProxy, handle, &response) {
+            fail(IdeviceFFI.consume(error, fallback: "send_command"), raiseException: raiseOnFailure)
+            return nil
+        }
+        let reply = response.map { String(cString: $0) }
+        do {
+            try DebugAttachResponse.validateScriptCommand(command, response: reply)
+        } catch {
+            fail(error as? StikJITError ?? .scriptExecution(error.localizedDescription), raiseException: raiseOnFailure)
+            return nil
+        }
+        if command.hasPrefix("vAttach;") { targetAttached = true }
+        if command == "D" { targetAttached = false }
+        return reply ?? ""
     }
 
     private func prepareMemoryRegion(_ address: UInt64, length: UInt64) -> String? {
@@ -86,18 +120,25 @@ final class ScriptRunner {
                 return debug_proxy_send_raw(debugProxy, base.advanced(by: byteOffset), UInt(byteCount))
             }
             if let sendError {
-                recordExecutionError(IdeviceFFI.consume(sendError, fallback: "debug_proxy_send_raw"))
+                fail(IdeviceFFI.consume(sendError, fallback: "debug_proxy_send_raw"))
                 return nil
             }
 
             for _ in 0..<commandsInBatch {
                 var response: UnsafeMutablePointer<CChar>?
                 let readError = debug_proxy_read_response(debugProxy, &response)
+                let reply = response.map { String(cString: $0) }
                 if let response {
                     idevice_string_free(response)
                 }
                 if let readError {
-                    recordExecutionError(IdeviceFFI.consume(readError, fallback: "debug_proxy_read_response"))
+                    fail(IdeviceFFI.consume(readError, fallback: "debug_proxy_read_response"))
+                    return nil
+                }
+                do {
+                    try DebugAttachResponse.validateMemoryWrite(reply)
+                } catch {
+                    fail(error as? StikJITError ?? .scriptExecution(error.localizedDescription))
                     return nil
                 }
             }
@@ -111,6 +152,15 @@ final class ScriptRunner {
         if executionError == nil {
             executionError = error
             progress(error.localizedDescription)
+        }
+    }
+
+    private func fail(_ error: StikJITError, raiseException: Bool = true) {
+        recordExecutionError(error)
+        // Returning an empty string alone lets the bundled register-wait loop
+        // continue indefinitely. A native JS exception stops evaluation instead.
+        if raiseException, let context {
+            context.exception = JSValue(newErrorFromMessage: error.localizedDescription, in: context)
         }
     }
 

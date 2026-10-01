@@ -2,6 +2,18 @@ import Foundation
 
 public enum StikJIT {
 
+    /// A process currently running on the paired device. A process may exit or
+    /// restart after discovery, so refresh the list before selecting a target.
+    public struct RunningProcess: Sendable {
+        public let pid: Int32
+        public let name: String
+
+        public init(pid: Int32, name: String) {
+            self.pid = pid
+            self.name = name
+        }
+    }
+
     public enum Script: Sendable {
 
         case universal
@@ -125,6 +137,19 @@ public enum StikJIT {
 
     public static var isTXMPresent: Bool? {
         ProcessInfo.processInfo.txmPresence.isPresent
+    }
+
+    /// Validates a Remote Pairing file with the same parser used for connections.
+    /// This reads only the local file and does not contact the device.
+    public static func validatePairingFile(at url: URL) throws {
+        try JITSession(pairingFilePath: url.path, configuration: .default).validatePairingFile()
+    }
+
+    /// Lists processes using the paired device's developer service.
+    /// Prepare the device first and call this blocking operation off the main thread.
+    public static func runningProcesses(pairingFile: URL,
+                                        configuration: Configuration = .default) throws -> [RunningProcess] {
+        try JITSession(pairingFilePath: pairingFile.path, configuration: configuration).runningProcesses()
     }
 
     public static func prepareDevice(pairingFile: URL,

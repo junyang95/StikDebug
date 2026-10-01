@@ -17,3 +17,6 @@ xcuserdata/
 *.bak
 *.swp
 *.log
+
+# Local signing identity and bundle ID overrides.
+Config/Signing.local.xcconfig

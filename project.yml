@@ -1,9 +1,14 @@
 name: StikJIT
 options:
   bundleIdPrefix: com.stik
+  developmentLanguage: en
   deploymentTarget:
     iOS: "17.4"
   createIntermediateGroups: true
+
+configFiles:
+  Debug: Config/Signing.xcconfig
+  Release: Config/Signing.xcconfig
 
 settings:
   base:
@@ -12,7 +17,73 @@ settings:
     CURRENT_PROJECT_VERSION: "10"
     CLANG_CXX_LIBRARY: "libc++"
 
+targetTemplates:
+  LauncherApp:
+    type: application
+    platform: iOS
+    sources:
+      - path: App
+        excludes:
+          - Info.plist
+          - JITLauncher.entitlements
+      - path: Shared
+      - path: ThirdParty
+        type: folder
+        buildPhase: resources
+    dependencies:
+      - target: TunnelProv
+        embed: true
+      - sdk: NetworkExtension.framework
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: "$(JIT_LAUNCHER_BUNDLE_ID)"
+        PRODUCT_NAME: JITLauncher
+        INFOPLIST_FILE: App/Info.plist
+        CODE_SIGN_ENTITLEMENTS: App/JITLauncher.entitlements
+        TARGETED_DEVICE_FAMILY: "1,2"
+        SUPPORTS_MACCATALYST: NO
+        SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD: NO
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+        GENERATE_INFOPLIST_FILE: NO
+
 targets:
+  JITLauncher:
+    templates: [LauncherApp]
+    dependencies:
+      - target: StikJIT
+        embed: true
+    settings:
+      base:
+        # The bundled idevice archive contains iOS device code only.
+        SUPPORTED_PLATFORMS: iphoneos
+  JITLauncherPreview:
+    templates: [LauncherApp]
+    settings:
+      base:
+        # Runs the identical UI with explicit device-required VPN/JIT states.
+        # No mock connection is reported and no device-only framework is linked.
+        SUPPORTED_PLATFORMS: iphonesimulator
+  TunnelProv:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: Tunnel
+        excludes:
+          - Info.plist
+          - TunnelProv.entitlements
+      - path: Shared
+    dependencies:
+      - sdk: NetworkExtension.framework
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: "$(JIT_LAUNCHER_BUNDLE_ID).TunnelProv"
+        PRODUCT_NAME: TunnelProv
+        INFOPLIST_FILE: Tunnel/Info.plist
+        CODE_SIGN_ENTITLEMENTS: Tunnel/TunnelProv.entitlements
+        APPLICATION_EXTENSION_API_ONLY: YES
+        TARGETED_DEVICE_FAMILY: "1,2"
+        SKIP_INSTALL: YES
+        GENERATE_INFOPLIST_FILE: NO
   StikJIT:
     type: framework
     platform: iOS
@@ -33,7 +104,10 @@ targets:
         PRODUCT_NAME: StikJIT
         DEFINES_MODULE: YES
         BUILD_LIBRARY_FOR_DISTRIBUTION: YES
-        SKIP_INSTALL: NO
+        # The application embeds this framework. Keep it out of the archive's
+        # top-level Products directory so JITLauncher exports as an iOS app.
+        # Standalone framework archives can explicitly pass SKIP_INSTALL=NO.
+        SKIP_INSTALL: YES
         # Embed only the idevice code reachable from StikJIT. Keep archive symbols
         # private so unused FFI/Rust exports do not become dead-strip roots.
         SWIFT_INCLUDE_PATHS: "$(SRCROOT)/idevice $(SRCROOT)/iokit"
@@ -48,6 +122,20 @@ targets:
           STRIP_STYLE: non-global
 
 schemes:
+  JITLauncher:
+    build:
+      targets:
+        JITLauncher: all
+    run:
+      config: Debug
+    archive:
+      config: Release
+  JITLauncherPreview:
+    build:
+      targets:
+        JITLauncherPreview: all
+    run:
+      config: Debug
   StikJIT:
     build:
       targets:

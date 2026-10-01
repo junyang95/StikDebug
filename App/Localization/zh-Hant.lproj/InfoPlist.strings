@@ -1,0 +1,3 @@
+"CFBundleDisplayName" = "JIT啟動器";
+"CFBundleName" = "JIT啟動器";
+"NSLocalNetworkUsageDescription" = "JIT啟動器透過本機連線與本裝置配對，為相容的 App 啟用 JIT。";

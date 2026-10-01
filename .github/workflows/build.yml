@@ -29,6 +29,18 @@ jobs:
       - name: Generate Xcode project
         run: xcodegen generate
 
+      - name: Check launcher storage and configuration
+        run: bash scripts/test-launcher.sh
+
+      - name: Build integrated launcher
+        run: |
+          xcodebuild build \
+            -project StikJIT.xcodeproj \
+            -scheme JITLauncher \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath build/Launcher \
+            CODE_SIGNING_ALLOWED=NO
+
       - name: Build framework
         run: |
           xcodebuild archive \

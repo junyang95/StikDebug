@@ -1,0 +1,6 @@
+// Use your own registered bundle identifier and team for device installation.
+// Put overrides in Signing.local.xcconfig (not committed), or pass build settings
+// directly to xcodebuild. The extension ID follows JIT_LAUNCHER_BUNDLE_ID.
+JIT_LAUNCHER_BUNDLE_ID = com.stik.JITLauncher
+CODE_SIGN_STYLE = Automatic
+#include? "Signing.local.xcconfig"
