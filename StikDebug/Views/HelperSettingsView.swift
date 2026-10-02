@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 struct HelperSettingsView: View {
     @EnvironmentObject private var localization: LocalizationManager
@@ -18,6 +19,8 @@ struct HelperSettingsView: View {
     @AppStorage("autoConnectEmbeddedVPN") private var autoConnectVPN = true
     @AppStorage("keepAliveLocation") private var keepAliveLocation = true
     @AppStorage("keepAliveAudio") private var keepAliveAudio = true
+    @ObservedObject private var authorization = VipAuthorizationService.shared
+    @AppStorage(MapCoordinateSystem.storageKey) private var mapCoordinatesRaw = MapCoordinateSystem.wgs84.rawValue
     @State private var showPairingImporter = false
     @State private var showOnDevicePairing = false
     @State private var importMessage: String?
@@ -25,6 +28,7 @@ struct HelperSettingsView: View {
     @State private var diagnosticsText: String?
     @State private var showDiagnostics = false
     @State private var showPrivacyDetails = false
+    @State private var confirmDeleteSteps = false
 
     private var profile: MovementProfile {
         get { MovementProfile(rawValue: profileRaw) ?? .walking }
@@ -74,6 +78,108 @@ struct HelperSettingsView: View {
     var body: some View {
         NavigationStack {
             Form {
+                Section("VIP 授权") {
+                    Text(authorization.message)
+                    if let until = authorization.offlineValidUntil {
+                        LabeledContent("离线授权有效至") {
+                            Text(until, format: .dateTime.month().day().hour().minute())
+                        }
+                        .font(.caption)
+                    }
+                    Button(action: authorization.verifyManually) {
+                        HStack {
+                            if authorization.isChecking { ProgressView() }
+                            Text(authorization.isChecking ? "取消验证" : "重新验证授权")
+                        }
+                    }
+                    if authorization.needsNetworkSettings {
+                        Link("打开网络设置", destination: URL(string: UIApplication.openSettingsURLString)!)
+                    }
+                    Link("购买或续费", destination: URL(string: "https://wow-app.store/vip")!)
+                }
+                Section {
+                    HStack(spacing: 12) {
+                        Image(systemName: pairingStatusSymbol)
+                            .font(.title3.weight(.semibold))
+                            .foregroundStyle(pairingStatusColor)
+                            .frame(width: 36, height: 36)
+                            .background(pairingStatusColor.opacity(0.12), in: Circle())
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("设备信任")
+                                .font(.subheadline.weight(.semibold))
+                            Text(pairingStatusTitle)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                        Spacer()
+                    }
+
+                    if onDevicePairing.isSupported {
+                        Button {
+                            showOnDevicePairing = true
+                        } label: {
+                            Label("iOS 27 本机配对（1–7 步）", systemImage: "iphone.and.arrow.forward")
+                                .fontWeight(.semibold)
+                                .frame(maxWidth: .infinity)
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .tint(PikminUI.actionGreen)
+                        .listRowBackground(Color.clear)
+                    }
+
+                    Button {
+                        showPairingImporter = true
+                    } label: {
+                        Label(onDevicePairing.isSupported ? "导入电脑生成的文件（备用）" : "导入 pairing file", systemImage: "square.and.arrow.down")
+                    }
+                    if let importMessage {
+                        Text(importMessage).font(.caption).foregroundStyle(.secondary)
+                    }
+                    Button {
+                        preflight.connectDevice()
+                    } label: {
+                        Label("连接设备并检查定位通道", systemImage: "point.3.connected.trianglepath.dotted")
+                    }
+                } header: {
+                    Text("设备连接")
+                } footer: {
+                    Text(onDevicePairing.isSupported
+                         ? "iOS 27 可直接在本机完成配对，无需连接电脑。"
+                         : "需要在电脑上运行 idevice_pair：连接 iPhone → 选择 StikDebug → 导入 pairing file → 回到本 App 点“检查”。")
+                }
+
+                Section("内置本地隧道") {
+                    LabeledContent("连接用途", value: vpn.modeTitle)
+                    LabeledContent("VPN 状态", value: vpn.status.title)
+                    Toggle("启动 App 时自动连接", isOn: $autoConnectVPN)
+                    if vpn.status.isConnected {
+                        Button("断开内置 VPN", role: .destructive) {
+                            vpn.disconnect()
+                            Task { await preflight.refresh() }
+                        }
+                    } else {
+                        Button("连接内置 VPN") {
+                            Task {
+                                await vpn.connect()
+                                try? await Task.sleep(for: .seconds(1))
+                                await preflight.refresh()
+                            }
+                        }
+                    }
+                    Text("首次连接时，iOS 会请求添加 VPN 配置。隧道仅在本机映射 10.7.0.1，不连接外部 VPN 服务器。")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+
+                Section {
+                    Picker("地图偏移校正", selection: $mapCoordinatesRaw) {
+                        Text("标准地图（WGS-84）").tag(MapCoordinateSystem.wgs84.rawValue)
+                        Text("高德地图（GCJ-02）").tag(MapCoordinateSystem.gcj02.rawValue)
+                    }
+                    .disabled(WalkingSessionController.shared.isActive)
+                } footer: {
+                    Text("若地图点选与游戏位置相差数百米，请切换地图校正后重新选点。手动输入和 GPX 使用 GPS 坐标（WGS-84）。")
+                }
                 Section("移动方式") {
                     Picker("方式", selection: Binding(
                         get: { profile },
@@ -83,7 +189,7 @@ struct HelperSettingsView: View {
                             Label(item.title, systemImage: item.symbol).tag(item)
                         }
                     }
-                    .pickerStyle(.segmented)
+                    .adaptivePicker()
                 }
 
                 if profile == .walking {
@@ -93,11 +199,12 @@ struct HelperSettingsView: View {
                                 Text(pace.title).tag(pace)
                             }
                         }
-                        .pickerStyle(.segmented)
+                        .adaptivePicker()
                         LabeledContent("速度") {
                             Text("\(walkingSpeedKPH, specifier: "%.1f") km/h")
                         }
                         Slider(value: $walkingSpeedKPH, in: 1...10, step: 0.5)
+                            .accessibilityLabel("步行速度")
                             .onChange(of: walkingSpeedKPH) { _, speed in
                                 walkingPaceRaw = WalkingPace.matching(
                                     speedKilometersPerHour: speed
@@ -108,6 +215,7 @@ struct HelperSettingsView: View {
                             Text("\(strideMeters, specifier: "%.2f") m")
                         }
                         Slider(value: $strideMeters, in: 0.4...1.5, step: 0.01)
+                            .accessibilityLabel("步幅")
                         LabeledContent("步频") {
                             Text("\(walkingCadence, specifier: "%.0f") 步/分")
                         }
@@ -121,10 +229,12 @@ struct HelperSettingsView: View {
                             Text("\(cyclingSpeedKPH, specifier: "%.1f") km/h")
                         }
                         Slider(value: $cyclingSpeedKPH, in: 1...20, step: 0.5)
+                            .accessibilityLabel("骑行速度")
                         LabeledContent("踏频") {
                             Text("\(cyclingCadence, specifier: "%.0f") 转/分")
                         }
                         Slider(value: cyclingCadenceBinding, in: 40...130, step: 1)
+                            .accessibilityLabel("踏频")
                         Text("踏频跟速度线性相关：拖动速度时踏频同步升降（齿比不变），拖动踏频相当于换挡。")
                             .font(.caption)
                             .foregroundStyle(.secondary)
@@ -150,31 +260,8 @@ struct HelperSettingsView: View {
                             Label(item.title, systemImage: item.symbol).tag(item.rawValue)
                         }
                     }
-                    .pickerStyle(.segmented)
+                    .adaptivePicker()
                     Text("深色模式适配 iOS 夜览。选「跟随系统」则随系统自动切换。")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-
-                Section("内置本地隧道") {
-                    LabeledContent("连接用途", value: vpn.modeTitle)
-                    LabeledContent("VPN 状态", value: vpn.status.title)
-                    Toggle("启动 App 时自动连接", isOn: $autoConnectVPN)
-                    if vpn.status.isConnected {
-                        Button("断开内置 VPN", role: .destructive) {
-                            vpn.disconnect()
-                            Task { await preflight.refresh() }
-                        }
-                    } else {
-                        Button("连接内置 VPN") {
-                            Task {
-                                await vpn.connect()
-                                try? await Task.sleep(for: .seconds(1))
-                                await preflight.refresh()
-                            }
-                        }
-                    }
-                    Text("首次连接时，iOS 会请求添加 VPN 配置。隧道仅在本机映射 10.7.0.1，不连接外部 VPN 服务器。")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -206,64 +293,13 @@ struct HelperSettingsView: View {
                         .foregroundStyle(.secondary)
                 }
 
-                Section {
-                    HStack(spacing: 12) {
-                        Image(systemName: pairingStatusSymbol)
-                            .font(.title3.weight(.semibold))
-                            .foregroundStyle(pairingStatusColor)
-                            .frame(width: 36, height: 36)
-                            .background(pairingStatusColor.opacity(0.12), in: Circle())
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text("设备信任")
-                                .font(.subheadline.weight(.semibold))
-                            Text(pairingStatusTitle)
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                        }
-                        Spacer()
-                    }
-
-                    if onDevicePairing.isSupported {
-                        Button {
-                            showOnDevicePairing = true
-                        } label: {
-                            Label("iOS 27 本机配对（1–7 步）", systemImage: "iphone.and.arrow.forward")
-                                .fontWeight(.semibold)
-                                .frame(maxWidth: .infinity)
-                        }
-                        .buttonStyle(.borderedProminent)
-                        .tint(PikminUI.green)
-                        .listRowBackground(Color.clear)
-                    }
-
-                    Button {
-                        showPairingImporter = true
-                    } label: {
-                        Label(onDevicePairing.isSupported ? "导入电脑生成的文件（备用）" : "导入 pairing file", systemImage: "square.and.arrow.down")
-                    }
-                    if let importMessage {
-                        Text(importMessage).font(.caption).foregroundStyle(.secondary)
-                    }
-                    Button {
-                        preflight.connectDevice()
-                    } label: {
-                        Label("连接设备并检查定位通道", systemImage: "point.3.connected.trianglepath.dotted")
-                    }
-                } header: {
-                    Text("设备连接")
-                } footer: {
-                    Text(onDevicePairing.isSupported
-                         ? "iOS 27 可直接在本机完成配对，无需连接电脑。"
-                         : "需要在电脑上运行 idevice_pair：连接 iPhone → 选择 StikDebug → 导入 pairing file → 回到本 App 点“检查”。")
-                }
-
                 Section("健康") {
                     Button("请求 HealthKit 权限") {
                         Task { _ = await health.requestAuthorization() }
                     }
                     LabeledContent("本 App 今日写入", value: String(format: "%d 步".localized, health.todayAppSteps))
                     Button("删除本 App 写入的步数", role: .destructive) {
-                        Task { _ = await health.deleteAppWrittenSteps() }
+                        confirmDeleteSteps = true
                     }
                 }
 
@@ -319,9 +355,17 @@ struct HelperSettingsView: View {
                 }
             }
             .scrollContentBackground(.hidden)
+            .frame(maxWidth: 820)
+            .frame(maxWidth: .infinity)
             .background(PikminUI.pageBackground.ignoresSafeArea())
             .navigationTitle("设置")
             .tint(PikminUI.green)
+        }
+        .confirmationDialog("删除本 App 写入的步数？", isPresented: $confirmDeleteSteps, titleVisibility: .visible) {
+            Button("删除步数", role: .destructive) { Task { _ = await health.deleteAppWrittenSteps() } }
+            Button("取消", role: .cancel) {}
+        } message: {
+            Text("将删除本 App 已写入 Apple 健康的全部步数，此操作无法撤销。")
         }
         .fileImporter(
             isPresented: $showPairingImporter,
@@ -421,7 +465,7 @@ private struct DiagnosticsReportView: View {
                             .frame(maxWidth: .infinity)
                     }
                     .buttonStyle(.borderedProminent)
-                    .tint(PikminUI.green)
+                    .tint(PikminUI.actionGreen)
                 }
                 .padding()
                 .background(.regularMaterial)

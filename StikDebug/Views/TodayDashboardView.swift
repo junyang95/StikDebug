@@ -1,60 +1,5 @@
 import SwiftUI
 
-enum PikminUI {
-    /// 随浅色/深色自动切换的颜色。深色模式下才能真正适配夜览，而不是把浅色底硬套上去。
-    private static func adaptive(
-        light: (Double, Double, Double),
-        dark: (Double, Double, Double)
-    ) -> Color {
-        Color(uiColor: UIColor { traits in
-            let c = traits.userInterfaceStyle == .dark ? dark : light
-            return UIColor(red: c.0, green: c.1, blue: c.2, alpha: 1)
-        })
-    }
-
-    // 主色在深色下略微提亮，保证在深色卡片上仍清晰。
-    static let green = adaptive(light: (0.12, 0.72, 0.30), dark: (0.28, 0.82, 0.44))
-    static let deepGreen = adaptive(light: (0.04, 0.48, 0.22), dark: (0.42, 0.86, 0.54))
-    static let softGreen = adaptive(light: (0.92, 0.98, 0.91), dark: (0.12, 0.22, 0.15))
-    static let pageBackground = adaptive(light: (0.965, 0.985, 0.955), dark: (0.055, 0.075, 0.06))
-    static let cardBackground = adaptive(light: (0.99, 1.0, 0.99), dark: (0.13, 0.16, 0.14))
-
-    /// 卡片内的浅色分隔/进度轨道，随主题自动明暗。
-    static let hairline = Color.primary.opacity(0.08)
-
-    static let cardCornerRadius: CGFloat = 22
-    static let tileCornerRadius: CGFloat = 16
-
-    static var heroGradient: LinearGradient {
-        LinearGradient(
-            colors: [
-                Color(red: 0.16, green: 0.80, blue: 0.36),
-                Color(red: 0.10, green: 0.68, blue: 0.28)
-            ],
-            startPoint: .topLeading,
-            endPoint: .bottomTrailing
-        )
-    }
-}
-
-private extension View {
-    func pikminCard(cornerRadius: CGFloat = PikminUI.cardCornerRadius) -> some View {
-        padding()
-            .background(PikminUI.cardBackground, in: RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
-            .shadow(color: .black.opacity(0.06), radius: 16, x: 0, y: 8)
-    }
-}
-
-extension View {
-    /// 覆盖在地图上的操作面板样式。摇杆页和路线/定点页共用同一张不透明卡片，
-    /// 保证两个界面观感一致，而不是一个卡片、一个半透明浮层。
-    func pikminControlCard() -> some View {
-        padding()
-            .background(PikminUI.cardBackground, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
-            .shadow(color: .black.opacity(0.08), radius: 18, x: 0, y: 10)
-    }
-}
-
 /// 今日步数所处的区间。以皮克敏花苗每日 5 万步上限为参照，
 /// 用绿/黄/红让用户一眼看出今天的力度是否合理、是否快到上限。
 enum StepStage {
@@ -105,13 +50,13 @@ enum StepStage {
         let stops: [Color]
         switch self {
         case .healthy:
-            stops = [Color(red: 0.16, green: 0.80, blue: 0.36), Color(red: 0.08, green: 0.62, blue: 0.26)]
+            stops = [PikminUI.actionGreen, Color(red: 0.09, green: 0.36, blue: 0.20)]
         case .elevated:
-            stops = [Color(red: 0.90, green: 0.66, blue: 0.14), Color(red: 0.74, green: 0.50, blue: 0.06)]
+            stops = [Color(red: 0.52, green: 0.36, blue: 0.05), Color(red: 0.40, green: 0.28, blue: 0.04)]
         case .high:
-            stops = [Color(red: 0.96, green: 0.55, blue: 0.16), Color(red: 0.82, green: 0.38, blue: 0.08)]
+            stops = [Color(red: 0.65, green: 0.30, blue: 0.06), Color(red: 0.48, green: 0.22, blue: 0.04)]
         case .capped:
-            stops = [Color(red: 0.92, green: 0.30, blue: 0.26), Color(red: 0.78, green: 0.16, blue: 0.16)]
+            stops = [Color(red: 0.68, green: 0.20, blue: 0.17), Color(red: 0.52, green: 0.12, blue: 0.12)]
         }
         return LinearGradient(colors: stops, startPoint: .topLeading, endPoint: .bottomTrailing)
     }
@@ -119,6 +64,9 @@ enum StepStage {
 
 struct TodayDashboardView: View {
     @Binding var selectedTab: MainTab
+    @Environment(\.dynamicTypeSize) private var typeSize
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @ScaledMetric(relativeTo: .largeTitle) private var stepNumberSize = 42
     @EnvironmentObject private var session: WalkingSessionController
     @EnvironmentObject private var preflight: EnvironmentPreflightService
     @EnvironmentObject private var permissions: PermissionChecklistService
@@ -140,6 +88,7 @@ struct TodayDashboardView: View {
                 VStack(spacing: 18) {
                     header
                     overviewCard
+                    quickActionsCard
                     stageLegend
 
                     LazyVGrid(columns: cardColumns, spacing: 14) {
@@ -177,10 +126,11 @@ struct TodayDashboardView: View {
                         activeSessionCard
                     }
 
-                    quickActionsCard
                     compactChecklistCard
                 }
+                .frame(maxWidth: 780)
                 .padding(.horizontal, 18)
+                .frame(maxWidth: .infinity)
                 .padding(.top, 10)
                 .padding(.bottom, 24)
             }
@@ -201,7 +151,9 @@ struct TodayDashboardView: View {
     }
 
     private var cardColumns: [GridItem] {
-        [GridItem(.flexible(), spacing: 14), GridItem(.flexible(), spacing: 14)]
+        typeSize.isAccessibilitySize
+            ? [GridItem(.flexible())]
+            : [GridItem(.adaptive(minimum: 155), spacing: 14)]
     }
 
     private var background: some View {
@@ -237,34 +189,20 @@ struct TodayDashboardView: View {
 
     private var overviewCard: some View {
         VStack(alignment: .leading, spacing: 16) {
-            HStack(alignment: .top) {
-                VStack(alignment: .leading, spacing: 8) {
-                    HStack(spacing: 8) {
-                        Text("今日总步数")
-                            .font(.headline.weight(.semibold))
-                            .foregroundStyle(.white.opacity(0.92))
-                        Text(stepStage.label)
-                            .font(.caption.weight(.bold))
-                            .padding(.horizontal, 8)
-                            .padding(.vertical, 3)
-                            .background(.white.opacity(0.24), in: Capsule())
-                            .foregroundStyle(.white)
-                    }
-                    HStack(alignment: .firstTextBaseline, spacing: 6) {
-                        Text(health.todayTotalSteps.formatted())
-                            .font(.system(size: 42, weight: .bold, design: .rounded))
-                            .monospacedDigit()
-                        Text("步")
-                            .font(.headline.weight(.semibold))
-                    }
-                    .foregroundStyle(.white)
-                }
-
-                Spacer()
-
-                progressRing(progress: dailyStepProgress, text: "\(Int(dailyStepProgress * 100))%")
-                    .frame(width: 76, height: 76)
+            AdaptiveActionStack {
+                Text("今日总步数").font(.headline)
+                Text(stepStage.label)
+                    .font(.caption.weight(.semibold))
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 4)
+                    .background(.white.opacity(0.18), in: Capsule())
             }
+            Text(health.todayTotalSteps.formatted())
+                .font(.system(size: stepNumberSize, weight: .bold, design: .rounded))
+                .monospacedDigit()
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
+                .accessibilityLabel(String(format: "%@ 步".localized, health.todayTotalSteps.formatted()))
 
             // 到 5 万上限的进度条，并在 3 万 / 4 万处标出阶段分界。
             VStack(alignment: .leading, spacing: 6) {
@@ -288,23 +226,15 @@ struct TodayDashboardView: View {
                     Link("查看官方说明", destination: stepDelayFAQURL)
                         .font(.caption.weight(.semibold))
                         .tint(.white)
+                        .frame(minHeight: 44)
                 }
             }
         }
-        // 黄/红阶段底色偏亮，给白字加一层淡阴影保证清晰。
-        .shadow(color: .black.opacity(0.18), radius: 3, x: 0, y: 1)
+        .foregroundStyle(.white)
         .padding(20)
-        .background(stepStage.gradient, in: RoundedRectangle(cornerRadius: 26, style: .continuous))
-        .overlay(alignment: .topTrailing) {
-            Circle()
-                .fill(.white.opacity(0.14))
-                .frame(width: 140, height: 140)
-                .offset(x: 34, y: -54)
-                .allowsHitTesting(false)
-        }
-        .clipShape(RoundedRectangle(cornerRadius: 26, style: .continuous))
-        .shadow(color: stepStage.tint.opacity(0.28), radius: 22, x: 0, y: 12)
-        .animation(.easeInOut(duration: 0.35), value: health.todayTotalSteps)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(stepStage.gradient, in: RoundedRectangle(cornerRadius: 24, style: .continuous))
+        .animation(reduceMotion ? nil : .easeInOut(duration: 0.25), value: health.todayTotalSteps)
     }
 
     /// 到 5 万的进度条，白色填充；在 3 万、4 万分界处画竖线，让用户看清自己落在哪一段。
@@ -333,7 +263,7 @@ struct TodayDashboardView: View {
 
     /// 阶段图例：绿/黄/红分别代表哪一段步数，放在概览卡下方，在浅底上颜色更清楚。
     private var stageLegend: some View {
-        HStack(spacing: 10) {
+        AdaptiveControlGrid(minimumWidth: 135) {
             ForEach([StepStage.healthy, .elevated, .high], id: \.rangeText) { stage in
                 HStack(spacing: 5) {
                     Circle()
@@ -342,7 +272,7 @@ struct TodayDashboardView: View {
                     Text(stage.rangeText)
                         .font(.caption2.weight(.medium))
                         .foregroundStyle(.secondary)
-                        .fixedSize()
+                        .fixedSize(horizontal: false, vertical: true)
                 }
             }
         }
@@ -358,7 +288,7 @@ struct TodayDashboardView: View {
     ) -> some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(spacing: 8) {
-                Text(emoji).font(.system(size: 30))
+                Text(emoji).font(.title2).accessibilityHidden(true)
                 Text(title)
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(.primary)
@@ -378,11 +308,10 @@ struct TodayDashboardView: View {
 
     private var activeSessionCard: some View {
         VStack(alignment: .leading, spacing: 14) {
-            HStack {
+            AdaptiveActionStack {
                 Label("行走会话", systemImage: "location.fill")
                     .font(.headline)
                     .foregroundStyle(PikminUI.deepGreen)
-                Spacer()
                 Text(phaseTitle)
                     .font(.caption.weight(.semibold))
                     .padding(.horizontal, 10)
@@ -396,7 +325,7 @@ struct TodayDashboardView: View {
                     .tint(PikminUI.green)
             }
 
-            HStack {
+            AdaptiveControlGrid(minimumWidth: 120) {
                 sessionMetric("距离", String(format: "%.2f km", session.distanceMeters / 1000))
                 sessionMetric("步数", session.estimatedSteps.formatted())
                 sessionMetric("时间", durationText(session.elapsedSeconds))
@@ -410,25 +339,10 @@ struct TodayDashboardView: View {
             Text("快捷功能")
                 .font(.headline.weight(.bold))
 
-            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12), count: 3), spacing: 12) {
-                quickAction("路线模拟", icon: "point.topleft.down.to.point.bottomright.curvepath") {
-                    selectedTab = .route
-                }
-                quickAction("虚拟步行", icon: "figure.walk.motion") {
-                    selectedTab = .route
-                }
-                quickAction("步数辅助", icon: "heart.text.square") {
-                    selectedTab = .settings
-                }
-                quickAction("种花路线", icon: "camera.macro") {
-                    selectedTab = .route
-                }
-                quickAction("定位场景", icon: "mappin.and.ellipse") {
-                    selectedTab = .route
-                }
-                quickAction("环境检查", icon: "checkmark.shield") {
-                    selectedTab = .settings
-                }
+            AdaptiveControlGrid(minimumWidth: 90) {
+                quickAction("模拟位置", icon: "mappin.and.ellipse") { selectedTab = .route }
+                quickAction("行走记录", icon: "calendar.badge.clock") { selectedTab = .history }
+                quickAction("连接与设置", icon: "gearshape") { selectedTab = .settings }
             }
         }
         .pikminCard()
@@ -443,11 +357,13 @@ struct TodayDashboardView: View {
                 Text(title)
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(.primary)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.82)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .multilineTextAlignment(.center)
             }
             .frame(maxWidth: .infinity)
-            .frame(height: 82)
+            .padding(.vertical, 14)
+            .padding(.horizontal, 8)
+            .frame(minHeight: 82)
             .background(PikminUI.hairline, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
         }
         .buttonStyle(.plain)
@@ -457,21 +373,6 @@ struct TodayDashboardView: View {
         VStack(spacing: 14) {
             PermissionChecklistView(service: permissions, compact: true)
             PreflightChecklistView(service: preflight, compact: true)
-        }
-    }
-
-    private func progressRing(progress: Double, text: String) -> some View {
-        ZStack {
-            Circle()
-                .stroke(.white.opacity(0.25), lineWidth: 8)
-            Circle()
-                .trim(from: 0, to: min(max(progress, 0), 1))
-                .stroke(.white.opacity(0.88), style: StrokeStyle(lineWidth: 8, lineCap: .round))
-                .rotationEffect(.degrees(-90))
-            Text(text)
-                .font(.headline.weight(.bold))
-                .foregroundStyle(.white)
-                .monospacedDigit()
         }
     }
 

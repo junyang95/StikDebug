@@ -1,5 +1,6 @@
 import SwiftData
 import SwiftUI
+import UIKit
 
 enum MainTab: Hashable {
     case home
@@ -20,6 +21,7 @@ struct MainTabView: View {
     @EnvironmentObject private var session: WalkingSessionController
     @EnvironmentObject private var health: HealthStepService
     @AppStorage(AppearancePreference.storageKey) private var appearanceRaw = AppearancePreference.system.rawValue
+    @ObservedObject private var authorization = VipAuthorizationService.shared
     @State private var selectedTab: MainTab = TabState.selected
 
     private var appearance: AppearancePreference {
@@ -77,6 +79,30 @@ struct MainTabView: View {
             HelperSettingsView()
                 .tabItem { Label("设置", systemImage: "gearshape.fill") }
                 .tag(MainTab.settings)
+        }
+        .safeAreaInset(edge: .top, spacing: 0) {
+            if !authorization.isAuthorized {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(authorization.message).font(.caption)
+                    AdaptiveActionStack {
+                        Button(action: authorization.verifyManually) {
+                            HStack {
+                                if authorization.isChecking { ProgressView() }
+                                Text(authorization.isChecking ? "取消验证" : "验证")
+                            }
+                            .frame(minHeight: 44)
+                        }
+                        if authorization.needsNetworkSettings {
+                            Link("打开网络设置", destination: URL(string: UIApplication.openSettingsURLString)!)
+                                .frame(minHeight: 44)
+                        }
+                    }
+                }
+                .frame(maxWidth: 780, alignment: .leading)
+                .padding(10)
+                .frame(maxWidth: .infinity)
+                .background(.regularMaterial)
+            }
         }
         .tint(PikminUI.green)
         .preferredColorScheme(appearance.colorScheme)

@@ -713,7 +713,7 @@ final class CMSDecoderHelper: NSObject {
     }
 }
 
-private enum LocationSimulationStatus {
+enum LocationSimulationStatus {
     static let ok: Int32 = 0
     static let invalidIP: Int32 = 1
     static let pairingRead: Int32 = 2
@@ -722,15 +722,20 @@ private enum LocationSimulationStatus {
     static let locationSimulation: Int32 = 10
     static let locationSet: Int32 = 11
     static let locationClear: Int32 = 12
+    static let unauthorized: Int32 = 13
 }
 
 private enum LocationSimulationState {
+    static var udid: String?
+    static var connectionIdentity: String?
     static var adapter: OpaquePointer?
     static var handshake: OpaquePointer?
     static var remoteServer: OpaquePointer?
     static var locationSimulation: OpaquePointer?
 
     static func cleanup() {
+        udid = nil
+        connectionIdentity = nil
         if let locationSimulation {
             location_simulation_free(locationSimulation)
             self.locationSimulation = nil
@@ -802,6 +807,16 @@ private func establishLocationSimulation(deviceIP: String, pairingFile: String) 
         return LocationSimulationStatus.providerCreate
     }
 
+    do {
+        LocationSimulationState.udid = try readLocationDeviceUDID(
+            adapter: LocationSimulationState.adapter!, handshake: LocationSimulationState.handshake!
+        )
+        LocationSimulationState.connectionIdentity = locationConnectionIdentity(deviceIP, pairingFile)
+    } catch {
+        LocationSimulationState.cleanup()
+        return LocationSimulationStatus.unauthorized
+    }
+
     let remoteServerError = remote_server_connect_rsd(
         LocationSimulationState.adapter,
         LocationSimulationState.handshake,
@@ -828,14 +843,80 @@ private func establishLocationSimulation(deviceIP: String, pairingFile: String) 
     return LocationSimulationStatus.ok
 }
 
+private func locationConnectionIdentity(_ ip: String, _ pairingFile: String) -> String {
+    "\(ip)|\(pairingFile)|\(PairingFileStore.stateSignature())"
+}
+
+private func readLocationDeviceUDID(adapter: OpaquePointer, handshake: OpaquePointer) throws -> String {
+    try IdeviceBridge.withConnectedClient(
+        fallback: "Failed to connect to lockdownd", missingClientMessage: "Missing lockdownd client",
+        connect: { lockdownd_connect_rsd(adapter, handshake, $0) },
+        cleanup: { lockdownd_client_free($0) }
+    ) { client in
+        var value: plist_t?
+        if let error = lockdownd_get_value(client, "UniqueDeviceID", nil, &value) {
+            throw IdeviceBridge.consumeFFIError(error, fallback: "Failed to read device UDID")
+        }
+        defer { if let value { plist_free(value) } }
+        guard let value else { throw VipLicenseVerifier.Failure.identity }
+        var text: UnsafeMutablePointer<CChar>?
+        plist_get_string_val(value, &text)
+        defer { free(text) }
+        guard let text, let udid = String(validatingUTF8: text), !udid.isEmpty else {
+            throw VipLicenseVerifier.Failure.identity
+        }
+        return udid
+    }
+}
+
+/// Authorization owns a separate tunnel so a slow identity read cannot block location resends.
+/// Run only on AuthorizationDeviceReader's bounded, single-worker queue.
+func readAuthorizationDeviceUDID(deviceIP: String, pairingFile: String) throws -> String {
+    guard !DeveloperConnectionGate.isBlocked else { throw AuthorizationOperationError.deviceBusy }
+    var address = sockaddr_in()
+    address.sin_family = sa_family_t(AF_INET)
+    address.sin_port = in_port_t(49152).bigEndian
+    guard deviceIP.withCString({ inet_pton(AF_INET, $0, &address.sin_addr) }) == 1 else {
+        throw VipLicenseVerifier.Failure.identity
+    }
+    var pairing: OpaquePointer?
+    if let error = pairingFile.withCString({ rp_pairing_file_read($0, &pairing) }) {
+        throw IdeviceBridge.consumeFFIError(error, fallback: "Cannot read pairing file")
+    }
+    guard let pairing else { throw VipLicenseVerifier.Failure.identity }
+    defer { rp_pairing_file_free(pairing) }
+    var adapter: OpaquePointer?
+    var handshake: OpaquePointer?
+    defer {
+        if let handshake { rsd_handshake_free(handshake) }
+        if let adapter { adapter_free(adapter) }
+    }
+    let error = withUnsafePointer(to: &address) { pointer in
+        pointer.withMemoryRebound(to: sockaddr.self, capacity: 1) {
+            tunnel_create_rppairing($0, socklen_t(MemoryLayout<sockaddr_in>.stride),
+                "PikminAuthorization", pairing, nil, nil, &adapter, &handshake)
+        }
+    }
+    if let error { throw IdeviceBridge.consumeFFIError(error, fallback: "Cannot connect to paired device") }
+    guard let adapter, let handshake else { throw VipLicenseVerifier.Failure.identity }
+    return try readLocationDeviceUDID(adapter: adapter, handshake: handshake)
+}
+
 func simulate_location(_ deviceIP: String, _ latitude: Double, _ longitude: Double, _ pairingFile: String) -> Int32 {
-    DeveloperConnectionGate.performLocationCommand(clear: false) {
+    guard VipLocationGate.shared.allows() else { return LocationSimulationStatus.unauthorized }
+    return DeveloperConnectionGate.performLocationCommand(clear: false) {
         simulateLocationUnchecked(deviceIP, latitude, longitude, pairingFile)
     }
 }
 
 private func simulateLocationUnchecked(_ deviceIP: String, _ latitude: Double, _ longitude: Double, _ pairingFile: String) -> Int32 {
+    if LocationSimulationState.connectionIdentity != locationConnectionIdentity(deviceIP, pairingFile) {
+        LocationSimulationState.cleanup()
+    }
     if let locationSimulation = LocationSimulationState.locationSimulation {
+        guard let udid = LocationSimulationState.udid, VipLocationGate.shared.allows(udid: udid) else {
+            return LocationSimulationStatus.unauthorized
+        }
         if let ffiError = location_simulation_set(locationSimulation, latitude, longitude) {
             idevice_error_free(ffiError)
             LocationSimulationState.cleanup()
@@ -849,6 +930,9 @@ private func simulateLocationUnchecked(_ deviceIP: String, _ latitude: Double, _
         return connectStatus
     }
 
+    guard let udid = LocationSimulationState.udid, VipLocationGate.shared.allows(udid: udid) else {
+        return LocationSimulationStatus.unauthorized
+    }
     let locationSetError = location_simulation_set(
         LocationSimulationState.locationSimulation,
         latitude,

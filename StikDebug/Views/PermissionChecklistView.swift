@@ -14,12 +14,13 @@ struct PermissionChecklistView: View {
                     .font(.headline)
                 Spacer()
                 if service.isRefreshing {
-                    ProgressView().controlSize(.small)
+                    ProgressView()
                 } else {
                     Button("检查") {
                         Task { await service.refresh() }
                     }
                     .font(.subheadline)
+                    .frame(minHeight: 44)
                 }
             }
 
@@ -77,6 +78,7 @@ struct PermissionChecklistView: View {
             Image(systemName: symbol(for: item.status))
                 .foregroundStyle(color(for: item.status))
         }
+        .frame(minHeight: 44)
         .contentShape(Rectangle())
     }
 
@@ -93,11 +95,11 @@ struct PermissionChecklistView: View {
         Button(action: action) {
             Label(title, systemImage: systemImage)
                 .font(.caption.weight(.semibold))
-                .frame(maxWidth: .infinity)
+                .frame(maxWidth: .infinity, minHeight: 44)
         }
         .buttonStyle(.borderedProminent)
-        .tint(PikminUI.green)
-        .controlSize(.small)
+        .tint(PikminUI.actionGreen)
+
     }
 
     @ViewBuilder
@@ -175,7 +177,7 @@ struct PermissionChecklistView: View {
         case .network:
             permissionAlert = .init(
                 title: "无线局域网与蜂窝网络".localized,
-                message: "iOS 不提供让 App 主动弹出“无线局域网与蜂窝网络”授权框的 API。请确认本 App 允许使用无线局域网与蜂窝数据；如果系统需要本地网络授权，会在实际网络访问时自动弹出。".localized,
+                message: "首次联网如出现系统弹窗，请允许 App 使用无线局域网与蜂窝数据。若之前拒绝，请到系统设置开启；设备配对还可能需要单独允许“本地网络”访问。返回 App 后会自动重试验证。".localized,
                 opensSettings: true
             )
         }

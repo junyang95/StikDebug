@@ -14,7 +14,6 @@ struct MovementStatusCapsule: View {
     @EnvironmentObject private var session: WalkingSessionController
     @EnvironmentObject private var preflight: EnvironmentPreflightService
     @EnvironmentObject private var vpn: EmbeddedVPNService
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @ObservedObject private var fixedSession = FixedLocationSessionController.shared
 
     let selectedMode: MovementMode
@@ -47,8 +46,8 @@ struct MovementStatusCapsule: View {
         switch session.phase {
         case .preparing:
             return MovementStatusPresentation(
-                title: "正在准备模拟…".localized,
-                detail: "正在连接设备并发送起始位置".localized,
+                title: session.isStopping ? "正在结束会话…".localized : "正在准备模拟…".localized,
+                detail: session.isStopping ? "正在保存会话记录".localized : "正在连接设备并发送起始位置".localized,
                 symbol: "location.fill",
                 tint: PikminUI.green,
                 isProgressing: true
@@ -84,7 +83,9 @@ struct MovementStatusCapsule: View {
         case .completed:
             return MovementStatusPresentation(
                 title: "会话已完成".localized,
-                detail: "可选择新位置或再次开始".localized,
+                detail: fixedSession.coordinate != nil
+                    ? "已停留在最后位置，恢复真实定位后才会离开".localized
+                    : "可选择新位置或再次开始".localized,
                 symbol: "checkmark.circle.fill",
                 tint: PikminUI.green,
                 isProgressing: false
@@ -215,41 +216,43 @@ struct MovementStatusCapsule: View {
         }
     }
 
+    @Environment(\.dynamicTypeSize) private var typeSize
+
     var body: some View {
-        VStack(spacing: 0) {
-            Button {
-                if reduceMotion {
-                    isExpanded.toggle()
-                } else {
-                    withAnimation(.snappy(duration: 0.24)) {
-                        isExpanded.toggle()
+        Button { isExpanded = true } label: {
+            collapsedContent
+                .padding(.horizontal, 14)
+                .padding(.vertical, 10)
+                .frame(minHeight: 60)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .background(PikminUI.cardBackground, in: RoundedRectangle(cornerRadius: 16))
+        .accessibilityLabel("位置模拟状态：\(presentation.title)")
+        .accessibilityHint("查看连接状态与诊断")
+        .sheet(isPresented: $isExpanded) {
+            NavigationStack {
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 20) {
+                        Text(presentation.detail).font(.subheadline).foregroundStyle(.secondary)
+                        diagnosticContent
+                    }
+                    .padding(20)
+                    .frame(maxWidth: 600)
+                    .frame(maxWidth: .infinity, minHeight: 44)
+                }
+                .navigationTitle("连接与诊断")
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .confirmationAction) {
+                        Button("完成") { isExpanded = false }
                     }
                 }
-            } label: {
-                collapsedContent
-                    .contentShape(Rectangle())
+                .background(PikminUI.pageBackground)
             }
-            .buttonStyle(.plain)
-            .accessibilityLabel("位置模拟状态：\(presentation.title)")
-            .accessibilityHint(isExpanded ? "轻点收起诊断" : "轻点展开诊断")
-
-            if isExpanded {
-                Divider()
-                    .padding(.top, 10)
-
-                diagnosticContent
-                    .padding(.top, 12)
-                    .transition(.opacity.combined(with: .move(edge: .top)))
-            }
+            .presentationDetents([.medium, .large])
+            .presentationDragIndicator(.visible)
         }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 12)
-        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
-        .overlay {
-            RoundedRectangle(cornerRadius: 20, style: .continuous)
-                .stroke(.white.opacity(0.24), lineWidth: 0.5)
-        }
-        .shadow(color: .black.opacity(0.12), radius: 14, y: 7)
     }
 
     private var collapsedContent: some View {
@@ -280,21 +283,23 @@ struct MovementStatusCapsule: View {
                 Text(presentation.title)
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(.primary)
-                    .lineLimit(1)
+                    .lineLimit(2)
 
-                Text(summaryLine)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
-                    .monospacedDigit()
+                if !typeSize.isAccessibilitySize {
+                    Text(summaryLine)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(2)
+                        .monospacedDigit()
+                }
             }
 
             Spacer(minLength: 6)
 
-            Image(systemName: "chevron.down")
+            Image(systemName: "chevron.right")
                 .font(.caption.weight(.bold))
                 .foregroundStyle(.tertiary)
-                .rotationEffect(.degrees(isExpanded ? 180 : 0))
+
         }
     }
 
@@ -342,16 +347,16 @@ struct MovementStatusCapsule: View {
                 )
             }
 
-            HStack(spacing: 10) {
+            AdaptiveActionStack {
                 if !vpn.status.isConnected {
                     Button {
                         Task { await vpn.connect() }
                     } label: {
                         Label("连接 VPN", systemImage: "network")
-                            .frame(maxWidth: .infinity)
+                            .frame(maxWidth: .infinity, minHeight: 44)
                     }
                     .buttonStyle(.borderedProminent)
-                    .tint(PikminUI.green)
+                    .tint(PikminUI.actionGreen)
                     .disabled(vpn.status == .connecting || vpn.status == .disconnecting)
                 }
 
@@ -359,10 +364,10 @@ struct MovementStatusCapsule: View {
                     Task { await preflight.refresh() }
                 } label: {
                     Label("重新检查", systemImage: "arrow.clockwise")
-                        .frame(maxWidth: .infinity)
+                        .frame(maxWidth: .infinity, minHeight: 44)
                 }
                 .buttonStyle(.borderedProminent)
-                .tint(PikminUI.green)
+                .tint(PikminUI.actionGreen)
                 .disabled(preflight.isRefreshing)
             }
             .font(.subheadline.weight(.semibold))
@@ -378,7 +383,7 @@ struct MovementStatusCapsule: View {
                 Text(title)
                     .font(.caption.weight(.semibold))
                 Text(value)
-                    .font(.caption2)
+                    .font(.subheadline)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }

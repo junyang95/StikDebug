@@ -1,0 +1,105 @@
+{
+  "ipa": "/Users/junyang/IdeaProjects/StikDebug/artifacts/PikminHelper-0.1.2-3-unsigned.ipa",
+  "bytes": 11766975,
+  "sha256": "e4844f83864bf8194f545f0797e04bb6196e629460fbbd14a473bcf9863091f7",
+  "configuration": "Release",
+  "signed": false,
+  "bundles": [
+    {
+      "bundle": "StikDebug.app",
+      "identifier": "com.jy.stikdebug.pikmin",
+      "version": "0.1.2",
+      "build": "3",
+      "architecture": "arm64"
+    },
+    {
+      "bundle": "PikminLiveActivity.appex",
+      "identifier": "com.jy.stikdebug.pikmin.liveactivity",
+      "version": "0.1.2",
+      "build": "3",
+      "architecture": "arm64"
+    },
+    {
+      "bundle": "PikminTunnel.appex",
+      "identifier": "com.jy.stikdebug.pikmin.networkextension",
+      "version": "0.1.2",
+      "build": "3",
+      "architecture": "arm64"
+    }
+  ],
+  "unsignedBinaries": [
+    "StikDebug",
+    "PlugIns/PikminTunnel.appex/PikminTunnel",
+    "PlugIns/PikminLiveActivity.appex/PikminLiveActivity"
+  ],
+  "clientTestsPassed": 34,
+  "releaseArchiveSucceeded": true,
+  "ios27PhysicalDeviceValidated": false,
+  "sourceChanges": [
+    {
+      "path": "Tools/test-pikmin-runtime.sh",
+      "oldSha256": "4058aa9cbe666f22262e13b63d404fc93155c29832f83e5d5e01c7a933092bed",
+      "newSha256": "9b0a7be93dac9d9a0d9cf85dc787694a566a2c28972d80b080352fb3dfb86e5f"
+    },
+    {
+      "path": "StikDebug/Localizable.xcstrings",
+      "oldSha256": "d60f99f947a7c8e4cd5d872670afce75211ff9229027907ca130c6c3c096adaa",
+      "newSha256": "2842947208b6a6f3af4504dad168be1215fc61795a0244e71464e4991b926bdd"
+    },
+    {
+      "path": "docs/buyer-fixes-2026-09.md",
+      "oldSha256": "342f40c791889c2d8b9c20dc22086720b8302c8b4a84cb21dbafcc450a4347d0",
+      "newSha256": "52068589063737a65f11a98069ae8ffc111d32784fa81937daf29e55e2dda57d"
+    },
+    {
+      "path": "StikDebug.xcodeproj/project.pbxproj",
+      "oldSha256": "3051c08590eef2bcf67aa58b604af48b98fd11033ae362c827a62239f0929092",
+      "newSha256": "f8b709fc47b5832807b790471088bbf956e50caf1ffe6bd26d8601cd96ba4981"
+    },
+    {
+      "path": "PikminRuntimeTests/RuntimeDoubles.swift",
+      "oldSha256": "4123883020f90abaca26ea1690962ee0b3ff538f748f24db82716901b1daabe3",
+      "newSha256": "e792a2d7c49697c5062de4ef63ad82b842621f02c758e89d2b41388fb6989292"
+    },
+    {
+      "path": "PikminRuntimeTests/AuthorizationTests.swift",
+      "oldSha256": null,
+      "newSha256": "26f1b7e9f3777f1f8eb2cc98e68348fd0363f537a3a9ff88a5b9133853751002"
+    },
+    {
+      "path": "StikDebug/Core/PairingGuidePolicy.swift",
+      "oldSha256": null,
+      "newSha256": "350f5e0ca713be697da338d720b8e35af30dc43466339cdd2f8b4cf338b9ea3d"
+    },
+    {
+      "path": "StikDebug/Core/AuthorizationDeadline.swift",
+      "oldSha256": null,
+      "newSha256": "d184e9b8271ecc51be3aae183144c28bcc4c3f7c6ec6aff7fcaa5a963185ac99"
+    },
+    {
+      "path": "StikDebug/App/StikDebugApp.swift",
+      "oldSha256": "e8cf6023fd4bed76356175cb787536a419877e1b0462cfaed2e916c786a17351",
+      "newSha256": "3b8df5e787ccee6f999e047cdf752414ca55bb35601930b576ff4ff3da54b147"
+    },
+    {
+      "path": "StikDebug/Device/IdeviceFFIBridge.swift",
+      "oldSha256": "dfae919691cc80ff261b4f4fdd25600dadf6bf3dd61ae91fb222a1e7861c0096",
+      "newSha256": "5c63c5713cf8210a695be9dcafe5cb17caa4e7f61b1e7cab0f20c9837208153a"
+    },
+    {
+      "path": "StikDebug/Views/MainTabView.swift",
+      "oldSha256": "d0fa744621f4b5bc3893ec091de2cfde420aa1fc2a83c0e9b8e9f333be58ac07",
+      "newSha256": "c1c4de274c6f22af1758ff4124e252114cfe36830c7d0e21ac9e9818b45cdf00"
+    },
+    {
+      "path": "StikDebug/Views/HelperSettingsView.swift",
+      "oldSha256": "e8c377335e7387accaeab9e9be5b93982984f460dbc18235b616d68c77388f2e",
+      "newSha256": "e475f375b5a2ce1ebe05b68e1582f0219ae65e8a245dce40e6bd6ee07461a7b2"
+    },
+    {
+      "path": "StikDebug/Services/VipAuthorizationService.swift",
+      "oldSha256": "639cd7168d687d99746b300ebf175726ebb5642bbe4bcebaf089db2e8ce086a0",
+      "newSha256": "73764d0494e49252e228d8103e3da603478556e9fdd6e10046869ef7d105c0e8"
+    }
+  ]
+}

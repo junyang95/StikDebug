@@ -13,6 +13,9 @@ final class MountingProgress: ObservableObject {
     @Published private(set) var mountingThread: Thread?
     @Published private(set) var coolisMounted: Bool = false
 
+    // Reserved by the guided installer, including its download stage.
+    var installationInProgress = false
+
     private init() {}
 
     func checkforMounted() {
@@ -36,6 +39,7 @@ final class MountingProgress: ObservableObject {
     }
 
     private func mount() {
+        guard !installationInProgress else { return }
         let currentlyMounted = isMounted()
         DispatchQueue.main.async {
             self.coolisMounted = currentlyMounted

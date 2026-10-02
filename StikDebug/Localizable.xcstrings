@@ -1,6 +1,1974 @@
 {
   "sourceLanguage" : "zh-Hans",
   "strings" : {
+    "打开 DDI 安装": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open DDI installer"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "開啟 DDI 安裝"
+          }
+        }
+      }
+    },
+    "DDI 安装": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "DDI installation"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "DDI 安裝"
+          }
+        }
+      }
+    },
+    "为额外开发服务安装 DDI": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Install DDI for additional developer services"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "為額外開發服務安裝 DDI"
+          }
+        }
+      }
+    },
+    "DDI 是可选组件，未安装也可以使用定位模拟。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "DDI is optional. Location simulation works without it."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "DDI 是選用元件，未安裝也可以使用定位模擬。"
+          }
+        }
+      }
+    },
+    "下载缺少的文件": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Download missing files"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "下載缺少的檔案"
+          }
+        }
+      }
+    },
+    "自动连接并挂载到设备": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Connect and mount automatically"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "自動連線並掛載到裝置"
+          }
+        }
+      }
+    },
+    "下载来源：static.wow-app.store。文件较大，建议使用 Wi‑Fi；使用 4G/5G 会消耗流量。已下载的完整文件会保留，重试时无需重复下载。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Downloads come from static.wow-app.store. The files are large; Wi-Fi is recommended. Using 4G/5G consumes mobile data. Completed files are kept for retries."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "下載來源：static.wow-app.store。檔案較大，建議使用 Wi‑Fi；使用 4G/5G 會消耗行動數據。已下載的完整檔案會保留，重試時無需重複下載。"
+          }
+        }
+      }
+    },
+    "下载并安装 DDI": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Download and install DDI"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "下載並安裝 DDI"
+          }
+        }
+      }
+    },
+    "重新检查并安装": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Check and install again"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "重新檢查並安裝"
+          }
+        }
+      }
+    },
+    "重新下载全部文件并安装": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Download all files again and install"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "重新下載全部檔案並安裝"
+          }
+        }
+      }
+    },
+    "取消下载": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cancel download"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "取消下載"
+          }
+        }
+      }
+    },
+    "请保持 App 在前台。可以关闭此页面，安装会在 App 内继续。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keep the app open. You can close this page; installation will continue within the app."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "請保持 App 在前景。可以關閉此頁面，安裝會在 App 內繼續。"
+          }
+        }
+      }
+    },
+    "正在检查配对与内置 VPN…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Checking pairing and built-in VPN…"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在檢查配對與內建 VPN…"
+          }
+        }
+      }
+    },
+    "正在挂载 DDI，请稍候…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mounting DDI. Please wait…"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在掛載 DDI，請稍候…"
+          }
+        }
+      }
+    },
+    "挂载可能需要几分钟。完成后会自动检查安装结果。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mounting may take a few minutes. The result will be checked automatically."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "掛載可能需要幾分鐘。完成後會自動檢查安裝結果。"
+          }
+        }
+      }
+    },
+    "正在取消下载…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cancelling download…"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在取消下載…"
+          }
+        }
+      }
+    },
+    "DDI 已安装并挂载": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "DDI is installed and mounted"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "DDI 已安裝並掛載"
+          }
+        }
+      }
+    },
+    "下载已取消，可以稍后继续。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Download cancelled. You can continue later."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "下載已取消，可以稍後繼續。"
+          }
+        }
+      }
+    },
+    "DDI 安装未完成": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "DDI installation incomplete"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "DDI 安裝未完成"
+          }
+        }
+      }
+    },
+    "请先停止本机 WLOC 连接测试，再安装 DDI。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stop the local WLOC connection test before installing DDI."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "請先停止本機 WLOC 連線測試，再安裝 DDI。"
+          }
+        }
+      }
+    },
+    "请先停止路线或摇杆，再安装 DDI。停止后会保留虚拟位置。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stop the route or joystick before installing DDI. Your virtual position will be kept."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "請先停止路線或搖桿，再安裝 DDI。停止後會保留虛擬位置。"
+          }
+        }
+      }
+    },
+    "DDI 正在后台挂载，请稍后重新检查。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "DDI is already being mounted. Check again shortly."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "DDI 正在背景掛載，請稍後重新檢查。"
+          }
+        }
+      }
+    },
+    "请先在设置中完成设备配对，再安装 DDI。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Complete device pairing in Settings before installing DDI."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "請先在設定中完成裝置配對，再安裝 DDI。"
+          }
+        }
+      }
+    },
+    "内置 VPN 尚未连接，请允许 VPN 连接后重试。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The built-in VPN is not connected. Allow the VPN connection, then try again."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "內建 VPN 尚未連線，請允許 VPN 連線後重試。"
+          }
+        }
+      }
+    },
+    "文件已下载。请先停止路线、摇杆或连接测试，再重试安装。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Files downloaded. Stop the route, joystick or connection test, then retry installation."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "檔案已下載。請先停止路線、搖桿或連線測試，再重試安裝。"
+          }
+        }
+      }
+    },
+    "文件已下载，但未确认 DDI 挂载成功。请检查内置 VPN 和开发者模式后重试。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Files downloaded, but DDI mounting could not be confirmed. Check the built-in VPN and Developer Mode, then try again."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "檔案已下載，但未確認 DDI 掛載成功。請檢查內建 VPN 和開發者模式後重試。"
+          }
+        }
+      }
+    },
+    "DDI 下载地址无效：": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Invalid DDI download address: "
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "DDI 下載位址無效："
+          }
+        }
+      }
+    },
+    "DDI 下载内容无效，请稍后重新下载。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Invalid DDI download. Please download the files again later."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "DDI 下載內容無效，請稍後重新下載。"
+          }
+        }
+      }
+    },
+    "DDI 下载服务器返回 HTTP %d，请稍后重试。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The DDI server returned HTTP %d. Please try again later."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "DDI 下載伺服器回傳 HTTP %d，請稍後重試。"
+          }
+        }
+      }
+    },
+    "已展开": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Expanded"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已展開"
+          }
+        }
+      }
+    },
+    "已收起": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Collapsed"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已收起"
+          }
+        }
+      }
+    },
+    "展开或收起操作选项，主要操作始终保留": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Expand or collapse options. Main actions remain available."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "展開或收起操作選項，主要操作仍可使用"
+          }
+        }
+      }
+    },
+    "停止行走": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stop walking"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "停止行走"
+          }
+        }
+      }
+    },
+    "查看连接状态与诊断": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "View connection status and diagnostics"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "查看連線狀態與診斷"
+          }
+        }
+      }
+    },
+    "连接与诊断": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Connection and diagnostics"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "連線與診斷"
+          }
+        }
+      }
+    },
+    "摇杆选项": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Joystick options"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "搖桿選項"
+          }
+        }
+      }
+    },
+    "目标数值": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Goal value"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "目標數值"
+          }
+        }
+      }
+    },
+    "暂停移动": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pause movement"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "暫停移動"
+          }
+        }
+      }
+    },
+    "路线选项": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Route options"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "路線選項"
+          }
+        }
+      }
+    },
+    "定点选项": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Location options"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "定點選項"
+          }
+        }
+      }
+    },
+    "导入 GPX": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Import GPX"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "匯入 GPX"
+          }
+        }
+      }
+    },
+    "步行速度": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Walking speed"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "步行速度"
+          }
+        }
+      }
+    },
+    "骑行速度": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cycling speed"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "騎行速度"
+          }
+        }
+      }
+    },
+    "删除本 App 写入的步数？": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete steps written by this app?"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "刪除本 App 寫入的步數？"
+          }
+        }
+      }
+    },
+    "删除步数": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete steps"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "刪除步數"
+          }
+        }
+      }
+    },
+    "将删除本 App 已写入 Apple 健康的全部步数，此操作无法撤销。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This deletes all steps this app has written to Apple Health. This cannot be undone."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "將刪除本 App 已寫入 Apple 健康的全部步數，此操作無法復原。"
+          }
+        }
+      }
+    },
+    "模拟位置": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Simulate location"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "模擬位置"
+          }
+        }
+      }
+    },
+    "行走记录": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Walking history"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "行走記錄"
+          }
+        }
+      }
+    },
+    "连接与设置": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Connection and settings"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "連線與設定"
+          }
+        }
+      }
+    },
+    "已复制配对码": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pairing code copied"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已複製配對碼"
+          }
+        }
+      }
+    },
+    "复制配对码": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Copy pairing code"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "複製配對碼"
+          }
+        }
+      }
+    },
+    "点“开始本机配对”": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tap “Start on-device pairing”"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "點「開始本機配對」"
+          }
+        }
+      }
+    },
+    "允许通知和本地网络权限，以便在系统设置中看到主机与配对码。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Allow notifications and local network access to see the host and pairing code in Settings."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "允許通知和區域網路權限，以便在系統設定中看到主機與配對碼。"
+          }
+        }
+      }
+    },
+    "保持 Wi‑Fi 开启": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keep Wi-Fi turned on"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "保持 Wi‑Fi 開啟"
+          }
+        }
+      }
+    },
+    "无需连接电脑；本机服务只在当前 iPhone 上运行。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No computer is needed. The pairing service runs on this iPhone."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "無需連接電腦；本機服務只在目前的 iPhone 上執行。"
+          }
+        }
+      }
+    },
+    "打开“设置”": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open Settings"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "打開「設定」"
+          }
+        }
+      }
+    },
+    "进入“隐私与安全”": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open Privacy & Security"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "進入「隱私權與安全性」"
+          }
+        }
+      }
+    },
+    "打开“开发者模式”": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open Developer Mode"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "打開「開發者模式」"
+          }
+        }
+      }
+    },
+    "选择“与主机配对” → StikDebug": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose “Pair with Host” → StikDebug"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "選擇「與主機配對」→ StikDebug"
+          }
+        }
+      }
+    },
+    "按系统提示输入本机解锁密码。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enter your device passcode when prompted."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "依系統提示輸入本機解鎖密碼。"
+          }
+        }
+      }
+    },
+    "输入通知中的 6 位配对码": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enter the six-digit pairing code from the notification"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "輸入通知中的 6 位配對碼"
+          }
+        }
+      }
+    },
+    "完成后回到 StikDebug，连接本地隧道。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Return to StikDebug when finished and connect the local tunnel."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "完成後回到 StikDebug，連接本地通道。"
+          }
+        }
+      }
+    },
+    "准备在本机配对": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ready to pair on this device"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "準備在本機配對"
+          }
+        }
+      }
+    },
+    "正在等待系统设置": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Waiting for Settings"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在等待系統設定"
+          }
+        }
+      }
+    },
+    "设备已连接": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Device connected"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "裝置已連接"
+          }
+        }
+      }
+    },
+    "配对码已生成": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pairing code ready"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "配對碼已產生"
+          }
+        }
+      }
+    },
+    "正在安全安装配对文件": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Installing the pairing file"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在安裝配對檔案"
+          }
+        }
+      }
+    },
+    "本机配对完成": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "On-device pairing complete"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "本機配對完成"
+          }
+        }
+      }
+    },
+    "本机配对未完成": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "On-device pairing incomplete"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "本機配對未完成"
+          }
+        }
+      }
+    },
+    "iOS 27 可以直接生成设备信任文件，不再需要电脑配对。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "On iOS 27, you can create the device trust file directly without pairing through a computer."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "iOS 27 可以直接產生裝置信任檔案，無需使用電腦配對。"
+          }
+        }
+      }
+    },
+    "前往“隐私与安全 → 开发者模式 → 与主机配对”。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Go to Privacy & Security → Developer Mode → Pair with Host."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "前往「隱私權與安全性 → 開發者模式 → 與主機配對」。"
+          }
+        }
+      }
+    },
+    "请完成解锁验证，配对码马上出现。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unlock your device to display the pairing code."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "請完成解鎖驗證，配對碼即將出現。"
+          }
+        }
+      }
+    },
+    "在系统设置的配对弹窗中输入下方 6 位号码。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enter the six-digit code below in the pairing dialog in Settings."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "在系統設定的配對視窗中輸入下方 6 位號碼。"
+          }
+        }
+      }
+    },
+    "正在保存设备配对文件，请稍候。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Saving the device pairing file. Please wait."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在儲存裝置配對檔案，請稍候。"
+          }
+        }
+      }
+    },
+    "配对文件已就绪。下一步连接内置 LocalDevVPN。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The pairing file is ready. Next, connect the built-in LocalDevVPN."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "配對檔案已就緒。下一步連接內建的 LocalDevVPN。"
+          }
+        }
+      }
+    },
+    "正在连接本地隧道…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Connecting the local tunnel…"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在連接本地通道…"
+          }
+        }
+      }
+    },
+    "开始本机配对": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Start on-device pairing"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "開始本機配對"
+          }
+        }
+      }
+    },
+    "打开“隐私与安全”": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open Privacy & Security"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "打開「隱私權與安全性」"
+          }
+        }
+      }
+    },
+    "正在安装配对文件…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Installing the pairing file…"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在安裝配對檔案…"
+          }
+        }
+      }
+    },
+    "连接本地隧道并检查": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Connect the local tunnel and check"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "連接本地通道並檢查"
+          }
+        }
+      }
+    },
+    "重新开始": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Start again"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "重新開始"
+          }
+        }
+      }
+    },
+    "重连中": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reconnecting"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "重新連線中"
+          }
+        }
+      }
+    },
+    "不支持此文件类型。请选择 GPX、KML、GeoJSON、JSON、CSV 或文本文件。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unsupported file type. Choose a GPX, KML, GeoJSON, JSON, CSV or text file."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "不支援此檔案類型。請選擇 GPX、KML、GeoJSON、JSON、CSV 或文字檔。"
+          }
+        }
+      }
+    },
+    "等待联网；如出现系统弹窗，请允许网络访问，允许后会自动验证" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Waiting for a connection. Allow network access if prompted; verification will continue automatically."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "等待連網；如出現系統彈窗，請允許網路存取，允許後會自動驗證"
+          }
+        }
+      }
+    },
+    "暂时无法联网验证。请允许 App 使用网络；恢复联网后会自动重试，也可前往设置检查权限" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unable to connect for verification. Allow network access; verification will retry when connectivity returns. You can also check permissions in Settings."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "暫時無法連網驗證。請允許 App 使用網路；恢復連網後會自動重試，也可前往設定檢查權限"
+          }
+        }
+      }
+    },
+    "打开网络设置" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open Network Settings"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "開啟網路設定"
+          }
+        }
+      }
+    },
+    "等待系统返回网络状态；首次联网如出现权限弹窗，请选择允许" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Waiting for network status. Allow access if a permission prompt appears on first use."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "等待系統回傳網路狀態；首次連網如出現權限彈窗，請選擇允許"
+          }
+        }
+      }
+    },
+    "检测到网络：%@。如首次联网出现系统弹窗，请允许 App 访问网络" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Network detected: %@. Allow access if a permission prompt appears on first use."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "偵測到網路：%@。如首次連網出現系統彈窗，請允許 App 存取網路"
+          }
+        }
+      }
+    },
+    "App 网络访问受限，请到系统设置允许无线数据访问" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Network access is restricted. Allow wireless data access in Settings."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "App 網路存取受限，請到系統設定允許無線資料存取"
+          }
+        }
+      }
+    },
+    "本地网络访问被拒绝，请到系统设置允许本地网络访问" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Local network access was denied. Allow local network access in Settings."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "本機網路存取被拒絕，請到系統設定允許本機網路存取"
+          }
+        }
+      }
+    },
+    "首次联网如出现系统弹窗，请允许 App 使用无线局域网与蜂窝数据。若之前拒绝，请到系统设置开启；设备配对还可能需要单独允许“本地网络”访问。返回 App 后会自动重试验证。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "If prompted on first connection, allow Wi-Fi and cellular data access. If previously denied, enable it in Settings. Device pairing may also require separate local network access. Verification retries when you return to the app."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "首次連網如出現系統彈窗，請允許 App 使用 Wi-Fi 與行動數據。若之前拒絕，請到系統設定開啟；裝置配對還可能需要另外允許「本機網路」存取。返回 App 後會自動重試驗證。"
+          }
+        }
+      }
+    },
+    "已取消验证，可重新尝试" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Verification canceled. You can try again."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已取消驗證，可重新嘗試"
+          }
+        }
+      }
+    },
+    "正在验证授权…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Verifying access…"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在驗證授權…"
+          }
+        }
+      }
+    },
+    "请先完成设备配对，再验证 VIP" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pair your device before verifying VIP access."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "請先完成裝置配對，再驗證 VIP"
+          }
+        }
+      }
+    },
+    "请先连接内置 VPN，再验证 VIP" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Connect the built-in VPN before verifying VIP access."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "請先連接內建 VPN，再驗證 VIP"
+          }
+        }
+      }
+    },
+    "正在读取设备信息…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reading device information…"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在讀取裝置資訊…"
+          }
+        }
+      }
+    },
+    "正在连接授权服务器…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Contacting the authorization server…"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在連接授權伺服器…"
+          }
+        }
+      }
+    },
+    "验证超时，请检查 VPN 和网络后重试" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Verification timed out. Check your VPN and network, then retry."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "驗證逾時，請檢查 VPN 和網路後重試"
+          }
+        }
+      }
+    },
+    "暂时无法验证授权，本机没有有效的离线授权，请联网重试" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unable to verify access. No valid offline license is stored on this device. Connect and retry."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "暫時無法驗證授權，本機沒有有效的離線授權，請連網重試"
+          }
+        }
+      }
+    },
+    "服务器暂不可用时可继续使用本地授权，最多保留 3 天" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your saved license allows up to 3 days of access while the server is unavailable."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "伺服器暫不可用時可繼續使用本機授權，最多保留 3 天"
+          }
+        }
+      }
+    },
+    "离线授权有效至" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Offline access expires"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "離線授權有效至"
+          }
+        }
+      }
+    },
+    "取消验证" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cancel verification"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "取消驗證"
+          }
+        }
+      }
+    },
+    "请完成设备连接后验证 VIP" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Connect your device to verify VIP access"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "請完成裝置連線後驗證 VIP"
+          }
+        }
+      }
+    },
+    "离线授权有效，请联网更新状态" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Offline license valid. Connect to refresh your status."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "離線授權有效，請連網更新狀態"
+          }
+        }
+      }
+    },
+    "VIP 授权有效" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "VIP access verified"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "VIP 授權有效"
+          }
+        }
+      }
+    },
+    "此设备已被封禁，请联系商家" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This device is blocked. Contact the seller."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "此裝置已被封禁，請聯絡商家"
+          }
+        }
+      }
+    },
+    "VIP 已过期，请续费后重新验证" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "VIP has expired. Renew and verify again."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "VIP 已到期，請續費後重新驗證"
+          }
+        }
+      }
+    },
+    "此设备尚未获得 VIP 授权" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This device does not have VIP access."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "此裝置尚未獲得 VIP 授權"
+          }
+        }
+      }
+    },
+    "授权验证失败，请检查连接并重新验证" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Authorization failed. Check your connection and try again."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "授權驗證失敗，請檢查連線並重新驗證"
+          }
+        }
+      }
+    },
+    "验证" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Verify"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "驗證"
+          }
+        }
+      }
+    },
+    "VIP 授权" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "VIP access"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "VIP 授權"
+          }
+        }
+      }
+    },
+    "重新验证授权" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Verify access again"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "重新驗證授權"
+          }
+        }
+      }
+    },
+    "购买或续费" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Purchase or renew"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "購買或續費"
+          }
+        }
+      }
+    },
+    "地图偏移校正" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Map offset correction"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "地圖偏移校正"
+          }
+        }
+      }
+    },
+    "标准地图（WGS-84）" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Standard map (WGS-84)"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "標準地圖（WGS-84）"
+          }
+        }
+      }
+    },
+    "高德地图（GCJ-02）" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Amap (GCJ-02)"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "高德地圖（GCJ-02）"
+          }
+        }
+      }
+    },
+    "若地图点选与游戏位置相差数百米，请切换地图校正后重新选点。手动输入和 GPX 使用 GPS 坐标（WGS-84）。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "If map selections differ from the game by hundreds of meters, change map correction and select the point again. Typed coordinates and GPX use GPS coordinates (WGS-84)."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "若地圖選點與遊戲位置相差數百公尺，請切換地圖校正後重新選點。手動輸入與 GPX 使用 GPS 座標（WGS-84）。"
+          }
+        }
+      }
+    },
+    "停留位置" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Holding position"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "停留位置"
+          }
+        }
+      }
+    },
+    "正在结束会话…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Finishing session…"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在結束階段…"
+          }
+        }
+      }
+    },
+    "正在保存会话记录" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Saving session history"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在儲存階段紀錄"
+          }
+        }
+      }
+    },
+    "已停留在最后位置，恢复真实定位后才会离开" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Holding the last position until you restore real location."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已停留在最後位置，恢復真實定位後才會離開"
+          }
+        }
+      }
+    },
+    "设备授权校验" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Device authorization"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "裝置授權驗證"
+          }
+        }
+      }
+    },
+    "App 会将已配对设备的 UDID 发送到 wow-app.store，用于检查 VIP、到期与封禁状态；不会上传配对文件或模拟坐标。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The app sends the paired device’s UDID to wow-app.store to check VIP access, expiry and bans. Pairing files and simulated coordinates are not uploaded."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "App 會將已配對裝置的 UDID 傳送至 wow-app.store，用於檢查 VIP、到期與封禁狀態；不會上傳配對檔案或模擬座標。"
+          }
+        }
+      }
+    },
     "·" : {
 
     },

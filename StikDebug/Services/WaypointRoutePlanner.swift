@@ -167,7 +167,7 @@ final class WaypointRoutePlanner: ObservableObject {
     var legPolylines: [RouteLegPolyline] {
         allLegs.compactMap { leg in
             guard leg.coordinates.count > 1 else { return nil }
-            let polyline = leg.coordinates.withUnsafeBufferPointer { buffer -> MKPolyline? in
+            let polyline = leg.coordinates.map(MapCoordinateSystem.current.toMap).withUnsafeBufferPointer { buffer -> MKPolyline? in
                 guard let baseAddress = buffer.baseAddress else { return nil }
                 return MKPolyline(coordinates: baseAddress, count: buffer.count)
             }
@@ -190,7 +190,7 @@ final class WaypointRoutePlanner: ObservableObject {
     var waypointsBoundingMapRect: MKMapRect? {
         guard !waypoints.isEmpty else { return nil }
         let rect = waypoints.reduce(MKMapRect.null) { partial, waypoint in
-            let point = MKMapPoint(waypoint.coordinate)
+            let point = MKMapPoint(MapCoordinateSystem.current.toMap(waypoint.coordinate))
             return partial.union(MKMapRect(x: point.x, y: point.y, width: 0, height: 0))
         }
         guard !rect.isNull else { return nil }
@@ -314,9 +314,10 @@ final class WaypointRoutePlanner: ObservableObject {
         from start: CLLocationCoordinate2D,
         to end: CLLocationCoordinate2D
     ) {
+        let coordinateSystem = MapCoordinateSystem.current
         let request = MKDirections.Request()
-        request.source = MKMapItem(placemark: MKPlacemark(coordinate: start))
-        request.destination = MKMapItem(placemark: MKPlacemark(coordinate: end))
+        request.source = MKMapItem(placemark: MKPlacemark(coordinate: coordinateSystem.toMap(start)))
+        request.destination = MKMapItem(placemark: MKPlacemark(coordinate: coordinateSystem.toMap(end)))
         let requestedStyle = planningStyle
         request.transportType = requestedStyle.transportType
         request.requestsAlternateRoutes = false
@@ -331,7 +332,7 @@ final class WaypointRoutePlanner: ObservableObject {
                     throw CocoaError(.featureUnsupported)
                 }
                 let coordinates = sampledRouteCoordinates(
-                    from: route.polyline.coordinateArray,
+                    from: route.polyline.coordinateArray.map(coordinateSystem.fromMap),
                     targetDistance: self.samplingDistance
                 )
                 resolved = RouteLeg(

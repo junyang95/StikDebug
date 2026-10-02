@@ -110,7 +110,7 @@ final class PermissionChecklistService: NSObject, ObservableObject, CLLocationMa
         if let latestPath {
             updateNetworkStatus(latestPath)
         } else {
-            set(.warning("等待系统返回网络状态；Wi‑Fi/蜂窝不是单独授权项".localized), for: .network)
+            set(.warning("等待系统返回网络状态；首次联网如出现权限弹窗，请选择允许".localized), for: .network)
         }
 
         set(await vpnConfigurationStatus(), for: .vpn)
@@ -208,7 +208,16 @@ final class PermissionChecklistService: NSObject, ObservableObject, CLLocationMa
 
     private func updateNetworkStatus(_ path: Network.NWPath) {
         guard path.status == .satisfied else {
-            set(.failed("当前没有可用网络".localized), for: .network)
+            let message: String
+            switch path.unsatisfiedReason {
+            case .cellularDenied, .wifiDenied:
+                message = "App 网络访问受限，请到系统设置允许无线数据访问".localized
+            case .localNetworkDenied:
+                message = "本地网络访问被拒绝，请到系统设置允许本地网络访问".localized
+            default:
+                message = "当前没有可用网络".localized
+            }
+            set(.failed(message), for: .network)
             return
         }
 
@@ -222,7 +231,7 @@ final class PermissionChecklistService: NSObject, ObservableObject, CLLocationMa
             "其他网络".localized
         }
 
-        set(.ready(String(format: "网络可用：%@。普通 Wi‑Fi/蜂窝访问不是用户授权项".localized, interface)), for: .network)
+        set(.ready(String(format: "检测到网络：%@。如首次联网出现系统弹窗，请允许 App 访问网络".localized, interface)), for: .network)
     }
 
     private func set(_ status: PreflightStatus, for kind: PermissionKind) {

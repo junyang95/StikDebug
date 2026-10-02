@@ -86,334 +86,6 @@ private func distanceAlong(_ coordinates: [CLLocationCoordinate2D]) -> CLLocatio
     }
 }
 
-private enum CoordinateImportError: LocalizedError {
-    case emptyFile
-    case noCoordinates
-
-    var errorDescription: String? {
-        switch self {
-        case .emptyFile:
-            return "选择的文件是空的。".localized
-        case .noCoordinates:
-            return "没有找到有效坐标。支持 GPX、KML、GeoJSON、JSON、CSV，或每行一组经纬度的纯文本。".localized
-        }
-    }
-}
-
-private enum CoordinateImportParser {
-    static let supportedContentTypes: [UTType] = [
-        .plainText,
-        .commaSeparatedText,
-        .json,
-        .xml,
-        UTType(filenameExtension: "gpx", conformingTo: .xml) ?? .xml,
-        UTType(filenameExtension: "kml", conformingTo: .xml) ?? .xml,
-        UTType(filenameExtension: "geojson", conformingTo: .json) ?? .json
-    ]
-
-    private enum CoordinateOrder {
-        case latitudeLongitude
-        case longitudeLatitude
-    }
-
-    static func parse(url: URL) throws -> [CLLocationCoordinate2D] {
-        let accessing = url.startAccessingSecurityScopedResource()
-        defer {
-            if accessing {
-                url.stopAccessingSecurityScopedResource()
-            }
-        }
-
-        let data = try Data(contentsOf: url)
-        guard !data.isEmpty else { throw CoordinateImportError.emptyFile }
-
-        let fileExtension = url.pathExtension.lowercased()
-        if fileExtension == "json" || fileExtension == "geojson" {
-            if let coordinates = try? parseJSONCoordinates(from: data),
-               !coordinates.isEmpty {
-                return coordinates
-            }
-        }
-
-        if fileExtension == "gpx" || fileExtension == "kml" || fileExtension == "xml" {
-            let coordinates = parseXMLCoordinates(from: data)
-            if !coordinates.isEmpty {
-                return coordinates
-            }
-        }
-
-        if let text = decodedText(from: data) {
-            let coordinates = parseInline(text)
-            if !coordinates.isEmpty {
-                return coordinates
-            }
-        }
-
-        if let coordinates = try? parseJSONCoordinates(from: data),
-           !coordinates.isEmpty {
-            return coordinates
-        }
-
-        let coordinates = parseXMLCoordinates(from: data)
-        if !coordinates.isEmpty {
-            return coordinates
-        }
-
-        throw CoordinateImportError.noCoordinates
-    }
-
-    static func parseInline(_ text: String) -> [CLLocationCoordinate2D] {
-        sanitized(parseTextCoordinates(from: text))
-    }
-
-    private static func decodedText(from data: Data) -> String? {
-        String(data: data, encoding: .utf8)
-            ?? String(data: data, encoding: .utf16)
-            ?? String(data: data, encoding: .ascii)
-    }
-
-    private static func sanitized(_ coordinates: [CLLocationCoordinate2D]) -> [CLLocationCoordinate2D] {
-        var result: [CLLocationCoordinate2D] = []
-        for coordinate in coordinates where CLLocationCoordinate2DIsValid(coordinate) {
-            if result.last.map(CoordinateSnapshot.init) == CoordinateSnapshot(coordinate) {
-                continue
-            }
-            result.append(coordinate)
-        }
-        return result
-    }
-
-    private static func coordinate(
-        first: Double,
-        second: Double,
-        order: CoordinateOrder
-    ) -> CLLocationCoordinate2D? {
-        let preferred: CLLocationCoordinate2D
-        let fallback: CLLocationCoordinate2D
-
-        switch order {
-        case .latitudeLongitude:
-            preferred = CLLocationCoordinate2D(latitude: first, longitude: second)
-            fallback = CLLocationCoordinate2D(latitude: second, longitude: first)
-        case .longitudeLatitude:
-            preferred = CLLocationCoordinate2D(latitude: second, longitude: first)
-            fallback = CLLocationCoordinate2D(latitude: first, longitude: second)
-        }
-
-        if CLLocationCoordinate2DIsValid(preferred) {
-            return preferred
-        }
-        if CLLocationCoordinate2DIsValid(fallback) {
-            return fallback
-        }
-        return nil
-    }
-
-    private static func parseJSONCoordinates(from data: Data) throws -> [CLLocationCoordinate2D] {
-        let object = try JSONSerialization.jsonObject(with: data)
-        return sanitized(coordinates(fromJSONObject: object, order: .latitudeLongitude))
-    }
-
-    private static func coordinates(
-        fromJSONObject object: Any,
-        order: CoordinateOrder
-    ) -> [CLLocationCoordinate2D] {
-        if let dictionary = object as? [String: Any] {
-            if let latitude = numberValue(forAnyKey: ["latitude", "lat"], in: dictionary),
-               let longitude = numberValue(forAnyKey: ["longitude", "lon", "lng"], in: dictionary),
-               let coordinate = coordinate(first: latitude, second: longitude, order: .latitudeLongitude) {
-                return [coordinate]
-            }
-
-            if let geometry = dictionary["geometry"] {
-                return coordinates(fromJSONObject: geometry, order: order)
-            }
-
-            if let type = dictionary["type"] as? String {
-                let loweredType = type.lowercased()
-                if loweredType == "featurecollection",
-                   let features = dictionary["features"] as? [Any] {
-                    return features.flatMap { coordinates(fromJSONObject: $0, order: .longitudeLatitude) }
-                }
-                if loweredType == "geometrycollection",
-                   let geometries = dictionary["geometries"] as? [Any] {
-                    return geometries.flatMap { coordinates(fromJSONObject: $0, order: .longitudeLatitude) }
-                }
-                if let coordinateObject = dictionary["coordinates"] {
-                    return coordinates(fromJSONObject: coordinateObject, order: .longitudeLatitude)
-                }
-            }
-
-            return dictionary.values.flatMap { coordinates(fromJSONObject: $0, order: order) }
-        }
-
-        if let array = object as? [Any] {
-            if array.count >= 2,
-               let first = numericValue(array[0]),
-               let second = numericValue(array[1]),
-               let coordinate = coordinate(first: first, second: second, order: order) {
-                return [coordinate]
-            }
-
-            return array.flatMap { coordinates(fromJSONObject: $0, order: order) }
-        }
-
-        return []
-    }
-
-    private static func numericValue(_ value: Any) -> Double? {
-        if let number = value as? NSNumber {
-            return number.doubleValue
-        }
-        if let string = value as? String {
-            return Double(string.trimmingCharacters(in: .whitespacesAndNewlines))
-        }
-        return nil
-    }
-
-    private static func numberValue(forAnyKey keys: [String], in dictionary: [String: Any]) -> Double? {
-        let keyedValues = Dictionary(uniqueKeysWithValues: dictionary.map { ($0.key.lowercased(), $0.value) })
-        for key in keys {
-            if let value = keyedValues[key],
-               let number = numericValue(value) {
-                return number
-            }
-        }
-        return nil
-    }
-
-    private static func parseXMLCoordinates(from data: Data) -> [CLLocationCoordinate2D] {
-        let collector = XMLCoordinateCollector()
-        let parser = XMLParser(data: data)
-        parser.delegate = collector
-        guard parser.parse() else { return [] }
-        return sanitized(collector.coordinates)
-    }
-
-    private final class XMLCoordinateCollector: NSObject, XMLParserDelegate {
-        var coordinates: [CLLocationCoordinate2D] = []
-        private var isCollectingKMLCoordinates = false
-        private var kmlCoordinateBuffer = ""
-
-        func parser(
-            _ parser: XMLParser,
-            didStartElement elementName: String,
-            namespaceURI: String?,
-            qualifiedName qName: String?,
-            attributes attributeDict: [String: String] = [:]
-        ) {
-            let name = elementName.lowercased()
-            if ["wpt", "trkpt", "rtept"].contains(name),
-               let latitude = Double(attributeDict["lat"] ?? ""),
-               let longitude = Double(attributeDict["lon"] ?? ""),
-               let coordinate = CoordinateImportParser.coordinate(
-                    first: latitude,
-                    second: longitude,
-                    order: .latitudeLongitude
-               ) {
-                coordinates.append(coordinate)
-            } else if name == "coordinates" {
-                isCollectingKMLCoordinates = true
-                kmlCoordinateBuffer = ""
-            }
-        }
-
-        func parser(_ parser: XMLParser, foundCharacters string: String) {
-            if isCollectingKMLCoordinates {
-                kmlCoordinateBuffer += string
-            }
-        }
-
-        func parser(
-            _ parser: XMLParser,
-            didEndElement elementName: String,
-            namespaceURI: String?,
-            qualifiedName qName: String?
-        ) {
-            guard elementName.lowercased() == "coordinates" else { return }
-            coordinates.append(contentsOf: CoordinateImportParser.parseKMLCoordinateText(kmlCoordinateBuffer))
-            isCollectingKMLCoordinates = false
-            kmlCoordinateBuffer = ""
-        }
-    }
-
-    private static func parseKMLCoordinateText(_ text: String) -> [CLLocationCoordinate2D] {
-        text
-            .split(whereSeparator: { $0.isWhitespace })
-            .compactMap { token -> CLLocationCoordinate2D? in
-                let values = token
-                    .split(separator: ",")
-                    .compactMap { Double($0.trimmingCharacters(in: .whitespacesAndNewlines)) }
-                guard values.count >= 2 else { return nil }
-                return coordinate(first: values[0], second: values[1], order: .longitudeLatitude)
-            }
-    }
-
-    private static func parseTextCoordinates(from text: String) -> [CLLocationCoordinate2D] {
-        var coordinates: [CLLocationCoordinate2D] = []
-        var headerIndices: (latitude: Int, longitude: Int)?
-
-        for line in text.components(separatedBy: .newlines) {
-            let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
-            guard !trimmed.isEmpty else { continue }
-
-            let fields = splitFields(trimmed)
-            if headerIndices == nil,
-               let detectedHeader = detectHeader(in: fields) {
-                headerIndices = detectedHeader
-                continue
-            }
-
-            if let headerIndices,
-               fields.indices.contains(headerIndices.latitude),
-               fields.indices.contains(headerIndices.longitude),
-               let latitude = numbers(in: fields[headerIndices.latitude]).first,
-               let longitude = numbers(in: fields[headerIndices.longitude]).first,
-               let coordinate = coordinate(first: latitude, second: longitude, order: .latitudeLongitude) {
-                coordinates.append(coordinate)
-                continue
-            }
-
-            let values = numbers(in: trimmed)
-            if values.count >= 2,
-               let coordinate = coordinate(first: values[0], second: values[1], order: .latitudeLongitude) {
-                coordinates.append(coordinate)
-            }
-        }
-
-        return coordinates
-    }
-
-    private static func splitFields(_ line: String) -> [String] {
-        line
-            .split { character in
-                character == "," ||
-                character == ";" ||
-                character == "\t"
-            }
-            .map { String($0).trimmingCharacters(in: .whitespacesAndNewlines) }
-    }
-
-    private static func detectHeader(in fields: [String]) -> (latitude: Int, longitude: Int)? {
-        let lowered = fields.map { $0.lowercased() }
-        guard let latitude = lowered.firstIndex(where: { $0 == "lat" || $0 == "latitude" }),
-              let longitude = lowered.firstIndex(where: { $0 == "lon" || $0 == "lng" || $0 == "long" || $0 == "longitude" }) else {
-            return nil
-        }
-        return (latitude, longitude)
-    }
-
-    private static func numbers(in text: String) -> [Double] {
-        let pattern = #"[-+]?(?:\d+(?:\.\d*)?|\.\d+)"#
-        guard let regex = try? NSRegularExpression(pattern: pattern) else { return [] }
-        let range = NSRange(text.startIndex..<text.endIndex, in: text)
-        return regex.matches(in: text, range: range).compactMap { match in
-            guard let matchRange = Range(match.range, in: text) else { return nil }
-            return Double(text[matchRange])
-        }
-    }
-}
-
 // MARK: - Search Completer
 
 @MainActor
@@ -454,6 +126,8 @@ struct LocationSimulationView: View {
     @Binding var selectedMode: MovementMode
     @ObservedObject private var fixedSession = FixedLocationSessionController.shared
     @AppStorage(MovementDefaultsKey.profile) private var profileRaw = MovementProfile.walking.rawValue
+    @AppStorage(MapCoordinateSystem.storageKey) private var mapCoordinatesRaw = MapCoordinateSystem.wgs84.rawValue
+    private var mapCoordinates: MapCoordinateSystem { MapCoordinateSystem(rawValue: mapCoordinatesRaw) ?? .wgs84 }
     @State private var coordinate: CLLocationCoordinate2D?
     @State private var position: MapCameraPosition = .userLocation(fallback: .automatic)
 
@@ -610,13 +284,13 @@ struct LocationSimulationView: View {
         }
         .listStyle(.plain)
         .scrollContentBackground(.hidden)
-        .frame(maxHeight: 300)
-        .scrollDisabled(true)
+        .frame(maxHeight: 220)
+        .scrollDismissesKeyboard(.interactively)
     }
 
     private var freehandPolyline: MKPolyline? {
         guard freehandCoordinates.count > 1 else { return nil }
-        return freehandCoordinates.withUnsafeBufferPointer { buffer in
+        return freehandCoordinates.map(mapCoordinates.toMap).withUnsafeBufferPointer { buffer in
             guard let baseAddress = buffer.baseAddress else { return nil }
             return MKPolyline(coordinates: baseAddress, count: buffer.count)
         }
@@ -634,7 +308,7 @@ struct LocationSimulationView: View {
     }
 
     var body: some View {
-        ZStack(alignment: .bottom) {
+        MapWorkspace(title: selectedMode == .route ? "路线选项" : "定点选项", showsPanel: !searchFocused) {
             MapReader { proxy in
                 Map(position: $position) {
                     if hasWaypointContext {
@@ -657,7 +331,7 @@ struct LocationSimulationView: View {
                                 )
                         }
                         ForEach(Array(waypointPlanner.waypoints.enumerated()), id: \.element.id) { index, waypoint in
-                            Annotation("", coordinate: waypoint.coordinate) {
+                            Annotation("", coordinate: mapCoordinates.toMap(waypoint.coordinate)) {
                                 WaypointBadge(
                                     number: index + 1,
                                     total: waypointPlanner.waypoints.count,
@@ -666,11 +340,14 @@ struct LocationSimulationView: View {
                             }
                         }
                         if walkingSession.isActive, let coordinate = walkingSession.currentCoordinate {
-                            Marker("行走中", coordinate: coordinate)
+                            Marker("行走中", coordinate: mapCoordinates.toMap(coordinate))
+                                .tint(.green)
+                        } else if let coordinate = fixedSession.coordinate {
+                            Marker("停留位置", coordinate: mapCoordinates.toMap(coordinate))
                                 .tint(.green)
                         }
                     } else if let coordinate {
-                        Marker("定点", coordinate: coordinate)
+                        Marker("定点", coordinate: mapCoordinates.toMap(coordinate))
                             .tint(.red)
                     }
                 }
@@ -681,10 +358,10 @@ struct LocationSimulationView: View {
                     guard let loc = proxy.convert(point, from: .local) else { return }
                     if hasWaypointContext {
                         guard !walkingSession.isActive else { return }
-                        waypointPlanner.append(loc)
+                        waypointPlanner.append(mapCoordinates.fromMap(loc))
                         Haptic.light()
                     } else {
-                        applySelection(loc)
+                        applySelection(mapCoordinates.fromMap(loc))
                     }
                 }
                 .mapControls {
@@ -695,7 +372,7 @@ struct LocationSimulationView: View {
                         .onChanged { value in
                             guard isDrawingRoute,
                                   let coordinate = proxy.convert(value.location, from: .local) else { return }
-                            _ = FreehandPathBuilder.append(coordinate, to: &freehandCoordinates)
+                            _ = FreehandPathBuilder.append(mapCoordinates.fromMap(coordinate), to: &freehandCoordinates)
                         }
                         .onEnded { _ in
                             guard isDrawingRoute else { return }
@@ -704,12 +381,11 @@ struct LocationSimulationView: View {
                     isEnabled: isDrawingRoute
                 )
             }
-                .ignoresSafeArea()
                 .onChange(of: coordinate.map(CoordinateSnapshot.init)) { _, new in
                     if let new {
                         position = .region(
                             MKCoordinateRegion(
-                                center: new.coordinate,
+                                center: mapCoordinates.toMap(new.coordinate),
                                 latitudinalMeters: 1000,
                                 longitudinalMeters: 1000
                             )
@@ -717,39 +393,47 @@ struct LocationSimulationView: View {
                     }
                 }
 
-            VStack(spacing: 0) {
-                if isDrawingRoute {
-                    drawingBanner
-                } else {
-                    searchBar
-                }
-
-                if !isDrawingRoute, !searchCompleter.results.isEmpty {
-                    searchResultsList
-                }
-
-                Spacer()
-
-                VStack(spacing: 12) {
-                    if isImportingCoordinates {
-                        ProgressView("正在导入坐标…")
-                            .font(.footnote)
-                    }
-
-                    if selectedMode == .route {
-                        waypointControls
-                    } else {
-                        pinControls
-                    }
-                }
-                .pikminControlCard()
-                .padding(.horizontal, 16)
-                .padding(.bottom, 16)
+        } tools: {
+            VStack(spacing: 6) {
+                if isDrawingRoute { drawingBanner } else { searchBar }
+                if !isDrawingRoute, !searchCompleter.results.isEmpty { searchResultsList }
             }
-            .padding(.top, 122)
+        } options: {
+            VStack(spacing: 12) {
+                if isImportingCoordinates {
+                    ProgressView("正在导入坐标…").font(.footnote)
+                }
+                if selectedMode == .route { waypointControls } else { pinControls }
+            }
+        } actions: {
+            if selectedMode == .route {
+                VStack(spacing: 8) {
+                    if !waypointPlanner.isReady, !walkingSession.isActive {
+                        Text(waypointStatusText).font(.caption).foregroundStyle(.secondary)
+                    }
+                    if let startBlockReason {
+                        Text(startBlockReason).font(.caption).foregroundStyle(.orange)
+                    }
+                    RouteActionBar(
+                    startTitle: profile.startActionTitle,
+                    isActive: walkingSession.isActive,
+                    canStart: pairingExists && preflight.canStartSession && !isBusy && waypointPlanner.isReady,
+                    canRestore: !isBusy,
+                    start: startWaypointWalk,
+                    stop: { Task { await walkingSession.stop() } },
+                    restore: restoreRealLocation
+                    )
+                }
+            } else {
+                pinActions
+            }
         }
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
+            ToolbarItemGroup(placement: .keyboard) {
+                Spacer()
+                Button("完成") { searchFocused = false; goalFocused = false }
+            }
             ToolbarItem(placement: .topBarTrailing) {
                 Menu {
                     Button {
@@ -757,6 +441,11 @@ struct LocationSimulationView: View {
                     } label: {
                         Label("位置资料库", systemImage: "books.vertical.fill")
                     }
+                    Picker("地图偏移校正", selection: $mapCoordinatesRaw) {
+                        Text("标准地图（WGS-84）").tag(MapCoordinateSystem.wgs84.rawValue)
+                        Text("高德地图（GCJ-02）").tag(MapCoordinateSystem.gcj02.rawValue)
+                    }
+                    .disabled(walkingSession.isActive)
                     Divider()
                     Button {
                         showCoordinateImporter = true
@@ -772,9 +461,6 @@ struct LocationSimulationView: View {
             }
         }
         .onChange(of: selectedMode) { _, mode in
-            if mode != .fixedLocation, simulatedCoordinate != nil {
-                stopResendLoop()
-            }
             if mode != .route {
                 cancelFreehandRoute()
             }
@@ -866,17 +552,24 @@ struct LocationSimulationView: View {
         }
     }
 
+    @FocusState private var searchFocused: Bool
+    @FocusState private var goalFocused: Bool
+
     private var searchBar: some View {
         HStack(spacing: 9) {
             Image(systemName: "magnifyingglass")
+                .font(.system(size: 18))
                 .foregroundStyle(.secondary)
+                .accessibilityHidden(true)
             TextField("搜索地点或输入经纬度", text: $searchText)
+                .focused($searchFocused)
                 .autocorrectionDisabled()
                 .submitLabel(.go)
                 .onChange(of: searchText) { _, newValue in
                     searchCompleter.update(query: newValue)
                 }
                 .onSubmit {
+                    searchFocused = false
                     applyCoordinatesFromSearchText()
                 }
 
@@ -886,7 +579,9 @@ struct LocationSimulationView: View {
                     searchCompleter.update(query: "")
                 } label: {
                     Image(systemName: "xmark.circle.fill")
+                        .font(.system(size: 18))
                         .foregroundStyle(.secondary)
+                        .frame(width: 44, height: 44)
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel("清除搜索")
@@ -899,13 +594,16 @@ struct LocationSimulationView: View {
                 showCoordinateEntry = true
             } label: {
                 Image(systemName: "numbers.rectangle")
+                    .font(.system(size: 18))
                     .foregroundStyle(PikminUI.deepGreen)
+                    .frame(width: 44, height: 44)
             }
             .buttonStyle(.plain)
             .accessibilityLabel("输入经纬度")
         }
         .padding(.horizontal, 14)
-        .frame(height: 46)
+        .frame(minHeight: 48)
+        .padding(.vertical, 2)
         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
         .overlay {
             RoundedRectangle(cornerRadius: 16, style: .continuous)
@@ -931,7 +629,8 @@ struct LocationSimulationView: View {
                 .font(.subheadline.weight(.semibold))
         }
         .padding(.horizontal, 14)
-        .frame(height: 52)
+        .frame(minHeight: 52)
+        .padding(.vertical, 6)
         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
         .shadow(color: .black.opacity(0.1), radius: 12, y: 6)
         .padding(.horizontal, 16)
@@ -963,14 +662,16 @@ struct LocationSimulationView: View {
     // MARK: - Location
 
     private func selectSearchResult(_ result: MKLocalSearchCompletion) {
+        searchFocused = false
         searchText = ""
         searchCompleter.results = []
 
+        let coordinateSystem = mapCoordinates
         let request = MKLocalSearch.Request(completion: result)
         MKLocalSearch(request: request).start { response, _ in
             if let item = response?.mapItems.first {
                 if selectedMode == .route {
-                    waypointPlanner.append(item.placemark.coordinate)
+                    waypointPlanner.append(coordinateSystem.fromMap(item.placemark.coordinate))
                     position = .region(
                         MKCoordinateRegion(
                             center: item.placemark.coordinate,
@@ -980,7 +681,7 @@ struct LocationSimulationView: View {
                     )
                     Haptic.light()
                 } else {
-                    applySelection(item.placemark.coordinate, name: result.title)
+                    applySelection(coordinateSystem.fromMap(item.placemark.coordinate), name: result.title)
                 }
             }
         }
@@ -1012,7 +713,7 @@ struct LocationSimulationView: View {
         selectedLocationName = "手动坐标".localized
         position = .region(
             MKCoordinateRegion(
-                center: coordinate,
+                center: mapCoordinates.toMap(coordinate),
                 latitudinalMeters: 800,
                 longitudinalMeters: 800
             )
@@ -1105,28 +806,15 @@ struct LocationSimulationView: View {
                 .font(.footnote.monospaced())
                 .foregroundStyle(.secondary)
 
-            HStack(spacing: 12) {
-                Button("恢复真实定位", action: clear)
-                    .buttonStyle(.bordered)
-                    .tint(.red)
-                    .disabled(!pairingExists || isBusy || vpn.isExperimentEnabled || vpn.isTransitioning)
-
-                Button("传送到此处", action: simulate)
-                    .buttonStyle(.borderedProminent)
-                    .disabled(!pairingExists || isBusy || vpn.isExperimentEnabled || vpn.isTransitioning)
-
-                Button {
-                    showSaveBookmark = true
-                } label: {
-                    Image(systemName: "bookmark")
+            AdaptiveActionStack {
+                coordinateEntryButton
+                Button { showSaveBookmark = true } label: {
+                    Label("收藏这个地点", systemImage: "bookmark")
+                        .frame(maxWidth: .infinity, minHeight: 44)
                 }
                 .buttonStyle(.bordered)
-                .tint(.blue)
                 .disabled(isRouteRunning)
-                .accessibilityLabel("收藏这个地点")
             }
-
-            coordinateEntryButton
 
             if simulatedCoordinate != nil {
                 Label(
@@ -1149,7 +837,27 @@ struct LocationSimulationView: View {
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
 
-            coordinateEntryButton
+        }
+    }
+
+    private var pinActions: some View {
+        VStack(spacing: 8) {
+            if coordinate != nil {
+                Button(action: simulate) {
+                    Label("传送到此处", systemImage: "location.fill")
+                        .fixedSize(horizontal: false, vertical: true)
+                        .frame(maxWidth: .infinity, minHeight: 44)
+                }
+                .buttonStyle(.borderedProminent)
+                    .tint(PikminUI.actionGreen)
+                .disabled(!pairingExists || isBusy || vpn.isExperimentEnabled || vpn.isTransitioning)
+            } else {
+                coordinateEntryButton
+            }
+            Button(role: .destructive, action: clear) {
+                Text("恢复真实定位").frame(maxWidth: .infinity, minHeight: 44)
+            }
+            .disabled(!pairingExists || isBusy || vpn.isExperimentEnabled || vpn.isTransitioning)
         }
     }
 
@@ -1160,11 +868,10 @@ struct LocationSimulationView: View {
             showCoordinateEntry = true
         } label: {
             Label("输入经纬度", systemImage: "numbers.rectangle")
-                .font(.footnote.weight(.semibold))
-                .frame(maxWidth: .infinity)
+                .font(.subheadline.weight(.semibold))
+                .frame(maxWidth: .infinity, minHeight: 44)
         }
         .buttonStyle(.bordered)
-        .controlSize(.small)
     }
 
     private var waypointControls: some View {
@@ -1175,7 +882,7 @@ struct LocationSimulationView: View {
                         Text(style.title).tag(style)
                     }
                 }
-                .pickerStyle(.segmented)
+                .adaptivePicker()
 
                 Text(waypointPlanner.planningStyle.detail)
                     .font(.caption2)
@@ -1210,11 +917,12 @@ struct LocationSimulationView: View {
 
             if !walkingSession.isActive {
                 if waypointPlanner.isEmpty {
-                    HStack {
+                    AdaptiveControlGrid(minimumWidth: 125) {
                         Button {
                             beginFreehandRoute()
                         } label: {
                             Label("手绘路线", systemImage: "hand.draw")
+                                .frame(maxWidth: .infinity, minHeight: 44)
                         }
                         .buttonStyle(.borderedProminent)
                         .tint(.orange)
@@ -1224,9 +932,17 @@ struct LocationSimulationView: View {
                             openLibrary(.routes)
                         } label: {
                             Label("载入路线", systemImage: "list.bullet.rectangle")
+                                .frame(maxWidth: .infinity, minHeight: 44)
                         }
                         .buttonStyle(.bordered)
                         .disabled(savedRoutes.isEmpty || isDrawingRoute)
+
+                        Button { showCoordinateImporter = true } label: {
+                            Label("导入 GPX", systemImage: "square.and.arrow.down")
+                                .frame(maxWidth: .infinity, minHeight: 44)
+                        }
+                        .buttonStyle(.bordered)
+                        .disabled(isBusy || isImportingCoordinates || isDrawingRoute)
                     }
                 } else {
                     Toggle(isOn: $waypointPlanner.isLoop) {
@@ -1238,7 +954,7 @@ struct LocationSimulationView: View {
                     .accessibilityHint("打开后走完一圈会自动继续，而不是原路折返")
                 }
 
-                HStack {
+                AdaptiveActionStack {
                     Picker("目标", selection: $routeGoalKind) {
                         ForEach(SessionGoalKind.allCases) { kind in
                             Text(kind.title).tag(kind)
@@ -1248,12 +964,14 @@ struct LocationSimulationView: View {
                         TextField(goalPlaceholder, value: $routeGoalValue, format: .number)
                             .textFieldStyle(.roundedBorder)
                             .keyboardType(.decimalPad)
-                            .frame(maxWidth: 100)
+                            .frame(minWidth: 100, maxWidth: .infinity)
+                            .focused($goalFocused)
+                            .accessibilityLabel("目标数值")
                     }
                 }
 
                 if !waypointPlanner.isEmpty {
-                    HStack(spacing: 12) {
+                    AdaptiveControlGrid {
                         // 导入轨迹是整条载入的，逐点撤销没有意义，只能整条清空。
                         if !waypointPlanner.isImported {
                             Button {
@@ -1261,6 +979,7 @@ struct LocationSimulationView: View {
                                 Haptic.light()
                             } label: {
                                 Label("撤销", systemImage: "arrow.uturn.backward")
+                                .frame(maxWidth: .infinity, minHeight: 44)
                             }
                             .buttonStyle(.bordered)
                         }
@@ -1269,12 +988,14 @@ struct LocationSimulationView: View {
                             showSaveRoute = true
                         } label: {
                             Label("保存", systemImage: "square.and.arrow.down")
+                                .frame(maxWidth: .infinity, minHeight: 44)
                         }
                         .buttonStyle(.bordered)
                         .disabled(waypointPlanner.waypoints.count < 2)
 
                         Button(action: exportCurrentRoute) {
                             Label("GPX", systemImage: "square.and.arrow.up")
+                                .frame(maxWidth: .infinity, minHeight: 44)
                         }
                         .buttonStyle(.bordered)
                         .disabled(!waypointPlanner.isReady)
@@ -1284,43 +1005,13 @@ struct LocationSimulationView: View {
                             Haptic.light()
                         } label: {
                             Label("清空", systemImage: "trash")
+                                .frame(maxWidth: .infinity, minHeight: 44)
                         }
                         .buttonStyle(.bordered)
                     }
                     .labelStyle(.titleAndIcon)
                     .font(.footnote)
                 }
-            }
-
-            HStack(spacing: 12) {
-                Button("停止") {
-                    Task { await walkingSession.stop() }
-                }
-                .buttonStyle(.bordered)
-                .tint(.red)
-                .disabled(!walkingSession.isActive)
-
-                Button(profile.startActionTitle, action: startWaypointWalk)
-                    .buttonStyle(.borderedProminent)
-                    .tint(.green)
-                    .disabled(
-                        !pairingExists ||
-                        !preflight.canStartSession ||
-                        walkingSession.isActive ||
-                        isBusy ||
-                        !waypointPlanner.isReady
-                    )
-
-                Button("恢复真实定位", action: restoreRealLocation)
-                    .buttonStyle(.bordered)
-                    .disabled(isBusy)
-            }
-
-            if let startBlockReason {
-                Label(startBlockReason, systemImage: "exclamationmark.triangle.fill")
-                    .font(.caption)
-                    .foregroundStyle(.orange)
-                    .multilineTextAlignment(.center)
             }
 
             if walkingSession.isActive {
@@ -1347,7 +1038,6 @@ struct LocationSimulationView: View {
         let coordinates = waypointPlanner.playbackCoordinates
         guard let firstCoordinate = coordinates.first, coordinates.count > 1 else { return }
 
-        stopResendLoop()
         if let rect = waypointPlanner.boundingMapRect {
             position = .rect(rect)
         }
@@ -1479,6 +1169,12 @@ struct LocationSimulationView: View {
     // 显式传坐标：手动输入经纬度时刚写完 @State 就要用，不依赖状态回读的时序。
     private func simulate(at coord: CLLocationCoordinate2D) {
         guard pairingExists, !isBusy else { return }
+        guard VipLocationGate.shared.allows() else {
+            alertTitle = "VIP 授权".localized
+            alertMessage = VipAuthorizationService.shared.message
+            showAlert = true
+            return
+        }
         runLocationCommand(
             errorTitle: "定点失败".localized,
             errorMessage: { code in
@@ -1522,31 +1218,19 @@ struct LocationSimulationView: View {
     }
 
     /// 恢复真实定位。
-    ///
-    /// 必须先停掉 4 秒一次的重发定时器，否则清除刚生效就又被下一次重发顶回去，
-    /// 用户会以为「恢复真实定位」根本没用。
+    /// 由会话控制器串行结束移动与定点重发，再清除设备位置。
     private func clear() {
         guard !isBusy else { return }
-        stopResendLoop()
-        let ip = deviceIP
-        let path = pairingFilePath
-        runLocationCommand(
-            errorTitle: "恢复失败".localized,
-            errorMessage: { code in
-                String(format: "无法清除模拟定位（错误 %d）。请确认设备仍然连接后重试。".localized, code)
-            },
-            operation: { clear_simulated_location(ip, path) }
-        ) {
-            endBackgroundTask()
-            Haptic.success()
-        }
+        restoreRealLocation()
     }
 
     /// 路线模式下的「恢复真实定位」：先停会话，再走和定点一样的清除流程。
     private func restoreRealLocation() {
-        fixedSession.stop()
+        guard !isBusy else { return }
+        isBusy = true
         Task {
             await walkingSession.restoreRealLocation()
+            isBusy = false
             endBackgroundTask()
             if let error = walkingSession.lastError {
                 alertTitle = "恢复失败".localized
@@ -1567,11 +1251,6 @@ struct LocationSimulationView: View {
         guard backgroundTaskID != .invalid else { return }
         UIApplication.shared.endBackgroundTask(backgroundTaskID)
         backgroundTaskID = .invalid
-    }
-
-    private func stopResendLoop() {
-        fixedSession.stop()
-        endBackgroundTask()
     }
 
     private func applySelection(_ coordinate: CLLocationCoordinate2D, name: String? = nil) {
@@ -1661,7 +1340,7 @@ private struct CoordinateEntrySheet: View {
                             .frame(maxWidth: .infinity)
                     }
                     .buttonStyle(.borderedProminent)
-                    .tint(PikminUI.green)
+                    .tint(PikminUI.actionGreen)
                     .disabled(parsed == nil)
 
                     Button {

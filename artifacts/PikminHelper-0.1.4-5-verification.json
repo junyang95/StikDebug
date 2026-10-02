@@ -1,0 +1,88 @@
+{
+  "ipa": "/Users/junyang/IdeaProjects/StikDebug/artifacts/PikminHelper-0.1.4-5-unsigned.ipa",
+  "bytes": 11776359,
+  "sha256": "dbe4118547faf5f0793e697347aea2c5e461c61413b2d9098ea5db7b4f668e33",
+  "configuration": "Release",
+  "signed": false,
+  "bundles": [
+    {
+      "bundle": "StikDebug.app",
+      "identifier": "com.jy.stikdebug.pikmin",
+      "version": "0.1.4",
+      "build": "5",
+      "architecture": "arm64"
+    },
+    {
+      "bundle": "PikminLiveActivity.appex",
+      "identifier": "com.jy.stikdebug.pikmin.liveactivity",
+      "version": "0.1.4",
+      "build": "5",
+      "architecture": "arm64"
+    },
+    {
+      "bundle": "PikminTunnel.appex",
+      "identifier": "com.jy.stikdebug.pikmin.networkextension",
+      "version": "0.1.4",
+      "build": "5",
+      "architecture": "arm64"
+    }
+  ],
+  "unsignedBinaries": [
+    "StikDebug",
+    "PlugIns/PikminTunnel.appex/PikminTunnel",
+    "PlugIns/PikminLiveActivity.appex/PikminLiveActivity"
+  ],
+  "clientTestsPassed": 52,
+  "releaseArchiveSucceeded": true,
+  "ios27PhysicalDeviceValidated": false,
+  "firstInstallPermissionPromptPhysicallyValidated": false,
+  "gpxDeclarationVerifiedInArchive": true,
+  "gpxPickerPhysicallyValidated": false,
+  "sourceChanges": [
+    {
+      "path": "Tools/test-pikmin-runtime.sh",
+      "oldSha256": "d7778a25dfda75e0d35dd3a664aaaf73c07c4df1a3bc0b7087afc2715c9b94c4",
+      "newSha256": "1c79b310a1173b1ec7ee62d29c48f5640627b7b99fd935ec03742f890c2e910d"
+    },
+    {
+      "path": "StikDebug/Localizable.xcstrings",
+      "oldSha256": "f644ef8cff074d4dac1bb19380ce9fa3d39900b91668ea1a235ee63b5a6c6030",
+      "newSha256": "01102fa894b3a04f585695cdbf0b130741d0fb755dafd395bf28a9ff54e7ae08"
+    },
+    {
+      "path": "StikDebug/Info.plist",
+      "oldSha256": "51d40fcd081e74d78cde66d8a400e1febaad0cd3e1b43a9776f57ef0891e8283",
+      "newSha256": "81105f9109c91eeaa44b1118d7d409defc8805de223d393b345dc86604992bc4"
+    },
+    {
+      "path": "docs/buyer-fixes-2026-09.md",
+      "oldSha256": "cda8f22d07e17f45515b60d689f85c8ea254c0b58aa584e19d02964a88e11431",
+      "newSha256": "a1576c6f8818cc9e03abd52bcd0364cae30772bccda30239543b547688be4880"
+    },
+    {
+      "path": "StikDebug.xcodeproj/project.pbxproj",
+      "oldSha256": "0567601087218dfc6e3bac4143bfaa00125569e3c871ea58e4627569fb046fe8",
+      "newSha256": "1556274767595e76e677ac4484406e3f4e867103ea2d4e4b295d4da87f909af9"
+    },
+    {
+      "path": "PikminRuntimeTests/CoordinateImportTests.swift",
+      "oldSha256": null,
+      "newSha256": "203bf207857e08c3c76e22e81ac72e2340ecc2204e6a76253208e5d27406f52a"
+    },
+    {
+      "path": "StikDebug/Core/CoordinateImportParser.swift",
+      "oldSha256": null,
+      "newSha256": "bd1d5412db1cba03d5bd0d515e4cfe3e4c7dc87bcd9bd895a005766ed06b2bdf"
+    },
+    {
+      "path": "StikDebug/Views/MapSelectionView.swift",
+      "oldSha256": "4a3a7f30a4d3340d47970e8c5554f624d11a2a437612f4638ed6f6e187ce9b99",
+      "newSha256": "ee8f60e18358fb1d7bda402c06685315723f4cb08bac261f7d500e46f550d273"
+    },
+    {
+      "path": "StikDebug/Services/AuthorizationNetwork.swift",
+      "oldSha256": "0140bce4289a3e6aae8538971873cb6637e598116eed0653f8abbdb0ed937263",
+      "newSha256": "be87736be84ed85e9c75625bc09a1ff4588d15ee888535eb37a228d5ec75af95"
+    }
+  ]
+}

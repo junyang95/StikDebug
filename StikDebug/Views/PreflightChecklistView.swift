@@ -6,11 +6,8 @@ struct PreflightChecklistView: View {
     @EnvironmentObject private var onDevicePairing: OnDevicePairingService
     var compact = false
     @Environment(\.openURL) private var openURL
-    @State private var isDownloadingDDI = false
-    @State private var ddiProgressText: String?
-    @State private var preflightAlert: PreflightAlert?
     @State private var showOnDevicePairing = false
-    @State private var showDDIDownloadConfirmation = false
+    @State private var showDDIInstallation = false
 
     private let idevicePairMacURL = URL(string: "https://static.wow-app.store/Xcode_iOS_DDI_Personalized/idevice_pair--macos-universal.dmg")!
     private let idevicePairWindowsURL = URL(string: "https://static.wow-app.store/Xcode_iOS_DDI_Personalized/idevice_pair--windows-x86_64.exe")!
@@ -36,59 +33,52 @@ struct PreflightChecklistView: View {
                     .font(.headline)
                 Spacer()
                 if service.isRefreshing {
-                    ProgressView().controlSize(.small)
+                    ProgressView()
                 } else {
                     Button("检查") {
                         Task { await service.refresh() }
                     }
                     .font(.subheadline)
+                    .frame(minHeight: 44)
                 }
             }
 
             ForEach(service.items) { item in
                 VStack(alignment: .leading, spacing: 8) {
-                    environmentRow(item)
+                    if item.kind == .ddi {
+                        Button { showDDIInstallation = true } label: {
+                            HStack(spacing: 8) {
+                                environmentRow(item)
+                                Image(systemName: "chevron.right").font(.caption).foregroundStyle(.secondary)
+                            }
+                            .frame(minHeight: 44)
+                            .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityHint(Text("打开 DDI 安装"))
+                    } else {
+                        environmentRow(item)
+                    }
 
-                    if !compact, !item.status.isReady {
+                    if (!compact || item.kind == .ddi), !item.status.isReady {
                         environmentAction(for: item)
                     }
                 }
             }
 
-            if !compact, let ddiProgressText {
-                Text(ddiProgressText)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .padding(.leading, 42)
-            }
+
         }
         .padding(compact ? 12 : 16)
         .background(PikminUI.cardBackground, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
         .shadow(color: .black.opacity(compact ? 0.04 : 0.06), radius: compact ? 8 : 14, x: 0, y: compact ? 4 : 8)
-        .alert(item: $preflightAlert) { alert in
-            Alert(
-                title: Text(alert.title),
-                message: Text(alert.message),
-                dismissButton: .default(Text("知道了"))
-            )
-        }
         .sheet(isPresented: $showOnDevicePairing) {
             OnDevicePairingView()
                 .environmentObject(onDevicePairing)
                 .environmentObject(service)
                 .environmentObject(EmbeddedVPNService.shared)
         }
-        .confirmationDialog(
-            "下载可选 DDI 文件？",
-            isPresented: $showDDIDownloadConfirmation,
-            titleVisibility: .visible
-        ) {
-            Button("从 static.wow-app.store 下载") {
-                downloadDDI()
-            }
-            Button("取消", role: .cancel) { }
-        } message: {
-            Text("定位模拟不需要 DDI。确认后 App 才会连接该第三方静态文件域名；下载内容只保存在本机。")
+        .sheet(isPresented: $showDDIInstallation) {
+            DDIInstallationView()
         }
     }
 
@@ -125,21 +115,21 @@ struct PreflightChecklistView: View {
         Button(action: action) {
             Label(title, systemImage: systemImage)
                 .font(.caption.weight(.semibold))
-                .frame(maxWidth: .infinity)
+                .frame(maxWidth: .infinity, minHeight: 44)
         }
         .buttonStyle(.borderedProminent)
-        .tint(PikminUI.green)
-        .controlSize(.small)
+        .tint(PikminUI.actionGreen)
+
     }
 
     private func secondaryActionButton(_ title: LocalizedStringKey, systemImage: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Label(title, systemImage: systemImage)
                 .font(.caption.weight(.semibold))
-                .frame(maxWidth: .infinity)
+                .frame(maxWidth: .infinity, minHeight: 44)
         }
         .buttonStyle(.bordered)
-        .controlSize(.small)
+
     }
 
     private func waitingCard(_ message: LocalizedStringKey) -> some View {
@@ -203,10 +193,10 @@ struct PreflightChecklistView: View {
                     } label: {
                         Label("重新检查", systemImage: "arrow.clockwise")
                             .font(.caption.weight(.semibold))
-                            .frame(maxWidth: .infinity)
+                            .frame(maxWidth: .infinity, minHeight: 44)
                     }
                     .buttonStyle(.bordered)
-                    .controlSize(.small)
+
                 }
             } else {
                 actionCard {
@@ -245,28 +235,10 @@ struct PreflightChecklistView: View {
             }
 
         case .ddi:
-            if service.ddiFilesMissing {
-                actionCard {
-                    Text("可选：仅额外开发服务需要 BuildManifest、Image.dmg 和 trustcache；定位模拟可直接继续。")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                    primaryActionButton(isDownloadingDDI ? "正在下载 DDI…" : "下载/重新下载 DDI 文件", systemImage: "arrow.down.circle") {
-                        showDDIDownloadConfirmation = true
-                    }
-                    .disabled(isDownloadingDDI)
-                }
-            } else if !isReady(.coreDeviceTunnel) {
-                waitingCard("DDI 文件已准备，等待 CoreDevice/RSD 通道后挂载")
-            } else {
-                actionCard {
-                    Text("可选：把 DDI 挂载到设备，供额外开发服务使用。")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                    primaryActionButton("挂载 DDI", systemImage: "externaldrive.badge.checkmark") {
-                        service.connectDevice()
-                    }
-                }
+            primaryActionButton("打开 DDI 安装", systemImage: "arrow.down.circle") {
+                showDDIInstallation = true
             }
+            .padding(.leading, compact ? 0 : 32)
         }
     }
 
@@ -300,10 +272,10 @@ struct PreflightChecklistView: View {
             ) {
                 Label("发送到 Mac", systemImage: "macbook.and.iphone")
                     .font(.caption.weight(.semibold))
-                    .frame(maxWidth: .infinity)
+                    .frame(maxWidth: .infinity, minHeight: 44)
             }
             .buttonStyle(.bordered)
-            .controlSize(.small)
+
 
             ShareLink(
                 item: windowsDownloadChecklist,
@@ -311,10 +283,10 @@ struct PreflightChecklistView: View {
             ) {
                 Label("发送到 Windows", systemImage: "desktopcomputer")
                     .font(.caption.weight(.semibold))
-                    .frame(maxWidth: .infinity)
+                    .frame(maxWidth: .infinity, minHeight: 44)
             }
             .buttonStyle(.bordered)
-            .controlSize(.small)
+
         }
     }
 
@@ -336,33 +308,6 @@ struct PreflightChecklistView: View {
         }
     }
 
-    private func downloadDDI() {
-        guard !isDownloadingDDI else { return }
-        isDownloadingDDI = true
-        ddiProgressText = "准备下载 DDI 文件…".localized
-
-        Task {
-            do {
-                try await redownloadDDI { progress, message in
-                    Task { @MainActor in
-                        ddiProgressText = "\(Int(progress * 100))% · \(message)"
-                    }
-                }
-                await MainActor.run {
-                    isDownloadingDDI = false
-                    ddiProgressText = "DDI 文件下载完成".localized
-                }
-                await service.refresh()
-            } catch {
-                await MainActor.run {
-                    isDownloadingDDI = false
-                    ddiProgressText = "DDI 下载失败".localized
-                    preflightAlert = .init(title: "DDI 下载失败".localized, message: error.localizedDescription)
-                }
-            }
-        }
-    }
-
     private func symbol(for status: PreflightStatus) -> String {
         switch status {
         case .unknown: "questionmark.circle"
@@ -381,10 +326,4 @@ struct PreflightChecklistView: View {
         case .failed: .red
         }
     }
-}
-
-private struct PreflightAlert: Identifiable {
-    let id = UUID()
-    let title: String
-    let message: String
 }

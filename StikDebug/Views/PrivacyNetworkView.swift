@@ -31,6 +31,11 @@ struct PrivacyNetworkView: View {
                     tint: .mint
                 )
                 disclosure(
+                    title: "设备授权校验",
+                    detail: "App 会将已配对设备的 UDID 发送到 wow-app.store，用于检查 VIP、到期与封禁状态；不会上传配对文件或模拟坐标。",
+                    symbol: "checkmark.shield", tint: .green
+                )
+                disclosure(
                     title: "可选 DDI 下载",
                     detail: "DDI 不影响定位模拟。只有你确认下载时，App 才会连接 static.wow-app.store；启动 App 不会自动下载。",
                     symbol: "externaldrive.badge.questionmark",

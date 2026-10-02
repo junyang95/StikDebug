@@ -13,6 +13,9 @@ struct MovementControlView: View {
     @State private var selectedMode: MovementMode = .fixedLocation
     @State private var goalKind: SessionGoalKind = .steps
     @State private var goalValue = 10_000.0
+    @FocusState private var goalFocused: Bool
+    @AppStorage(MapCoordinateSystem.storageKey) private var mapCoordinatesRaw = MapCoordinateSystem.wgs84.rawValue
+    private var mapCoordinates: MapCoordinateSystem { MapCoordinateSystem(rawValue: mapCoordinatesRaw) ?? .wgs84 }
     @State private var mapPosition: MapCameraPosition = .userLocation(fallback: .automatic)
 
     private var profile: MovementProfile {
@@ -26,13 +29,15 @@ struct MovementControlView: View {
 
     var body: some View {
         NavigationStack {
-            ZStack(alignment: .top) {
+            Group {
                 if selectedMode == .joystick {
                     joystickContent
                 } else {
                     LocationSimulationView(selectedMode: $selectedMode)
                 }
 
+            }
+            .safeAreaInset(edge: .top, spacing: 0) {
                 VStack(spacing: 8) {
                     Picker("移动模式", selection: $selectedMode) {
                         Label("定点", systemImage: "mappin").tag(MovementMode.fixedLocation)
@@ -40,7 +45,8 @@ struct MovementControlView: View {
                         Label("路线", systemImage: "point.topleft.down.to.point.bottomright.curvepath")
                             .tag(MovementMode.route)
                     }
-                    .pickerStyle(.segmented)
+                    .adaptivePicker()
+                    .labelsHidden()
                     .disabled(session.isActive)
 
                     MovementStatusCapsule(
@@ -49,26 +55,32 @@ struct MovementControlView: View {
                         selectedSpeedKilometersPerHour: displaySpeedKPH
                     )
                 }
+                .frame(maxWidth: 780)
                 .padding(.horizontal, 16)
-                .padding(.top, 8)
+                .padding(.vertical, 8)
+                .frame(maxWidth: .infinity)
+                .background(.regularMaterial)
+            }
+            .toolbar {
+                if selectedMode == .joystick {
+                    ToolbarItemGroup(placement: .keyboard) {
+                        Spacer()
+                        Button("完成") { goalFocused = false }
+                    }
+                }
             }
             .navigationTitle("模拟位置")
             .navigationBarTitleDisplayMode(.inline)
             .tint(PikminUI.green)
-            .onChange(of: selectedMode) { _, mode in
-                if mode != .fixedLocation {
-                    FixedLocationSessionController.shared.stop()
-                }
-            }
         }
     }
 
     private var joystickContent: some View {
-        ZStack(alignment: .bottom) {
+        MapWorkspace(title: "摇杆选项") {
             MapReader { proxy in
                 Map(position: $mapPosition) {
                     if let coordinate = session.currentCoordinate {
-                        Marker("当前位置", coordinate: coordinate)
+                        Marker("当前位置", coordinate: mapCoordinates.toMap(coordinate))
                             .tint(.green)
                     }
                 }
@@ -77,36 +89,65 @@ struct MovementControlView: View {
                 .onTapGesture { point in
                     guard !session.isActive,
                           let coordinate = proxy.convert(point, from: .local) else { return }
-                    session.setStartingCoordinate(coordinate)
+                    session.setStartingCoordinate(mapCoordinates.fromMap(coordinate))
                 }
             }
-            .ignoresSafeArea(edges: .bottom)
-
+        } tools: {
+            EmptyView()
+        } options: {
+            sessionControls
+        } actions: {
             VStack(spacing: 12) {
-                sessionControls
-
+                if !session.isActive {
+                    Button(action: startSession) {
+                        Label(profile.startActionTitle, systemImage: profile == .cycling ? "bicycle" : "figure.walk.motion")
+                            .fixedSize(horizontal: false, vertical: true)
+                            .frame(maxWidth: .infinity, minHeight: 44)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .tint(PikminUI.actionGreen)
+                    .disabled(session.currentCoordinate == nil || !preflight.canStartSession)
+                } else {
+                    AdaptiveControlGrid(minimumWidth: 120) {
+                        Button {
+                            session.phase == .paused ? session.resume() : session.pause()
+                        } label: {
+                            Text(session.phase == .paused ? "继续" : "暂停")
+                                .frame(maxWidth: .infinity, minHeight: 44)
+                        }
+                        .disabled(session.phase == .preparing || session.phase == .reconnecting)
+                        Button { Task { await session.stop() } } label: {
+                            Text("停止行走").frame(maxWidth: .infinity, minHeight: 44)
+                        }
+                    }
+                    .buttonStyle(.bordered)
+                }
                 if session.phase == .running || session.phase == .paused {
                     JoystickPad(heading: session.headingDegrees) { heading in
                         session.updateHeading(heading)
                         if session.phase == .paused { session.resume() }
                     } onRelease: {
                         if !session.cruiseLocked { session.pause() }
+                    } onPause: {
+                        session.pause()
                     }
-                    .frame(width: 150, height: 150)
+                    .frame(width: 140, height: 140)
+                }
+                Button(role: .destructive) {
+                    Task { await session.restoreRealLocation() }
+                } label: {
+                    Text("恢复真实定位").frame(maxWidth: .infinity, minHeight: 44)
                 }
             }
-            .padding()
         }
     }
 
     private var sessionControls: some View {
         VStack(spacing: 10) {
             if session.isActive {
-                HStack {
+                AdaptiveControlGrid(minimumWidth: 100) {
                     Label(String(format: "%.2f km", session.distanceMeters / 1000), systemImage: "point.topleft.down.to.point.bottomright.curvepath")
-                    Spacer()
                     Label(session.estimatedSteps.formatted(), systemImage: "figure.walk")
-                    Spacer()
                     Label(String(format: "%.0f°", session.headingDegrees), systemImage: "location.north.fill")
                 }
                 .font(.caption.weight(.medium))
@@ -115,42 +156,13 @@ struct MovementControlView: View {
                     .tint(.green)
 
                 if session.phase == .reconnecting {
-                    HStack {
-                        ProgressView()
-                        Text(String(
-                            format: "正在重连（%1$d/%2$d）".localized,
-                            max(session.reconnectAttempt, 1),
-                            SessionReconnectPolicy.maximumAttempts
-                        ))
-                        .font(.subheadline.weight(.medium))
-                        Spacer()
-                        Button("停止", role: .destructive) {
-                            Task { await session.stop() }
-                        }
-                        .buttonStyle(.bordered)
-                    }
-                } else {
-                    HStack {
-                        Button(session.phase == .paused ? "继续" : "暂停") {
-                            session.phase == .paused ? session.resume() : session.pause()
-                        }
-                        .buttonStyle(.bordered)
-                        .disabled(session.phase == .preparing)
-
-                        Button("结束") {
-                            Task { await session.stop() }
-                        }
-                        .buttonStyle(.borderedProminent)
-                        .tint(.orange)
-
-                        Button("恢复真实定位", role: .destructive) {
-                            Task { await session.restoreRealLocation() }
-                        }
-                        .buttonStyle(.bordered)
-                    }
+                    Label(String(format: "正在重连（%1$d/%2$d）".localized,
+                                 max(session.reconnectAttempt, 1), SessionReconnectPolicy.maximumAttempts),
+                          systemImage: "arrow.triangle.2.circlepath")
+                        .font(.subheadline)
                 }
             } else {
-                HStack {
+                AdaptiveActionStack {
                     Picker("目标", selection: $goalKind) {
                         ForEach(SessionGoalKind.allCases) { kind in
                             Text(kind.title).tag(kind)
@@ -158,21 +170,13 @@ struct MovementControlView: View {
                     }
                     if goalKind != .manual {
                         TextField("目标", value: $goalValue, format: .number)
+                            .focused($goalFocused)
                             .keyboardType(.decimalPad)
                             .textFieldStyle(.roundedBorder)
-                            .frame(maxWidth: 110)
+                            .frame(minWidth: 100, maxWidth: .infinity)
+                            .accessibilityLabel("目标数值")
                     }
                 }
-
-                Button {
-                    startSession()
-                } label: {
-                    Label(profile.startActionTitle, systemImage: profile == .cycling ? "bicycle" : "figure.walk.motion")
-                        .frame(maxWidth: .infinity)
-                }
-                .buttonStyle(.borderedProminent)
-                .tint(PikminUI.green)
-                .disabled(session.currentCoordinate == nil || !preflight.canStartSession)
 
                 Text(session.currentCoordinate == nil
                      ? "点击地图选择起点".localized
@@ -185,7 +189,6 @@ struct MovementControlView: View {
                 Text(error).font(.caption).foregroundStyle(.red)
             }
         }
-        .pikminControlCard()
     }
 
     private func startSession() {
@@ -215,6 +218,8 @@ private struct JoystickPad: View {
     let heading: Double
     let onHeadingChange: (Double) -> Void
     let onRelease: () -> Void
+    let onPause: () -> Void
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var knobOffset: CGSize = .zero
 
     var body: some View {
@@ -247,11 +252,21 @@ private struct JoystickPad: View {
                         onHeadingChange(degrees)
                     }
                     .onEnded { _ in
-                        withAnimation(.spring(response: 0.25)) { knobOffset = .zero }
+                        withAnimation(reduceMotion ? nil : .spring(response: 0.25)) { knobOffset = .zero }
                         onRelease()
                     }
             )
         }
+        .accessibilityElement(children: .ignore)
         .accessibilityLabel("移动摇杆")
+        .accessibilityValue(String(format: "%.0f°", heading))
+        .accessibilityAdjustableAction { direction in
+            switch direction {
+            case .increment: onHeadingChange((heading + 15).truncatingRemainder(dividingBy: 360))
+            case .decrement: onHeadingChange((heading + 345).truncatingRemainder(dividingBy: 360))
+            @unknown default: break
+            }
+        }
+        .accessibilityAction(named: "暂停移动", onPause)
     }
 }

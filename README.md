@@ -21,6 +21,7 @@ StikDebug 是基于 StikDebug 定位底层重构的内部学习项目，面向 i
 - 地点搜索与步道/道路规划使用系统 MapKit；使用这些功能时，搜索文字或路线端点由 Apple 地图服务处理。
 - 内置 VPN 只建立到本机/已配对设备的本地通道，不连接外部 VPN 服务器。
 - Debug 的 WLOC 透传实验可让四个限定定位域名经本机代理直接出网；不解密、不改坐标，与旧模拟互斥，详见 [第一阶段验证记录](docs/wloc-probe-stage1.md)。
+- VIP 校验会将已配对设备的 UDID 发送到 `wow-app.store`；授权签名与设备绑定在主程序内验证，不依赖注入 dylib。
 - DDI 是可选开发能力。App 启动时不会自动下载；只有用户确认后才连接 `static.wow-app.store`。
 - GPX 与诊断报告仅在用户主动打开系统导出/分享面板后离开 App。
 
@@ -64,3 +65,9 @@ GPS spoofing 违反 Pikmin Bloom 服务政策，可能导致账号受限或永�
 ## License
 
 本项目继承原项目的 AGPL-3.0 许可证，详见 [LICENSE](LICENSE)。
+
+## 本次买家反馈修复
+
+坐标校正、停止后保持位置及原生 VIP 校验的行为与发布顺序见 [修复说明](docs/buyer-fixes-2026-09.md)。
+
+0.1.6 (7) 的蜂窝网络重试、离线授权边界及 DDI 安装入口见 [说明与复测步骤](docs/cellular-authorization-and-ddi-2026-10.md)。

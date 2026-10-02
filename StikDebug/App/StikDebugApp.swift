@@ -11,6 +11,9 @@ struct StikDebugApp: App {
     @StateObject private var vpn = EmbeddedVPNService.shared
     @StateObject private var onDevicePairing = OnDevicePairingService.shared
     @StateObject private var localization = LocalizationManager.shared
+    @State private var startupDecisionMade = false
+    @State private var showStartupPairingGuide = false
+    @State private var presentedPairingGuideThisLaunch = false
     private let isTesting: Bool
     private let modelContainer: ModelContainer
 
@@ -37,20 +40,45 @@ struct StikDebugApp: App {
                 .environment(\.locale, localization.locale)
                 // 重建整棵树，让已经渲染出来的文案按新语言重新查表。
                 .id(localization.language)
+                .sheet(isPresented: $showStartupPairingGuide, onDismiss: {
+                    Task { await prepareEnvironment() }
+                }) {
+                    OnDevicePairingView()
+                        .environmentObject(onDevicePairing)
+                        .environmentObject(preflight)
+                        .environmentObject(vpn)
+                        .environmentObject(localization)
+                        .environment(\.locale, localization.locale)
+                }
                 .task {
                     guard !isTesting,
                           !ProcessInfo.processInfo.arguments.contains("--ui-testing") else { return }
-                    await vpn.load()
-                    #if DEBUG
-                    WLOCUSBDebugBridge.shared.setActive(scenePhase == .active)
-                    #endif
-                    if UserDefaults.standard.bool(forKey: "autoConnectEmbeddedVPN"),
-                       !vpn.status.isConnected {
-                        await vpn.connect()
+                    // Restore entitlement locally before VPN, HealthKit or other network work.
+                    VipAuthorizationService.shared.restoreCachedAuthorization()
+                    let pairingURL = PairingFileStore.prepareURL()
+                    let hasPairing = PairingFileStore.isValidPairingFile(at: pairingURL)
+                    if PairingGuidePolicy.shouldPresent(
+                        isSupported: onDevicePairing.isSupported,
+                        hasValidPairing: hasPairing,
+                        presentedThisLaunch: presentedPairingGuideThisLaunch
+                    ) {
+                        presentedPairingGuideThisLaunch = true
+                        showStartupPairingGuide = true
+                        startupDecisionMade = true
+                        return
                     }
-                    await permissions.refresh()
-                    await preflight.refresh()
-                    await health.refreshToday()
+                    startupDecisionMade = true
+                    await prepareEnvironment()
+                }
+                .onChange(of: onDevicePairing.phase) { _, phase in
+                    if phase == .succeeded, !showStartupPairingGuide {
+                        Task { await prepareEnvironment() }
+                    }
+                }
+                .onChange(of: vpn.status) { _, status in
+                    guard status.isConnected, !isTesting, startupDecisionMade,
+                          !showStartupPairingGuide, !onDevicePairing.isBusy else { return }
+                    VipAuthorizationService.shared.connectionDidBecomeAvailable()
                 }
                 .onChange(of: scenePhase) { _, phase in
                     #if DEBUG
@@ -59,16 +87,37 @@ struct StikDebugApp: App {
                     }
                     #endif
                     FixedLocationSessionController.shared.updateForegroundState(phase == .active)
-                    guard phase == .active else { return }
+                    guard phase == .active, !isTesting, startupDecisionMade,
+                          !showStartupPairingGuide, !onDevicePairing.isBusy else { return }
+                    Task {
+                        // Returning from a permission prompt/settings must not lose a retry.
+                        VipAuthorizationService.shared.connectionDidBecomeAvailable()
+                        await VipAuthorizationService.shared.refresh()
+                    }
                     Task {
                         session.refreshAfterForeground()
-                        await vpn.load()
-                        await permissions.refresh()
-                        await preflight.refresh()
-                        await health.refreshToday()
+                        await prepareEnvironment()
                     }
                 }
         }
         .modelContainer(modelContainer)
     }
+
+    @MainActor
+    private func prepareEnvironment() async {
+        guard !isTesting, !showStartupPairingGuide, !onDevicePairing.isBusy else { return }
+        VipAuthorizationService.shared.startMonitoring()
+        await vpn.load()
+        #if DEBUG
+        WLOCUSBDebugBridge.shared.setActive(scenePhase == .active)
+        #endif
+        if UserDefaults.standard.bool(forKey: "autoConnectEmbeddedVPN"), !vpn.status.isConnected {
+            await vpn.connect()
+        }
+        Task { await VipAuthorizationService.shared.refresh(force: true) }
+        await permissions.refresh()
+        await preflight.refresh()
+        await health.refreshToday()
+    }
+
 }

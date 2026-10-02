@@ -8,6 +8,8 @@ struct OnDevicePairingView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.openURL) private var openURL
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var copiedPIN = false
+    @ScaledMetric(relativeTo: .largeTitle) private var pinFontSize = 42
     @State private var isConnecting = false
 
     var body: some View {
@@ -22,8 +24,10 @@ struct OnDevicePairingView: View {
                     stepsCard
                     compatibilityNote
                 }
+                .frame(maxWidth: 600)
                 .padding(.horizontal, 16)
-                .padding(.bottom, 112)
+                .padding(.bottom, 24)
+                .frame(maxWidth: .infinity)
             }
             .background(PikminUI.pageBackground.ignoresSafeArea())
             .navigationTitle("本机配对")
@@ -50,9 +54,9 @@ struct OnDevicePairingView: View {
                     .background(.white.opacity(0.18), in: Circle())
 
                 VStack(alignment: .leading, spacing: 5) {
-                    Text(statusTitle)
+                    Text(statusTitle.localized)
                         .font(.title3.weight(.bold))
-                    Text(statusDetail)
+                    Text(statusDetail.localized)
                         .font(.subheadline)
                         .foregroundStyle(.white.opacity(0.86))
                         .fixedSize(horizontal: false, vertical: true)
@@ -60,9 +64,8 @@ struct OnDevicePairingView: View {
                 Spacer(minLength: 0)
             }
 
-            HStack(spacing: 8) {
+            AdaptiveActionStack {
                 Label("无需电脑", systemImage: "iphone")
-                Text("·")
                 Label("iOS 27+", systemImage: "checkmark.seal")
             }
             .font(.caption.weight(.semibold))
@@ -81,10 +84,20 @@ struct OnDevicePairingView: View {
                 .font(.subheadline.weight(.semibold))
                 .foregroundStyle(.secondary)
             Text(pin)
-                .font(.system(size: 42, weight: .bold, design: .monospaced))
-                .tracking(8)
+                .font(.system(size: pinFontSize, weight: .bold, design: .monospaced))
+                .tracking(4)
+                .lineLimit(1)
+                .minimumScaleFactor(0.5)
                 .contentTransition(.numericText())
                 .accessibilityLabel("配对码 \(pin)")
+            Button {
+                UIPasteboard.general.string = pin
+                copiedPIN = true
+            } label: {
+                Label(copiedPIN ? "已复制配对码" : "复制配对码", systemImage: copiedPIN ? "checkmark" : "doc.on.doc")
+                    .frame(minHeight: 44)
+            }
+            .onChange(of: pin) { _, _ in copiedPIN = false }
             Text("通知中也会保留这组号码")
                 .font(.caption)
                 .foregroundStyle(.secondary)
@@ -135,10 +148,10 @@ struct OnDevicePairingView: View {
             .frame(width: 28, height: 28)
 
             VStack(alignment: .leading, spacing: 3) {
-                Text(title)
+                Text(title.localized)
                     .font(.subheadline.weight(number == currentStep ? .semibold : .regular))
                 if let detail {
-                    Text(detail)
+                    Text(detail.localized)
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
@@ -171,14 +184,14 @@ struct OnDevicePairingView: View {
                     } else {
                         Image(systemName: primarySymbol)
                     }
-                    Text(primaryTitle)
+                    Text(primaryTitle.localized)
                         .fontWeight(.semibold)
                 }
                 .frame(maxWidth: .infinity)
-                .frame(height: 48)
+                .frame(minHeight: 48)
             }
             .buttonStyle(.borderedProminent)
-            .tint(PikminUI.green)
+            .tint(PikminUI.actionGreen)
             .disabled(primaryDisabled)
 
             if pairing.isBusy {
@@ -187,9 +200,11 @@ struct OnDevicePairingView: View {
                     .foregroundStyle(.secondary)
             }
         }
+        .frame(maxWidth: 600)
         .padding(.horizontal, 16)
         .padding(.top, 12)
         .padding(.bottom, 8)
+        .frame(maxWidth: .infinity)
         .background(.regularMaterial)
     }
 
@@ -233,7 +248,7 @@ struct OnDevicePairingView: View {
         case .advertising: "前往“隐私与安全 → 开发者模式 → 与主机配对”。"
         case .deviceConnected: "请完成解锁验证，配对码马上出现。"
         case .awaitingPIN: "在系统设置的配对弹窗中输入下方 6 位号码。"
-        case .installing: "正在校验并原子替换 pairing file，请稍候。"
+        case .installing: "正在保存设备配对文件，请稍候。"
         case .succeeded: "配对文件已就绪。下一步连接内置 LocalDevVPN。"
         case .failed(let message): message
         }

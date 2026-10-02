@@ -1,0 +1,193 @@
+{
+  "ipa": "/Users/junyang/IdeaProjects/StikDebug/artifacts/PikminHelper-0.1.6-7-unsigned.ipa",
+  "bytes": 11849232,
+  "sha256": "60d85d42bf273a4ac1768f9e21b8a2f8845bd35bdf73aacd30a506d8d61b6be5",
+  "configuration": "Release",
+  "signed": false,
+  "bundles": [
+    {
+      "bundle": "StikDebug.app",
+      "identifier": "com.jy.stikdebug.pikmin",
+      "version": "0.1.6",
+      "build": "7",
+      "architecture": "arm64"
+    },
+    {
+      "bundle": "PikminLiveActivity.appex",
+      "identifier": "com.jy.stikdebug.pikmin.liveactivity",
+      "version": "0.1.6",
+      "build": "7",
+      "architecture": "arm64"
+    },
+    {
+      "bundle": "PikminTunnel.appex",
+      "identifier": "com.jy.stikdebug.pikmin.networkextension",
+      "version": "0.1.6",
+      "build": "7",
+      "architecture": "arm64"
+    }
+  ],
+  "unsignedBinaries": [
+    "StikDebug",
+    "PlugIns/PikminTunnel.appex/PikminTunnel",
+    "PlugIns/PikminLiveActivity.appex/PikminLiveActivity"
+  ],
+  "clientTestsPassed": 72,
+  "releaseArchiveSucceeded": true,
+  "layoutPreviewImages": 10,
+  "layoutScenarios": 7,
+  "layoutWidthsPoints": [
+    320,
+    375,
+    430,
+    667,
+    1024
+  ],
+  "layoutHarnessUsesServiceFixtures": true,
+  "physicalCellularNetworkValidated": false,
+  "physicalDDIMountValidated": false,
+  "sourceChanges": [
+    {
+      "path": "PikminRuntimeTests/AuthorizationTests.swift",
+      "oldSha256": "f55e136717b262dd5c33e9ba3bd24115d95b587132960b38f3af22a964615427",
+      "newSha256": "823c2206f978c1a51b6f835eb09ed5d8a1003a49e6b47953ddf9b38ca964c318"
+    },
+    {
+      "path": "PikminRuntimeTests/DDIInstallationTests.swift",
+      "oldSha256": null,
+      "newSha256": "34d21ca5384a534939944e09964dc2ca4fb5eef4567c45fcd8ec178f248cd718"
+    },
+    {
+      "path": "README.md",
+      "oldSha256": "d0ca2041ec00b220e6b5e061c78c1b92efcfc37341a761147103080482092453",
+      "newSha256": "5fc8834233f3a8230c3ec20448a17d500c01456fc798aba97246ac06a22db6fe"
+    },
+    {
+      "path": "StikDebug/Device/MountingProgress.swift",
+      "oldSha256": "94526373eab67260f2454696f7c2aaa0014e0297f2bfbd577d107251a28b0173",
+      "newSha256": "f098d1ccb7d937a864bc1e9ff0470079abab64068728766baa6b1c2b4464bc20"
+    },
+    {
+      "path": "StikDebug/Localizable.xcstrings",
+      "oldSha256": "bb80c592ea27bf90416f8dbda1b498b38c249275aa02873418440b5021298866",
+      "newSha256": "25f8d7bc51d735649e77170a88ef8dbceb0005ba951ec1bc6a067debe7498e95"
+    },
+    {
+      "path": "StikDebug/Services/AuthorizationNetwork.swift",
+      "oldSha256": "b20dfc8645d70a0a1362e5e84f4b02f792c12c86bdbf9d6bb81d28e650355a12",
+      "newSha256": "1d0305cba3ba894c0c4d46974b66d1dd05203aab42541e262c3091b09a208ee8"
+    },
+    {
+      "path": "StikDebug/Services/DDIInstallationController.swift",
+      "oldSha256": null,
+      "newSha256": "62e3e5e156246eb2133929bd99ed06d2b8b3bfe8322b9283cea510fde555b041"
+    },
+    {
+      "path": "StikDebug/Services/DDIInstallationLive.swift",
+      "oldSha256": null,
+      "newSha256": "61e622327ef7641d9f9c3119445fa89ab56f165035bfdf4452820685c9572dec"
+    },
+    {
+      "path": "StikDebug/Services/DeveloperDiskImageService.swift",
+      "oldSha256": "815074de0685e3847e23e03bc9527c118d3c6274e23898f2fcb72d68953f4b9b",
+      "newSha256": "3180865c96b8dc43fe5226bd2588181efbf98df209c0097bf732d43fca5c22e6"
+    },
+    {
+      "path": "StikDebug/Services/DiagnosticsReport.swift",
+      "oldSha256": "bbb032785aa6ce7bcd9d881b6631577340a65b4ffb3c527d7f4c4920b6c52b23",
+      "newSha256": "bbca4414559851f3752968b0c56ffa80cc5887261a682052a77f8bc5c234b290"
+    },
+    {
+      "path": "StikDebug/Services/VipAuthorizationService.swift",
+      "oldSha256": "4283bbc9f4f301dab32dcf5bc6313196a8535ce8b214e0c8b89a00858bbe301a",
+      "newSha256": "093fa69806059f72cb173fbbc44decac8190d5070a1164e3513648f721a7aa4a"
+    },
+    {
+      "path": "StikDebug/Views/DDIInstallationView.swift",
+      "oldSha256": null,
+      "newSha256": "99c1e390e0d2fe8f38478bf9a3e0d35fe74de470517b8207250344cff4d7787a"
+    },
+    {
+      "path": "StikDebug/Views/PreflightChecklistView.swift",
+      "oldSha256": "f6bddae6e5564bdd8c2bf9ce4e2947702b0ebbdb68e6fae4dee916d60606185b",
+      "newSha256": "0042765231458a3df04364a1f8bdf5262cde1c1e5d2381d18a8df7bcc72d1259"
+    },
+    {
+      "path": "StikDebug.xcodeproj/project.pbxproj",
+      "oldSha256": "7266e06ab1ef1218f4df74eccdb07b5f41adb9cacfc8b43f6f8d9aefe8630b53",
+      "newSha256": "b118393dc391fa7103bda41146fd19e384d978595f642e9b9f4dda1ca0989083"
+    },
+    {
+      "path": "Tools/LayoutPreview/Capture.swift",
+      "oldSha256": "cb445b684c64e5048df6dcaa03faf975dbbb4d1b24dce44be17eeeb9512b0d6a",
+      "newSha256": "86dd26d812a5676c6af9e59e49898ed2e15ab9dd4b681f8c7f714d5e7e2f20a4"
+    },
+    {
+      "path": "Tools/LayoutPreview/Fixtures.swift",
+      "oldSha256": "ed01575f36b12504be7e9f45066c62063901e7e7430b360fdc431f7e997a5f74",
+      "newSha256": "e646cff4f50b1148f35ec87045bb10fc02ce9407012a4d6b7568c6b7bd6a6de5"
+    },
+    {
+      "path": "Tools/LayoutPreview/README.md",
+      "oldSha256": "da2159b3600b7ddb9addd0077ca0caa3878572297899f25f97924996b9800bb3",
+      "newSha256": "6e504f24ab560b944ed1a6274c2c879048ecfc8f4e8351390433a825f3290804"
+    },
+    {
+      "path": "Tools/LayoutPreview/build.sh",
+      "oldSha256": "b01cc08189d8491e360f8bdf85102ee6734a5e6d75e7a489198bb08451112f6f",
+      "newSha256": "7ed60805e77b6726a3ac0edefb3ed216ddf39871418ca8e5442076ccdab4d046"
+    },
+    {
+      "path": "Tools/test-pikmin-runtime.sh",
+      "oldSha256": "1c79b310a1173b1ec7ee62d29c48f5640627b7b99fd935ec03742f890c2e910d",
+      "newSha256": "1770795ff785dc906b2074e62b3602f6a60fd15893e51d7cd58f5f1b36a3b168"
+    },
+    {
+      "path": "docs/cellular-authorization-and-ddi-2026-10.md",
+      "oldSha256": null,
+      "newSha256": "e71a15c87313bd59dc5382c0f492a855f045962e20bff13ed123962f3ac50566"
+    }
+  ],
+  "layoutFiles": [
+    {
+      "path": "/Users/junyang/IdeaProjects/StikDebug/artifacts/layout-0.1.6/ddi-accessibility-scrolled.png",
+      "sha256": "1546cad9c0c486b280bf837894a5d24857d150e35aef549b2c64ae060d19a4cc"
+    },
+    {
+      "path": "/Users/junyang/IdeaProjects/StikDebug/artifacts/layout-0.1.6/ddi-accessibility.png",
+      "sha256": "9172fc5b335881dc5b1095bb4dd81dfa88be799ddcaa38b6f5be44548d9f0ffc"
+    },
+    {
+      "path": "/Users/junyang/IdeaProjects/StikDebug/artifacts/layout-0.1.6/ddi-downloading-dark.png",
+      "sha256": "79329cc76259cc67393bf91548a0f5e75510037bc1cd2cd494a676f12de27f96"
+    },
+    {
+      "path": "/Users/junyang/IdeaProjects/StikDebug/artifacts/layout-0.1.6/ddi-entry.png",
+      "sha256": "4ca5a704ce4648ab6cd8cb001aa8fea94750b912658ca5697cb4d280093df39f"
+    },
+    {
+      "path": "/Users/junyang/IdeaProjects/StikDebug/artifacts/layout-0.1.6/ddi-failed-scrolled.png",
+      "sha256": "66d0de59b986d15532cbc0c3d6afb2b776d2eba719fe10a643a3c76ecb0b7d8e"
+    },
+    {
+      "path": "/Users/junyang/IdeaProjects/StikDebug/artifacts/layout-0.1.6/ddi-failed.png",
+      "sha256": "66d0de59b986d15532cbc0c3d6afb2b776d2eba719fe10a643a3c76ecb0b7d8e"
+    },
+    {
+      "path": "/Users/junyang/IdeaProjects/StikDebug/artifacts/layout-0.1.6/ddi-ipad.png",
+      "sha256": "7958c88b1f86eab2e3ee01d7cfc0dac60ef67be12e3e8634ea0864119e9350b3"
+    },
+    {
+      "path": "/Users/junyang/IdeaProjects/StikDebug/artifacts/layout-0.1.6/ddi-landscape-scrolled.png",
+      "sha256": "9f3a0a296928e907480831165848aef76a3b84034ca2f4b45d79265a0f415cc7"
+    },
+    {
+      "path": "/Users/junyang/IdeaProjects/StikDebug/artifacts/layout-0.1.6/ddi-landscape.png",
+      "sha256": "c5ffad70386b55071b8442db8412d528ca464a36a24bd66a62fb46e497c26f31"
+    },
+    {
+      "path": "/Users/junyang/IdeaProjects/StikDebug/artifacts/layout-0.1.6/ddi-small.png",
+      "sha256": "c227c777cd6246ab90352a24c18f2b065a161aff22230a44862c200e262bdaf5"
+    }
+  ]
+}

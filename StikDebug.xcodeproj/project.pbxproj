@@ -509,7 +509,7 @@
 				CODE_SIGN_ENTITLEMENTS = PikminTunnel/PikminTunnel.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 7;
 				DEVELOPMENT_TEAM = W8UCWPZS66;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = PikminTunnel/Info.plist;
@@ -520,7 +520,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 0.1.0;
+				MARKETING_VERSION = 0.1.6;
 				PRODUCT_BUNDLE_IDENTIFIER = com.jy.stikdebug.pikmin.networkextension;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
@@ -539,7 +539,7 @@
 				CODE_SIGN_ENTITLEMENTS = PikminTunnel/PikminTunnel.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 7;
 				DEVELOPMENT_TEAM = W8UCWPZS66;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = PikminTunnel/Info.plist;
@@ -550,7 +550,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 0.1.0;
+				MARKETING_VERSION = 0.1.6;
 				PRODUCT_BUNDLE_IDENTIFIER = com.jy.stikdebug.pikmin.networkextension;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
@@ -568,7 +568,7 @@
 				APPLICATION_EXTENSION_API_ONLY = YES;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 7;
 				DEVELOPMENT_TEAM = W8UCWPZS66;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = PikminLiveActivity/Info.plist;
@@ -579,7 +579,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 0.1.0;
+				MARKETING_VERSION = 0.1.6;
 				PRODUCT_BUNDLE_IDENTIFIER = com.jy.stikdebug.pikmin.liveactivity;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
@@ -598,7 +598,7 @@
 				APPLICATION_EXTENSION_API_ONLY = YES;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 7;
 				DEVELOPMENT_TEAM = W8UCWPZS66;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = PikminLiveActivity/Info.plist;
@@ -609,7 +609,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 0.1.0;
+				MARKETING_VERSION = 0.1.6;
 				PRODUCT_BUNDLE_IDENTIFIER = com.jy.stikdebug.pikmin.liveactivity;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
@@ -745,7 +745,7 @@
 				CODE_SIGN_ENTITLEMENTS = StikDebug/StikDebug.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 7;
 				DEVELOPMENT_TEAM = W8UCWPZS66;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
@@ -785,7 +785,7 @@
 					"$(PROJECT_DIR)/StikDebug/idevice",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 15.1;
-				MARKETING_VERSION = 0.1.0;
+				MARKETING_VERSION = 0.1.6;
 				PRODUCT_BUNDLE_IDENTIFIER = com.jy.stikdebug.pikmin;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
@@ -812,7 +812,7 @@
 				CODE_SIGN_ENTITLEMENTS = StikDebug/StikDebug.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 7;
 				DEVELOPMENT_TEAM = W8UCWPZS66;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
@@ -852,7 +852,7 @@
 					"$(PROJECT_DIR)/StikDebug/idevice",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 15.1;
-				MARKETING_VERSION = 0.1.0;
+				MARKETING_VERSION = 0.1.6;
 				PRODUCT_BUNDLE_IDENTIFIER = com.jy.stikdebug.pikmin;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";

@@ -44,6 +44,11 @@ enum DiagnosticsReport {
         row("系统版本", "iOS \(UIDevice.current.systemVersion)")
         row("低电量模式", ProcessInfo.processInfo.isLowPowerModeEnabled ? "开启（可能影响后台）" : "关闭")
 
+        section("地图与授权")
+        row("地图坐标模式", MapCoordinateSystem.current.rawValue)
+        row("授权状态", VipAuthorizationService.shared.message)
+        row("授权请求诊断", VipAuthorizationService.shared.lastDiagnostic)
+
         // MARK: 内置 VPN（PikminTunnel）
         section("内置 VPN（PikminTunnel）")
         row("App 记录的状态", EmbeddedVPNService.shared.status.title)

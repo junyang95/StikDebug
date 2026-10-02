@@ -1,3 +1,4 @@
+import Combine
 import CoreLocation
 import Foundation
 import SwiftData
@@ -20,6 +21,11 @@ final class WalkingSessionController: ObservableObject {
 
     private let locationQueue = LocationSimulationCommandQueue.shared
     private var timer: DispatchSourceTimer?
+    private var finishTask: Task<Void, Never>?
+    private var shouldHoldAfterStop = true
+    private var generation = UUID()
+    private var hasKeepAliveLease = false
+    private var locationTask: Task<Int32, Never>?
     private var config: WalkingSessionConfig?
     private var sessionID: UUID?
     private var startedAt: Date?
@@ -47,6 +53,8 @@ final class WalkingSessionController: ObservableObject {
     private weak var modelContext: ModelContext?
 
     private init() {}
+
+    var isStopping: Bool { finishTask != nil }
 
     var isActive: Bool {
         phase == .running || phase == .reconnecting || phase == .paused || phase == .preparing
@@ -87,6 +95,7 @@ final class WalkingSessionController: ObservableObject {
     }
 
     func start(config: WalkingSessionConfig) async {
+        guard !isActive else { return }
         routeCoordinates = []
         routeIsLoop = false
         await startPreparedSession(config: config)
@@ -97,6 +106,7 @@ final class WalkingSessionController: ObservableObject {
         coordinates: [CLLocationCoordinate2D],
         isLoop: Bool = false
     ) async {
+        guard !isActive else { return }
         let validCoordinates = coordinates.filter(CLLocationCoordinate2DIsValid)
         guard validCoordinates.count > 1 else {
             fail("路线至少需要两个有效坐标".localized)
@@ -124,6 +134,12 @@ final class WalkingSessionController: ObservableObject {
             return
         }
 
+        guard VipLocationGate.shared.allows() else {
+            fail(VipAuthorizationService.shared.message)
+            return
+        }
+        generation = UUID()
+        let startingGeneration = generation
         phase = .preparing
         lastError = nil
         reconnectAttempt = 0
@@ -131,8 +147,11 @@ final class WalkingSessionController: ObservableObject {
         reconnectTask = nil
         SessionNotificationService.shared.requestAuthorizationIfNeeded()
         _ = await HealthStepService.shared.requestAuthorization()
+        guard generation == startingGeneration else { return }
+        FixedLocationSessionController.shared.stop()
 
         let initialCode = await sendLocation(config.startCoordinate)
+        guard generation == startingGeneration else { return }
         guard initialCode == 0 else {
             fail(String(format: "无法开始位置模拟（错误 %d）".localized, initialCode))
             return
@@ -159,6 +178,7 @@ final class WalkingSessionController: ObservableObject {
         phase = .running
 
         Task {
+            guard generation == startingGeneration, phase == .running else { return }
             await LiveActivityManager.shared.start(
                 config: config,
                 coordinate: config.startCoordinate,
@@ -168,18 +188,21 @@ final class WalkingSessionController: ObservableObject {
 
         BackgroundAudioManager.shared.requestStart()
         BackgroundLocationManager.shared.requestStart()
+        hasKeepAliveLease = true
         startTimer()
     }
 
     func pause() {
         guard phase == .running else { return }
         phase = .paused
+        if let currentCoordinate { FixedLocationSessionController.shared.hold(currentCoordinate) }
         lastTickAt = Date()
         updateLiveActivity(force: true)
     }
 
     func resume() {
-        guard phase == .paused else { return }
+        guard phase == .paused, VipLocationGate.shared.allows() else { return }
+        FixedLocationSessionController.shared.stop()
         reconnectAttempt = 0
         lastError = nil
         phase = .running
@@ -187,21 +210,41 @@ final class WalkingSessionController: ObservableObject {
         updateLiveActivity(force: true)
     }
 
-    func stop(reason: String = "用户停止".localized) async {
+    func stop(reason: String = "用户停止".localized, holdLocation: Bool = true) async {
+        if let finishTask {
+            shouldHoldAfterStop = shouldHoldAfterStop && holdLocation
+            await finishTask.value
+            return
+        }
         guard isActive else { return }
-        await flushHealthSteps()
-        finish(reason: reason, phase: .completed)
+        generation = UUID() // Prevent a pending start/reconnect from reviving this session.
+        shouldHoldAfterStop = holdLocation
+        timer?.cancel()
+        timer = nil
+        reconnectTask?.cancel()
+        reconnectTask = nil
+        phase = .preparing // No more movement or health batches while finishing.
+        let task = Task {
+            if let locationTask { _ = await locationTask.value }
+            if shouldHoldAfterStop, let currentCoordinate {
+                FixedLocationSessionController.shared.hold(currentCoordinate)
+            }
+            await flushHealthSteps()
+            if !shouldHoldAfterStop { FixedLocationSessionController.shared.stop() }
+            finish(reason: reason, phase: .completed)
+        }
+        finishTask = task
+        await task.value
+        finishTask = nil
     }
 
     func restoreRealLocation() async {
         FixedLocationSessionController.shared.stop()
         if isActive {
-            await stop(reason: "恢复真实定位".localized)
+            await stop(reason: "恢复真实定位".localized, holdLocation: false)
         }
 
-        // 会话没在跑时也要停掉保活，否则后台定位和静音音频会一直挂着。
-        BackgroundAudioManager.shared.requestStop()
-        BackgroundLocationManager.shared.requestStop()
+        // The controllers release only their own keep-alive leases.
 
         let pairingPath = PairingFileStore.url.path
         let code = await withCheckedContinuation { continuation in
@@ -244,8 +287,11 @@ final class WalkingSessionController: ObservableObject {
               !isSendingLocation,
               let coordinate = currentCoordinate else { return }
         isSendingLocation = true
+        let sendingGeneration = generation
         Task {
+            guard generation == sendingGeneration else { return }
             let code = await sendLocation(coordinate)
+            guard generation == sendingGeneration else { return }
             isSendingLocation = false
             handleLocationResult(code)
         }
@@ -291,9 +337,12 @@ final class WalkingSessionController: ObservableObject {
         updateLiveActivity()
         isSendingLocation = true
 
+        let sendingGeneration = generation
         Task {
+            guard generation == sendingGeneration else { return }
             let code = await sendLocation(simulatedCoordinate)
             await MainActor.run {
+                guard self.generation == sendingGeneration else { return }
                 self.isSendingLocation = false
                 self.handleLocationResult(code)
             }
@@ -306,11 +355,7 @@ final class WalkingSessionController: ObservableObject {
         }
 
         if hasReachedGoal(config) {
-            phase = .preparing
-            Task {
-                await flushHealthSteps()
-                finish(reason: "目标完成".localized, phase: .completed)
-            }
+            Task { await stop(reason: "目标完成".localized) }
         }
     }
 
@@ -359,8 +404,12 @@ final class WalkingSessionController: ObservableObject {
         reconnectTask = nil
         reconnectAttempt = 0
         currentSpeedKilometersPerHour = 0
-        BackgroundAudioManager.shared.requestStop()
-        BackgroundLocationManager.shared.requestStop()
+        if hasKeepAliveLease {
+            hasKeepAliveLease = false
+            BackgroundAudioManager.shared.requestStop()
+            BackgroundLocationManager.shared.requestStop()
+        }
+        isSendingLocation = false
 
         if let id = sessionID, let startedAt, let config {
             let record = WalkingSessionRecord(
@@ -413,6 +462,10 @@ final class WalkingSessionController: ObservableObject {
     private func handleLocationResult(_ code: Int32) {
         guard phase == .running, config != nil else { return }
         guard code != 0 else { return }
+        if code == LocationSimulationStatus.unauthorized {
+            Task { await stop(reason: "授权验证失败，请检查连接并重新验证".localized, holdLocation: false) }
+            return
+        }
         beginReconnect(after: code)
     }
 
@@ -450,6 +503,7 @@ final class WalkingSessionController: ObservableObject {
                       let coordinate = self.currentCoordinate else { return }
 
                 latestErrorCode = await self.sendLocation(coordinate)
+                guard !Task.isCancelled, self.config != nil else { return }
                 if latestErrorCode == 0 {
                     self.reconnectTask = nil
                     self.reconnectAttempt = 0
@@ -479,16 +533,18 @@ final class WalkingSessionController: ObservableObject {
 
     private func sendLocation(_ coordinate: CLLocationCoordinate2D) async -> Int32 {
         let pairingPath = PairingFileStore.url.path
-        return await withCheckedContinuation { continuation in
-            locationQueue.async {
-                continuation.resume(returning: simulate_location(
-                    DeviceConnectionContext.targetIPAddress,
-                    coordinate.latitude,
-                    coordinate.longitude,
-                    pairingPath
-                ))
+        let task = Task<Int32, Never> {
+            await withCheckedContinuation { continuation in
+                locationQueue.async {
+                    continuation.resume(returning: simulate_location(
+                        DeviceConnectionContext.targetIPAddress,
+                        coordinate.latitude, coordinate.longitude, pairingPath
+                    ))
+                }
             }
         }
+        locationTask = task
+        return await task.value
     }
 
     private func resetJitter() {

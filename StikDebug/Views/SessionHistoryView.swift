@@ -14,19 +14,16 @@ struct SessionHistoryView: View {
                     List {
                         ForEach(records) { record in
                             VStack(alignment: .leading, spacing: 8) {
-                                HStack {
+                                AdaptiveActionStack {
                                     Label(record.mode.title, systemImage: "figure.walk")
                                         .font(.headline)
-                                    Spacer()
                                     Text(record.startedAt, style: .date)
                                         .font(.caption)
                                         .foregroundStyle(.secondary)
                                 }
-                                HStack {
+                                AdaptiveActionStack {
                                     Text(String(format: "%.2f km", record.distanceMeters / 1000))
-                                    Text("·")
                                     Text(String(format: "%d 步".localized, record.estimatedSteps))
-                                    Text("·")
                                     Text(Duration.seconds(record.durationSeconds).formatted(.time(pattern: .minuteSecond)))
                                 }
                                 .font(.subheadline)

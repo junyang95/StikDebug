@@ -1,3 +1,4 @@
+import Combine
 import CoreLocation
 import Foundation
 
@@ -9,6 +10,7 @@ final class FixedLocationSessionController: ObservableObject {
 
     private var resendTimer: DispatchSourceTimer?
     private var hasKeepAliveLease = false
+    private let commandGeneration = FixedLocationCommandGeneration()
     private var isForeground = true
 
     private init() {}
@@ -18,12 +20,18 @@ final class FixedLocationSessionController: ObservableObject {
     }
 
     func start(_ coordinate: CLLocationCoordinate2D, isForeground: Bool) {
-        guard !DeveloperConnectionGate.isBlocked else { return }
+        guard !DeveloperConnectionGate.isBlocked, VipLocationGate.shared.allows() else { return }
         guard CLLocationCoordinate2DIsValid(coordinate) else { return }
         self.coordinate = coordinate
         self.isForeground = isForeground
         acquireKeepAliveIfNeeded()
         schedule(sendImmediately: false)
+    }
+
+    /// Preserve the last WGS-84 position without an initial resend gap.
+    func hold(_ coordinate: CLLocationCoordinate2D) {
+        start(coordinate, isForeground: isForeground)
+        schedule(sendImmediately: true)
     }
 
     func updateForegroundState(_ isForeground: Bool) {
@@ -34,6 +42,7 @@ final class FixedLocationSessionController: ObservableObject {
     }
 
     func stop() {
+        commandGeneration.invalidate()
         resendTimer?.cancel()
         resendTimer = nil
         coordinate = nil
@@ -47,7 +56,10 @@ final class FixedLocationSessionController: ObservableObject {
         let interval = resendInterval
         let ip = DeviceConnectionContext.targetIPAddress
         let pairingPath = PairingFileStore.prepareURL().path
+        let generation = commandGeneration.invalidate()
+        let commandGeneration = commandGeneration
         let send: @Sendable () -> Void = {
+            guard commandGeneration.isCurrent(generation) else { return }
             let jittered = MovementMath.offset(
                 coordinate,
                 eastMeters: Double.random(in: -1.5...1.5),
@@ -82,5 +94,19 @@ final class FixedLocationSessionController: ObservableObject {
         hasKeepAliveLease = false
         BackgroundLocationManager.shared.requestStop()
         BackgroundAudioManager.shared.requestStop()
+    }
+}
+
+private final class FixedLocationCommandGeneration: @unchecked Sendable {
+    private let lock = NSLock()
+    private var value = UUID()
+    @discardableResult func invalidate() -> UUID {
+        lock.lock(); defer { lock.unlock() }
+        value = UUID()
+        return value
+    }
+    func isCurrent(_ value: UUID) -> Bool {
+        lock.lock(); defer { lock.unlock() }
+        return self.value == value
     }
 }
