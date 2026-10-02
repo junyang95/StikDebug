@@ -1,5 +1,7 @@
 # StikDebug integration provenance
 
+Current integrated launcher release: **2.0.2 (13)**.
+
 Upstream project: <https://github.com/StikDebug/StikDebug>
 
 Pinned commit: **`4bdfc92aa7cebd7a534f1e1ef56415f5727402de`** (3.1.13).
@@ -32,7 +34,11 @@ device metadata, provisioning-profile operations, and location-service calls
 follow the relevant operations in `StikDebug/Device/IdeviceFFIBridge.swift` and
 `StikDebug/Device/JITEnableContext.swift`. They are adapted into
 `Sources/DeviceTools.swift`, `Sources/DeviceMetadata.swift`, and framework API
-models with scoped FFI ownership, checked results, and input validation.
+models with scoped FFI ownership, checked results, and input validation. The
+application UI shows only targets whose device-reported entitlements contain
+`get-task-allow`, excluding the launcher itself. Its lazy icon loading calls
+SpringBoard services, with bounded thumbnails/cache and a fallback for an
+unavailable icon.
 
 `Sources/DebugHeartbeatSession.swift` follows StikDebug's debugger heartbeat
 behavior. It owns its own tunnel/handles and uses a worker thread; cancellation
@@ -57,15 +63,39 @@ name, a prominent real PIN, and actionable connection preparation. It retains
 its own cancellable pairing session, atomic protected record storage, bounded
 background lifetime, and notification cleanup. The app cannot observe or mark
 manual Settings actions complete. The Pikmin branch's HealthKit, walking/step
-writing, VIP/subscription, proxy, and authorization flows are not included.
+writing, VIP/subscription, and proxy workflows are not included.
+
+## Device-verification reference
+
+The local `codex/pikmin-helper` signed-license implementation also informs the
+P-256 public-key/signature, UDID, nonce, and timestamp contract. The launcher
+implements a separate registration/non-ban policy in
+`App/Models/WowDeviceAccess.swift` and `App/Services/WowDeviceAccessClient.swift`.
+It does not adopt the branch's VIP gate or offline permission cache.
+
+Sign in to **wow-app.store** in Safari and complete device identification to
+create the device registration. Each protected new operation reads the actual
+connected device UDID and sends it over HTTPS to the existing
+`/api/checkVipInfo.action` and `/api/vip-license.action` endpoints. Registration
+requires `code: 0` and a matching `data.device`; the signed response must match the
+UDID, fresh nonce and allowed timestamp, with explicit `isBanned: false` and a
+recognized status other than `BANNED`. Non-VIP and expired-VIP devices are allowed.
+The registration record does not prove a current browser session or an independent
+last-login timestamp. No backend modification or deployment is included.
+
+Network or verification failures block new protected operations. Responses and
+offline permission are not cached, and the UDID/response is not logged. Restoring
+real location remains available for recovery when the local device connection
+works, including after a ban or network outage. Admission checks cannot revoke
+JIT already obtained by a running process. See [LAUNCHER.md](../../LAUNCHER.md) for
+the request limits and operation scope.
 
 ## Compatibility boundaries
 
-- The installed-app list currently uses placeholder icons. The framework icon
-  service has not yet been connected to list loading. The launcher itself retains
-  its bundled application icon.
-- JIT eligibility is read from device metadata; target-app protocol compatibility
-  still depends on the OS, hardware, and selected script.
+- Real installed-app icons require a connected, prepared device; unavailable
+  icons use a fallback. The launcher retains its bundled application icon.
+- The Applications tab only exposes debuggable targets. Target-app protocol
+  compatibility still depends on the OS, hardware, and selected script.
 - The script host supplies `get_pid`, `send_command`, `prepare_memory_region`,
   `log`, and device-capability-backed `hasTXM`. `resume_app()` and
   `take_screenshot()` explicitly report unsupported operations. Custom scripts
@@ -75,9 +105,9 @@ writing, VIP/subscription, proxy, and authorization flows are not included.
 - Device syslog stopping remains cooperative because the bundled FFI has no
   interrupt for a pending log read. The app waits for that read to return before
   releasing handles or starting a replacement stream.
-- Shortcuts and the `jitlauncher`/`stikpair` URL schemes require in-app confirmation
-  and prior preparation. Arbitrary external scripts and upstream `stikdebug://`
-  compatibility are not provided.
+- Shortcuts and the `jitlauncher`/`stikpair` URL schemes require in-app confirmation,
+  prior preparation, and fresh online device verification. Arbitrary external
+  scripts and upstream `stikdebug://` compatibility are not provided.
 - This build needs signing with the app/extension VPN entitlements and physical
   device acceptance. Neither an unsigned archive nor a simulator preview verifies
   a real pairing, VPN, or target JIT session.

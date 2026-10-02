@@ -1,0 +1,18 @@
+// Website device verification. Never include a device identifier in UI strings.
+
+"access.title" = "裝置驗證";
+"access.pending" = "尚未驗證本機裝置。";
+"access.checking" = "正在驗證本機裝置…";
+"access.verified" = "本機裝置已通過驗證。";
+"access.help" = "請先在 Safari 登入 wow-app.store，並完成本機裝置識別。本機已登記且未被封鎖即可，無需 VIP。";
+"access.login" = "前往 wow-app.store";
+"access.verify" = "驗證本機裝置";
+"access.privacy" = "驗證時會將本機 UDID 傳送至 wow-app.store。";
+"access.date" = "最近檢查";
+"access.error.banned" = "此裝置已被封鎖，無法通過驗證。請前往 wow-app.store 查看裝置狀態。";
+"access.error.not_registered" = "尚未登記本機裝置。請在 Safari 登入 wow-app.store，完成本機裝置識別後重試。";
+"access.error.server_unsupported" = "網站暫未提供相容的裝置驗證服務，請稍後重試。";
+"access.error.invalid_response" = "網站傳回的驗證結果無效，請稍後重試。";
+"access.error.network_unavailable" = "無法連接裝置驗證網站。請檢查網路連線後重試。";
+"access.error.device_unavailable" = "無法讀取本機裝置以完成驗證。請先完成配對並連接本機 VPN，再重試。";
+"access.error.cancelled" = "裝置驗證已取消，可以重試。";

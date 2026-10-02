@@ -19,6 +19,7 @@ struct LauncherSettingsView: View {
 
     var body: some View {
         Form {
+            Section { WowDeviceAccessView(model: model) }
             Section {
                 LabeledContent("settings.local_connection") {
                     ConnectionStatusLabel(status: vpn.status)

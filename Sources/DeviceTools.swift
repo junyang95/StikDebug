@@ -43,7 +43,14 @@ extension StikJIT {
             }, free: springboard_services_free) { client in
                 var bytes: UnsafeMutableRawPointer?
                 var count = 0
-                defer { if let bytes { free(bytes) } }
+                defer {
+                    // The FFI returns a Rust boxed byte slice. Match its allocator
+                    // and handle the valid dangling pointer of an empty slice;
+                    // unlike free(ptr), idevice_data_free(ptr, 0) never frees it.
+                    if let bytes, count >= 0 {
+                        idevice_data_free(bytes.assumingMemoryBound(to: UInt8.self), UInt(count))
+                    }
+                }
                 try IdeviceFFI.check("Failed to load application icon") {
                     bundleIdentifier.withCString { springboard_services_get_icon(client, $0, &bytes, &count) }
                 }

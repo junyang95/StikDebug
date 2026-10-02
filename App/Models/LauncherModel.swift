@@ -35,6 +35,12 @@ final class LauncherModel: ObservableObject {
     @Published private(set) var profiles: [LauncherProfile] = []
     @Published private(set) var operationLog: [String] = []
     @Published private(set) var locationIsSimulated = false
+    @Published private(set) var applicationIcons: [String: Data] = [:]
+    @Published private(set) var iconLoadRevision = 0
+    @Published private(set) var accessStatusKey = "access.pending"
+    @Published private(set) var accessCheckedAt: Date?
+    @Published private(set) var accessError: String?
+    var isDeviceAccessVerified: Bool { accessStatusKey == "access.verified" }
     let scripts = ScriptLibrary()
     let console = LauncherConsole()
 
@@ -45,11 +51,19 @@ final class LauncherModel: ObservableObject {
     private let cacheDirectory: URL
     private let worker = DispatchQueue(label: "com.stik.JITLauncher.device", qos: .userInitiated)
     private var observation: AnyCancellable?
+    private var isForeground = true
     private var preparationGeneration = 0
     private var backgroundTask: UIBackgroundTaskIdentifier = .invalid
     private var operationExpired = false
     private var operationID: UUID?
     private var requestedApplication: (String, Bool)?
+    private var operationTask: Task<Void, Never>?
+    private var operationToken: LauncherOperationToken?
+    private let iconWorker = DispatchQueue(label: "com.stik.JITLauncher.icons", qos: .utility)
+    private var iconToken = LauncherOperationToken()
+    private var iconRequests: [String: UUID] = [:]
+    private var iconAttempts = Set<String>()
+    private var iconCacheOrder: [String] = []
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
@@ -83,12 +97,17 @@ final class LauncherModel: ObservableObject {
         }
     }
 
+    func enteredForeground() { isForeground = true }
+
     func refreshState() async {
         if !store.hasRecord {
             pairingFileName = nil
             invalidatePreparation()
         }
         await vpn.refresh()
+        if isForeground && store.hasRecord && vpn.isConnected && developerModeConfirmed && !isBusy && !pairing.isRunning {
+            verifyDeviceAccess()
+        }
     }
 
     func clearMessages() {
@@ -142,7 +161,7 @@ final class LauncherModel: ObservableObject {
         isPrepared = false
         let record = store.fileURL
         let cache = cacheDirectory
-        perform(progress: "progress.checking_device", failure: "error.preparation_failed") { report in
+        perform(progress: "progress.checking_device", failure: "error.preparation_failed") { report, _ in
             try LauncherEngine.prepare(record: record, cache: cache, report: report)
             return .prepared
         }
@@ -152,7 +171,7 @@ final class LauncherModel: ObservableObject {
         guard preflight(requirePreparation: true) else { return }
         let record = store.fileURL
         let ownPID = ProcessInfo.processInfo.processIdentifier
-        perform(progress: "progress.loading_processes", failure: "error.processes_failed") { _ in
+        perform(progress: "progress.loading_processes", failure: "error.processes_failed") { _, _ in
             .processes(try LauncherEngine.processes(record: record).filter { $0.id != ownPID })
         }
     }
@@ -176,7 +195,7 @@ final class LauncherModel: ObservableObject {
         } catch { errorMessage = error.localizedDescription; return }
         let record = store.fileURL
         let cache = cacheDirectory
-        perform(progress: "progress.enabling_jit", failure: "error.jit_failed") { report in
+        perform(progress: "progress.enabling_jit", failure: "error.jit_failed") { report, _ in
             try LauncherEngine.enable(pid: pid, record: record, cache: cache, script: data, report: report)
             return .enabled
         }
@@ -200,11 +219,64 @@ final class LauncherModel: ObservableObject {
 
     func refreshApplications() {
         guard preflight() else { return }
+        iconAttempts.removeAll()
         let record = store.fileURL
         let ownBundle = Bundle.main.bundleIdentifier
-        perform(progress: "progress.loading_apps", failure: "error.apps_failed") { _ in
-            .applications(try LauncherEngine.applications(record: record).filter { $0.bundleIdentifier != ownBundle })
+        perform(progress: "progress.loading_apps", failure: "error.apps_failed") { _, _ in
+            .applications(try LauncherEngine.applications(record: record).filter { $0.isDebuggable && $0.bundleIdentifier != ownBundle })
         }
+    }
+
+    func requestApplicationIcon(for app: LauncherApplication) {
+        guard isForeground, app.isDebuggable, isPrepared, isDeviceAccessVerified, vpn.isConnected, !isBusy,
+              applicationIcons[app.id] == nil, iconRequests[app.id] == nil,
+              !iconAttempts.contains(app.id), iconRequests.count < 64,
+              applications.contains(where: { $0.id == app.id }) else { return }
+        let request = UUID()
+        iconRequests[app.id] = request
+        let token = iconToken
+        let record = store.fileURL
+        iconWorker.async { [weak self] in
+            let data: Data?
+            do {
+                try token.check()
+                data = ApplicationIconThumbnail.make(try LauncherEngine.applicationIcon(app.id, record: record))
+            } catch { data = nil }
+            DispatchQueue.main.async { [weak self] in
+                guard let self, self.iconRequests[app.id] == request else { return }
+                self.iconRequests.removeValue(forKey: app.id)
+                self.iconAttempts.insert(app.id)
+                self.iconLoadRevision &+= 1
+                guard let data else { return }
+                self.applicationIcons[app.id] = data
+                self.iconCacheOrder.removeAll { $0 == app.id }
+                self.iconCacheOrder.append(app.id)
+                while self.applicationIcons.values.reduce(0, { $0 + $1.count }) > 8 * 1024 * 1024 || self.iconCacheOrder.count > 128 {
+                    let evicted = self.iconCacheOrder.removeFirst()
+                    self.applicationIcons.removeValue(forKey: evicted)
+                    self.iconAttempts.remove(evicted)
+                }
+            }
+        }
+    }
+
+    func verifyDeviceAccess() {
+        guard preflight() else { return }
+        perform(progress: "progress.verifying_access", failure: "error.access_failed") { _, _ in .accessVerified }
+    }
+
+    func enteredBackground() {
+        isForeground = false
+        requestedApplication = nil
+        console.stop()
+        accessStatusKey = "access.pending"
+        accessCheckedAt = nil
+        if operationToken?.leaveForeground() == true { operationTask?.cancel() }
+        iconToken.cancel()
+        iconToken = LauncherOperationToken()
+        iconRequests.removeAll()
+        // Already-started brief device work retains its finite background task.
+        // Waiting authorization and queued icon reads cannot start new work.
     }
 
     func launchApplication(_ app: LauncherApplication, enableJIT: Bool) {
@@ -220,16 +292,18 @@ final class LauncherModel: ObservableObject {
         catch { errorMessage = error.localizedDescription; return }
         let record = store.fileURL
         let cache = cacheDirectory
-        perform(progress: enableJIT ? "progress.enabling_jit" : "progress.launching_app", failure: "error.launch_failed") { report in
-            let pid = try LauncherEngine.launch(app.bundleIdentifier, record: record, suspended: enableJIT)
-            if let script {
-                do { try LauncherEngine.enable(pid: pid, record: record, cache: cache, script: script, report: report) }
-                catch {
-                    // A failed script must not leave a newly suspended target unusable.
-                    try? LauncherEngine.resume(pid, record: record)
-                    throw error
-                }
-            }
+        perform(progress: enableJIT ? "progress.enabling_jit" : "progress.launching_app", failure: "error.launch_failed") { report, checkCancelled in
+            let pid = try LauncherApplicationLaunch.run(
+                enableJIT: enableJIT,
+                launch: { try LauncherEngine.launch(app.bundleIdentifier, record: record, suspended: $0) },
+                checkCancelled: checkCancelled,
+                enable: { pid in
+                    if let script {
+                        try LauncherEngine.enable(pid: pid, record: record, cache: cache, script: script, report: report)
+                    }
+                },
+                resume: { try LauncherEngine.resume($0, record: record) }
+            )
             return .launched(app.bundleIdentifier, pid, enableJIT)
         }
     }
@@ -237,7 +311,7 @@ final class LauncherModel: ObservableObject {
     func refreshDeviceDetails() {
         guard preflight() else { return }
         let record = store.fileURL
-        perform(progress: "progress.device_details", failure: "error.tool_failed") { _ in
+        perform(progress: "progress.device_details", failure: "error.tool_failed") { _, _ in
             .details(try LauncherEngine.details(record: record))
         }
     }
@@ -245,7 +319,7 @@ final class LauncherModel: ObservableObject {
     func refreshProfiles() {
         guard preflight() else { return }
         let record = store.fileURL
-        perform(progress: "progress.profiles", failure: "error.tool_failed") { _ in
+        perform(progress: "progress.profiles", failure: "error.tool_failed") { _, _ in
             .profiles(try LauncherEngine.profiles(record: record))
         }
     }
@@ -263,7 +337,7 @@ final class LauncherModel: ObservableObject {
             guard data.count <= 8 * 1024 * 1024 else { throw CocoaError(.fileReadTooLarge) }
         } catch { errorMessage = error.localizedDescription; return }
         let record = store.fileURL
-        perform(progress: "progress.profiles", failure: "error.tool_failed") { _ in
+        perform(progress: "progress.profiles", failure: "error.tool_failed") { _, _ in
             try LauncherEngine.installProfile(data, record: record)
             return .profiles(try LauncherEngine.profiles(record: record))
         }
@@ -272,7 +346,7 @@ final class LauncherModel: ObservableObject {
     func removeProfile(_ profile: LauncherProfile) {
         guard preflight() else { return }
         let record = store.fileURL
-        perform(progress: "progress.profiles", failure: "error.tool_failed") { _ in
+        perform(progress: "progress.profiles", failure: "error.tool_failed") { _, _ in
             try LauncherEngine.removeProfile(profile.id, record: record)
             return .profiles(try LauncherEngine.profiles(record: record))
         }
@@ -285,7 +359,7 @@ final class LauncherModel: ObservableObject {
         }
         let record = store.fileURL
         let ownPID = ProcessInfo.processInfo.processIdentifier
-        perform(progress: "progress.process_control", failure: "error.tool_failed") { _ in
+        perform(progress: "progress.process_control", failure: "error.tool_failed") { _, _ in
             try LauncherEngine.terminate(process.id, record: record)
             return .processes(try LauncherEngine.processes(record: record).filter { $0.id != ownPID })
         }
@@ -299,9 +373,10 @@ final class LauncherModel: ObservableObject {
         let record = store.fileURL
         // The service can apply location before a timeout is observed. Preserve
         // restoration credentials even when its acknowledgement is lost.
-        locationIsSimulated = true
-        defaults.set(true, forKey: "locationIsSimulated")
-        perform(progress: "progress.location", failure: "error.tool_failed") { _ in
+        perform(progress: "progress.location", failure: "error.tool_failed", willRun: { [weak self] in
+            self?.locationIsSimulated = true
+            self?.defaults.set(true, forKey: "locationIsSimulated")
+        }) { _, _ in
             try LauncherEngine.setLocation(point.0, point.1, record: record)
             return .location(true)
         }
@@ -310,7 +385,9 @@ final class LauncherModel: ObservableObject {
     func restoreLocation() {
         guard preflight() else { return }
         let record = store.fileURL
-        perform(progress: "progress.location", failure: "error.tool_failed") { _ in
+        // Restoring the real location is recovery, and must remain possible
+        // after a ban or network outage. It cannot start a new simulation.
+        perform(progress: "progress.location", failure: "error.tool_failed", verifyAccess: false) { _, _ in
             try LauncherEngine.clearLocation(record: record)
             return .location(false)
         }
@@ -318,7 +395,7 @@ final class LauncherModel: ObservableObject {
 
     func startConsole() {
         guard preflight() else { return }
-        console.start(pairingFile: store.fileURL)
+        perform(progress: "progress.verifying_access", failure: "error.access_failed") { _, _ in .consoleReady }
     }
 
     func clearOperationLog() { operationLog.removeAll() }
@@ -329,7 +406,7 @@ final class LauncherModel: ObservableObject {
     }
 
     private func preflight(requirePreparation: Bool = false) -> Bool {
-        guard !isBusy, !pairing.isRunning else { return false }
+        guard isForeground, !isBusy, !pairing.isRunning else { return false }
         clearMessages()
         #if targetEnvironment(simulator)
         errorMessage = localized("error.device_required")
@@ -357,6 +434,17 @@ final class LauncherModel: ObservableObject {
 
     private func invalidatePreparation() {
         preparationGeneration += 1
+        operationToken?.cancel()
+        operationTask?.cancel()
+        accessStatusKey = "access.pending"
+        accessCheckedAt = nil
+        accessError = nil
+        iconToken.cancel()
+        iconToken = LauncherOperationToken()
+        iconRequests.removeAll()
+        iconAttempts.removeAll()
+        iconCacheOrder.removeAll()
+        applicationIcons.removeAll()
         isPrepared = false
         processes = []
         deviceDetails = [:]
@@ -368,16 +456,24 @@ final class LauncherModel: ObservableObject {
         if !isBusy { progressKey = "progress.idle" }
     }
 
-    private func perform(progress: String, failure: String,
-                         work: @escaping (@escaping LauncherEngine.Report) throws -> LauncherResult) {
+    private func perform(progress: String, failure: String, verifyAccess: Bool = true,
+                         willRun: (() -> Void)? = nil,
+                         work: @escaping (@escaping LauncherEngine.Report, () throws -> Void) throws -> LauncherResult) {
         isBusy = true
-        progressKey = progress
+        progressKey = verifyAccess ? "progress.verifying_access" : progress
         progressFraction = nil
         operationExpired = false
         appendLog(localized(progress))
         let generation = preparationGeneration
         let operation = UUID()
+        let token = LauncherOperationToken()
+        let record = store.fileURL
         operationID = operation
+        operationToken = token
+        if verifyAccess {
+            accessStatusKey = "access.checking"
+            accessError = nil
+        }
         backgroundTask = UIApplication.shared.beginBackgroundTask(withName: "JIT operation") { [weak self] in
             MainActor.assumeIsolated {
                 guard let self, self.operationID == operation else { return }
@@ -385,91 +481,158 @@ final class LauncherModel: ObservableObject {
                 self.invalidatePreparation()
                 self.errorMessage = self.localized("error.background_expired")
                 self.endBackgroundTask()
-                // The FFI is blocking. Keep isBusy until it returns to prevent overlapping sessions.
             }
         }
-        worker.async { [weak self] in
-            let result = Result {
-                try work { key, fraction in
-                    DispatchQueue.main.async { [weak self] in
-                        guard let self, self.operationID == operation, !self.operationExpired,
-                              generation == self.preparationGeneration else { return }
-                        if key.hasPrefix("log:") {
-                            self.appendLog(String(key.dropFirst(4)))
-                        } else {
-                            self.progressKey = key
-                            self.progressFraction = fraction
+        operationTask = Task { [weak self] in
+            guard let self else { return }
+            let result: Result<LauncherResult, Error>
+            do {
+                if verifyAccess {
+                    // Identity is read from the current physical device before
+                    // every request, never trusted from a URL, plist or old grant.
+                    let udid: String
+                    do {
+                        udid = try await self.onDeviceWorker {
+                            try token.check()
+                            return try LauncherEngine.deviceUDID(record: record)
                         }
-                    }
+                    } catch is CancellationError { throw CancellationError() }
+                    catch { throw WowDeviceAccessError.deviceUnavailable }
+                    try token.check()
+                    try Task.checkCancellation()
+                    try await WowDeviceAccessClient().verify(udid: udid)
+                    try token.check()
+                    try Task.checkCancellation()
+                    guard self.operationID == operation, generation == self.preparationGeneration,
+                          self.vpn.isConnected else { throw CancellationError() }
+                    self.accessStatusKey = "access.verified"
+                    self.accessCheckedAt = Date()
+                    self.accessError = nil
                 }
+                try token.check()
+                try Task.checkCancellation()
+                self.progressKey = progress
+                willRun?()
+                result = .success(try await self.onDeviceWorker { [weak self] in
+                    try token.beginWork()
+                    return try work({ key, fraction in
+                        DispatchQueue.main.async { [weak self] in
+                            guard let self, self.operationID == operation, !self.operationExpired,
+                                  generation == self.preparationGeneration else { return }
+                            if key.hasPrefix("log:") { self.appendLog(String(key.dropFirst(4))) }
+                            else { self.progressKey = key; self.progressFraction = fraction }
+                        }
+                    }, token.check)
+                })
+            } catch { result = .failure(error) }
+            self.completeOperation(result, operation: operation, generation: generation, failure: failure, token: token)
+        }
+    }
+
+    private func onDeviceWorker<T>(_ work: @escaping () throws -> T) async throws -> T {
+        try await withCheckedThrowingContinuation { continuation in
+            worker.async { continuation.resume(with: Result { try work() }) }
+        }
+    }
+
+    private func completeOperation(_ result: Result<LauncherResult, Error>, operation: UUID,
+                                   generation: Int, failure: String, token: LauncherOperationToken) {
+        guard operationID == operation else { return }
+        endBackgroundTask()
+        operationID = nil
+        operationToken = nil
+        operationTask = nil
+        isBusy = false
+        progressFraction = nil
+        // Recovery state must survive even if cancellation happened while a
+        // blocking device operation was returning its actual side effect.
+        if case .success(.location(let simulated)) = result {
+            locationIsSimulated = simulated
+            defaults.set(simulated, forKey: "locationIsSimulated")
+        }
+        guard !operationExpired else { progressKey = "progress.idle"; return }
+        guard generation == preparationGeneration, vpn.isConnected else {
+            errorMessage = localized("error.prepare_required")
+            progressKey = "progress.idle"
+            return
+        }
+        if case .failure(let error) = result,
+           !token.allowsForegroundCompletion,
+           (error is CancellationError || (error as? WowDeviceAccessError) == .cancelled) {
+            accessStatusKey = "access.pending"
+            accessCheckedAt = nil
+            accessError = nil
+            progressKey = isPrepared ? "progress.ready" : "progress.idle"
+            return
+        }
+        switch result {
+        case .success(.accessVerified):
+            self.progressKey = self.isPrepared ? "progress.ready" : "progress.idle"
+        case .success(.consoleReady):
+            if isForeground && token.allowsForegroundCompletion {
+                self.console.start(pairingFile: self.store.fileURL)
             }
-            DispatchQueue.main.async { [weak self] in
-                guard let self, self.operationID == operation else { return }
-                self.endBackgroundTask()
-                self.operationID = nil
-                self.isBusy = false
-                self.progressFraction = nil
-                // Record completed device side effects even when the UI session
-                // became stale while the blocking service call was returning.
-                if case .success(.location(let simulated)) = result {
-                    self.locationIsSimulated = simulated
-                    self.defaults.set(simulated, forKey: "locationIsSimulated")
-                }
-                guard !self.operationExpired else { self.progressKey = "progress.idle"; return }
-                guard generation == self.preparationGeneration, self.vpn.isConnected else {
-                    self.errorMessage = self.localized("error.prepare_required")
-                    self.progressKey = "progress.idle"
-                    return
-                }
-                switch result {
-                case .success(.prepared):
-                    self.isPrepared = true
-                    self.progressKey = "progress.ready"
-                    self.refreshApplications()
-                case .success(.applications(let applications)):
-                    self.applications = applications
-                    self.applicationError = nil
-                    self.progressKey = "progress.ready"
-                    if let request = self.requestedApplication {
-                        self.requestedApplication = nil
-                        if let app = applications.first(where: { $0.bundleIdentifier == request.0 }) {
-                            self.launchApplication(app, enableJIT: request.1)
-                        } else { self.errorMessage = self.localized("error.app_not_found") }
-                    }
-                case .success(.launched(let bundleID, let pid, let enabled)):
-                    self.scripts.recordLaunch(bundleID)
-                    self.targetPID = String(pid)
-                    self.successMessage = self.localized(enabled ? "success.jit_enabled" : "success.app_launched")
-                    self.appendLog(self.successMessage! + " " + bundleID)
-                    self.progressKey = "progress.ready"
-                case .success(.details(let details)):
-                    self.deviceDetails = details
-                    self.progressKey = "progress.ready"
-                case .success(.profiles(let profiles)):
-                    self.profiles = profiles
-                    self.progressKey = "progress.ready"
-                case .success(.location(let simulated)):
-                    self.locationIsSimulated = simulated
-                    self.defaults.set(simulated, forKey: "locationIsSimulated")
-                    self.successMessage = self.localized(simulated ? "success.location_set" : "success.location_reset")
-                    self.progressKey = "progress.ready"
-                case .success(.processes(let processes)):
-                    self.processes = processes.sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
-                    self.progressKey = "progress.ready"
-                case .success(.enabled):
-                    self.successMessage = self.localized("success.jit_enabled")
-                    self.progressKey = "progress.ready"
-                case .failure(let error):
-                    if failure == "error.preparation_failed" { self.isPrepared = false }
-                    self.progressKey = self.isPrepared ? "progress.ready" : "progress.idle"
-                    self.errorMessage = self.message(failure, error)
-                    if failure == "error.apps_failed" {
-                        self.applicationError = self.errorMessage
-                        self.requestedApplication = nil
-                    }
-                    self.appendLog(self.errorMessage!)
-                }
+            self.progressKey = self.isPrepared ? "progress.ready" : "progress.idle"
+        case .success(.prepared):
+            self.isPrepared = true
+            self.progressKey = "progress.ready"
+            self.refreshApplications()
+        case .success(.applications(let applications)):
+            self.applications = applications
+            self.applicationError = nil
+            self.progressKey = "progress.ready"
+            if let request = self.requestedApplication {
+                self.requestedApplication = nil
+                if let app = applications.first(where: { $0.bundleIdentifier == request.0 }) {
+                    self.launchApplication(app, enableJIT: request.1)
+                } else { self.errorMessage = self.localized("error.app_not_found") }
             }
+        case .success(.launched(let bundleID, let pid, let enabled)):
+            self.scripts.recordLaunch(bundleID)
+            self.targetPID = String(pid)
+            self.successMessage = self.localized(enabled ? "success.jit_enabled" : "success.app_launched")
+            self.appendLog(self.successMessage! + " " + bundleID)
+            self.progressKey = "progress.ready"
+        case .success(.details(let details)):
+            self.deviceDetails = details
+            self.progressKey = "progress.ready"
+        case .success(.profiles(let profiles)):
+            self.profiles = profiles
+            self.progressKey = "progress.ready"
+        case .success(.location(let simulated)):
+            self.locationIsSimulated = simulated
+            self.defaults.set(simulated, forKey: "locationIsSimulated")
+            self.successMessage = self.localized(simulated ? "success.location_set" : "success.location_reset")
+            self.progressKey = "progress.ready"
+        case .success(.processes(let processes)):
+            self.processes = processes.sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
+            self.progressKey = "progress.ready"
+        case .success(.enabled):
+            self.successMessage = self.localized("success.jit_enabled")
+            self.progressKey = "progress.ready"
+        case .failure(let error):
+            if let access = error as? WowDeviceAccessError {
+                self.accessStatusKey = access.localizationKey
+                self.accessError = access.localizedDescription
+                self.accessCheckedAt = nil
+                self.isPrepared = false
+                self.applications = []
+                self.console.stop()
+                self.iconToken.cancel()
+                self.iconToken = LauncherOperationToken()
+                self.iconRequests.removeAll()
+                self.iconAttempts.removeAll()
+                self.applicationIcons.removeAll()
+                self.iconCacheOrder.removeAll()
+            }
+            if failure == "error.preparation_failed" { self.isPrepared = false }
+            self.progressKey = self.isPrepared ? "progress.ready" : "progress.idle"
+            self.errorMessage = self.message(failure, error)
+            if failure == "error.apps_failed" {
+                self.applicationError = self.errorMessage
+                self.requestedApplication = nil
+            }
+            self.appendLog(self.errorMessage!)
         }
     }
 
@@ -487,7 +650,7 @@ final class LauncherModel: ObservableObject {
 }
 
 private enum LauncherResult {
-    case prepared, processes([LauncherProcess]), enabled
+    case prepared, processes([LauncherProcess]), enabled, accessVerified, consoleReady
     case applications([LauncherApplication]), launched(String, Int32, Bool)
     case details([String: String]), profiles([LauncherProfile]), location(Bool)
 }
@@ -496,6 +659,22 @@ private enum LauncherOperationError: Error { case deviceRequired }
 /// All synchronous framework calls are executed by the model's single serial queue.
 private enum LauncherEngine {
     typealias Report = (String, Double?) -> Void
+
+    static func deviceUDID(record: URL) throws -> String {
+        #if targetEnvironment(simulator)
+        throw LauncherOperationError.deviceRequired
+        #else
+        return try StikJIT.deviceUDID(pairingFile: record)
+        #endif
+    }
+
+    static func applicationIcon(_ bundleID: String, record: URL) throws -> Data {
+        #if targetEnvironment(simulator)
+        throw LauncherOperationError.deviceRequired
+        #else
+        return try StikJIT.applicationIcon(bundleIdentifier: bundleID, pairingFile: record)
+        #endif
+    }
 
     static func prepare(record: URL, cache: URL, report: @escaping Report) throws {
         #if targetEnvironment(simulator)

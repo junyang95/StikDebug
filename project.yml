@@ -13,8 +13,8 @@ configFiles:
 settings:
   base:
     SWIFT_VERSION: "5.0"
-    MARKETING_VERSION: "2.0.1"
-    CURRENT_PROJECT_VERSION: "12"
+    MARKETING_VERSION: "2.0.2"
+    CURRENT_PROJECT_VERSION: "13"
     CLANG_CXX_LIBRARY: "libc++"
 
 targetTemplates:

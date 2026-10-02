@@ -32,6 +32,7 @@ struct LauncherRootView: View {
             .tag(3)
         }
         .task {
+            model.enteredForeground()
             await model.refreshState()
             if !selectedInitialTab {
                 selectedInitialTab = true
@@ -39,8 +40,11 @@ struct LauncherRootView: View {
             }
         }
         .onChange(of: scenePhase) { _, phase in
-            if phase == .active { Task { await model.refreshState() } }
-            else if phase == .background { model.console.stop() }
+            if phase == .active {
+                model.enteredForeground()
+                Task { await model.refreshState() }
+            }
+            else if phase == .background { model.enteredBackground() }
         }
         .onOpenURL { url in
             guard let request = LauncherExternalRequest(url: url) else { invalidLink = true; return }

@@ -1,0 +1,18 @@
+// Website device verification. Never include a device identifier in UI strings.
+
+"access.title" = "Device verification";
+"access.pending" = "This device has not been verified.";
+"access.checking" = "Verifying this device…";
+"access.verified" = "This device has passed verification.";
+"access.help" = "Sign in to wow-app.store in Safari and complete identification for this device. The device must be registered and not banned; VIP is not required.";
+"access.login" = "Open wow-app.store";
+"access.verify" = "Verify this device";
+"access.privacy" = "Verification sends this device’s UDID to wow-app.store.";
+"access.date" = "Last checked";
+"access.error.banned" = "This device is banned and cannot pass verification. Check its status at wow-app.store.";
+"access.error.not_registered" = "This device is not registered. Sign in to wow-app.store in Safari, complete identification for this device, then try again.";
+"access.error.server_unsupported" = "The website does not currently provide a compatible device verification service. Try again later.";
+"access.error.invalid_response" = "The website returned an invalid verification response. Try again later.";
+"access.error.network_unavailable" = "Could not reach the verification website. Check your internet connection and try again.";
+"access.error.device_unavailable" = "Could not read this device for verification. Complete pairing, connect the local VPN, then try again.";
+"access.error.cancelled" = "Device verification was cancelled. You can try again.";

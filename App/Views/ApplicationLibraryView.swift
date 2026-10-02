@@ -9,7 +9,6 @@ struct ApplicationLibraryView: View {
     let openSetup: () -> Void
     @State private var searchText = ""
     @State private var collection = ApplicationCollection.all
-    @State private var eligibility = ApplicationEligibility.all
     @State private var selectedApplication: LauncherApplication?
 
     init(model: LauncherModel, openSetup: @escaping () -> Void) {
@@ -22,18 +21,18 @@ struct ApplicationLibraryView: View {
 
     private var isAvailable: Bool { model.isPrepared && vpn.isConnected }
     private var isWorking: Bool { model.isBusy || vpn.isBusy || pairing.isRunning }
+    private var canRequestIcons: Bool { isAvailable && !model.isBusy && model.isDeviceAccessVerified }
     private var isLoadingApplications: Bool { model.isBusy && model.progressKey == "progress.loading_apps" }
+    private var debuggableApplications: [LauncherApplication] { model.applications.filter(\.isDebuggable) }
 
     private var matchingApplications: [LauncherApplication] {
         let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
-        var apps = model.applications.filter { app in
+        var apps = debuggableApplications.filter { app in
             let matchesSearch = query.isEmpty || app.name.localizedStandardContains(query) || app.bundleIdentifier.localizedStandardContains(query)
             let matchesCollection = collection == .all ||
                 (collection == .favorites && scripts.isFavorite(app.id)) ||
                 (collection == .recent && scripts.recentBundleIDs.contains(app.id))
-            let matchesEligibility = eligibility == .all ||
-                (eligibility == .jit && app.isDebuggable) || (eligibility == .launchOnly && !app.isDebuggable)
-            return matchesSearch && matchesCollection && matchesEligibility
+            return matchesSearch && matchesCollection
         }
         if collection == .recent {
             let positions = Dictionary(uniqueKeysWithValues: scripts.recentBundleIDs.enumerated().map { ($0.element, $0.offset) })
@@ -76,13 +75,6 @@ struct ApplicationLibraryView: View {
                     Text("apps.collection", tableName: "Library")
                 }
                 .pickerStyle(.segmented)
-                Picker(selection: $eligibility) {
-                    ForEach(ApplicationEligibility.allCases) { option in
-                        Text(LocalizedStringKey(option.key), tableName: "Library").tag(option)
-                    }
-                } label: {
-                    Text("apps.filter", tableName: "Library")
-                }
             }
 
             if let error = model.applicationError {
@@ -93,12 +85,12 @@ struct ApplicationLibraryView: View {
             }
 
             Section {
-                if model.applications.isEmpty && isLoadingApplications {
+                if debuggableApplications.isEmpty && isLoadingApplications {
                     Text("apps.loading_body", tableName: "Library")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                         .padding(.vertical, 8)
-                } else if model.applications.isEmpty {
+                } else if debuggableApplications.isEmpty {
                     VStack(alignment: .leading, spacing: 10) {
                         Label {
                             Text(isAvailable ? "apps.empty_title" : "apps.not_loaded_title", tableName: "Library")
@@ -125,10 +117,15 @@ struct ApplicationLibraryView: View {
                 } else {
                     ForEach(matchingApplications) { app in
                         Button { selectedApplication = app } label: {
-                            ApplicationLibraryRow(application: app, isFavorite: scripts.isFavorite(app.id))
+                            ApplicationLibraryRow(application: app,
+                                                  iconData: model.applicationIcons[app.id] ?? app.iconPNG,
+                                                  isFavorite: scripts.isFavorite(app.id))
                         }
                         .buttonStyle(.plain)
                         .accessibilityHint(Text("apps.row_hint", tableName: "Library"))
+                        .task(id: ApplicationIconRequestID(bundleIdentifier: app.id, isReady: canRequestIcons, revision: model.iconLoadRevision)) {
+                            if canRequestIcons { model.requestApplicationIcon(for: app) }
+                        }
                         .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                             Button { scripts.toggleFavorite(app.id) } label: {
                                 Text(scripts.isFavorite(app.id) ? "apps.unfavorite" : "apps.favorite", tableName: "Library")
@@ -147,7 +144,7 @@ struct ApplicationLibraryView: View {
                     }
                 }
             } header: {
-                if model.applications.isEmpty && isLoadingApplications {
+                if debuggableApplications.isEmpty && isLoadingApplications {
                     Text("apps.collection.all", tableName: "Library")
                 } else {
                     Text("apps.count \(matchingApplications.count)", tableName: "Library")
@@ -189,11 +186,11 @@ struct ApplicationLibraryView: View {
     }
 
     private var emptyCollectionTitle: LocalizedStringKey {
-        if !searchText.isEmpty || eligibility != .all { return "apps.no_results" }
+        if !searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty { return "apps.no_results" }
         return collection == .favorites ? "apps.favorites_empty" : "apps.recent_empty"
     }
     private var emptyCollectionBody: LocalizedStringKey {
-        if !searchText.isEmpty || eligibility != .all { return "apps.no_results_body" }
+        if !searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty { return "apps.no_results_body" }
         return collection == .favorites ? "apps.favorites_empty_body" : "apps.recent_empty_body"
     }
 }
@@ -204,19 +201,20 @@ private enum ApplicationCollection: String, CaseIterable, Identifiable {
     var key: String { "apps.collection.\(rawValue)" }
 }
 
-private enum ApplicationEligibility: String, CaseIterable, Identifiable {
-    case all, jit, launchOnly
-    var id: String { rawValue }
-    var key: String { "apps.filter.\(rawValue)" }
+private struct ApplicationIconRequestID: Hashable {
+    let bundleIdentifier: String
+    let isReady: Bool
+    let revision: Int
 }
 
 private struct ApplicationLibraryRow: View {
     let application: LauncherApplication
+    let iconData: Data?
     let isFavorite: Bool
 
     var body: some View {
         HStack(spacing: 12) {
-            ApplicationIcon(application: application, size: 48)
+            ApplicationIcon(data: iconData, size: 48)
             VStack(alignment: .leading, spacing: 4) {
                 HStack(spacing: 6) {
                     Text(application.name)
@@ -235,9 +233,6 @@ private struct ApplicationLibraryRow: View {
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
                     .truncationMode(.middle)
-                Text(application.isDebuggable ? "apps.jit_eligible" : "apps.launch_only", tableName: "Library")
-                    .font(.caption)
-                    .foregroundStyle(application.isDebuggable ? Color.accentColor : .secondary)
             }
             Spacer(minLength: 4)
             Image(systemName: "chevron.right")
@@ -252,12 +247,12 @@ private struct ApplicationLibraryRow: View {
 }
 
 private struct ApplicationIcon: View {
-    let application: LauncherApplication
+    let data: Data?
     let size: CGFloat
 
     var body: some View {
         Group {
-            if let data = application.iconPNG, let icon = UIImage(data: data) {
+            if let data, let icon = UIImage(data: data) {
                 Image(uiImage: icon).resizable().scaledToFit()
             } else {
                 Image(systemName: "app.dashed")
@@ -296,19 +291,23 @@ private struct ApplicationDetailSheet: View {
         model.isPrepared && vpn.isConnected && !model.isBusy && !vpn.isBusy && !pairing.isRunning
     }
 
+    private var canRequestIcon: Bool {
+        model.isPrepared && vpn.isConnected && !model.isBusy && model.isDeviceAccessVerified
+    }
+
     var body: some View {
         NavigationStack {
             List {
                 Section {
                     HStack(alignment: .top, spacing: 16) {
-                        ApplicationIcon(application: application, size: 64)
+                        ApplicationIcon(data: model.applicationIcons[application.id] ?? application.iconPNG, size: 64)
                         VStack(alignment: .leading, spacing: 6) {
                             Text(application.name).font(.title2.bold())
                             Text(application.bundleIdentifier)
                                 .font(.footnote)
                                 .foregroundStyle(.secondary)
                                 .textSelection(.enabled)
-                            Text(application.isDebuggable ? "apps.jit_eligible" : "apps.launch_only", tableName: "Library")
+                            Text("apps.jit_eligible", tableName: "Library")
                                 .font(.subheadline)
                                 .foregroundStyle(.secondary)
                         }
@@ -379,7 +378,7 @@ private struct ApplicationDetailSheet: View {
                     .buttonStyle(.bordered)
                     .disabled(!canLaunch)
                 } footer: {
-                    Text(application.isDebuggable ? "apps.launch_hint" : "apps.launch_only_hint", tableName: "Library")
+                    Text("apps.launch_hint", tableName: "Library")
                 }
             }
             .navigationTitle(Text("apps.details", tableName: "Library"))
@@ -388,6 +387,11 @@ private struct ApplicationDetailSheet: View {
                 ToolbarItem(placement: .confirmationAction) {
                     Button { dismiss() } label: { Text("library.done", tableName: "Library") }
                 }
+            }
+        }
+        .task(id: ApplicationIconRequestID(bundleIdentifier: application.id, isReady: canRequestIcon, revision: model.iconLoadRevision)) {
+            if canRequestIcon {
+                model.requestApplicationIcon(for: application)
             }
         }
     }

@@ -12,6 +12,14 @@ The display name is **JIT启动器**, or **JIT啟動器** in Traditional Chinese
 Simplified Chinese, and Traditional Chinese interfaces follow the system or the
 app's language preference in iOS Settings.
 
+## Current release: 2.0.2 (13)
+
+The Applications tab now shows only device-reported debuggable targets, loads
+their real icons through SpringBoard services, and excludes the launcher itself.
+New protected operations also require online wow-app.store device registration
+and non-ban verification. VIP membership is not required. The application-list
+compatibility fix below remains included.
+
 ## Application-list compatibility fix (2.0.1)
 
 Installed-app refresh now reads the Bundle ID, display/fallback name, and
@@ -35,10 +43,10 @@ node-type semantics were separately checked against version 0.1.6.
 
 | Tab | Current behavior |
 | --- | --- |
-| Applications / 应用 | Read the installed-app catalog, search names and Bundle IDs, filter debuggable apps, keep favorites/recent launches, choose an app-specific script, launch an app, or launch and enable JIT. |
-| Setup / 配对引导 | Follow the seven pairing steps, view/copy the actual pairing PIN, import a remote pairing record when needed, connect the embedded VPN, and check/prepare the developer disk image (DDI). |
+| Applications / 应用 | Show debuggable apps with device icons, search names and Bundle IDs, keep favorites/recent launches, choose an app-specific script, launch an app, or launch and enable JIT. |
+| Setup / 配对引导 | Follow the seven pairing steps, view/copy the actual pairing PIN, import a remote pairing record when needed, connect the embedded VPN, verify device registration, and check/prepare the developer disk image (DDI). |
 | Tools / 工具 | Manage scripts; inspect/terminate processes or enable JIT by PID; view JIT and system logs; read device metadata; inspect/import/export/remove provisioning profiles; simulate or restore device location. |
-| Settings / 设置 | Control the local VPN, inspect/remove the pairing record, return to setup, open this app's system settings for language/permissions, and read upstream attribution/licenses. |
+| Settings / 设置 | Control the local VPN, inspect/remove the pairing record, check device verification, return to setup, open this app's system settings for language/permissions, and read upstream attribution/licenses. |
 
 A launch without a stored pairing record opens Setup first. An existing
 record opens Applications, but it does not imply that VPN or JIT preparation is
@@ -101,7 +109,8 @@ reports the tunnel connected. If it is already connected, the action becomes
 **Check and prepare JIT**. The readiness section separately reports the saved
 record, actual VPN status, and verified device/DDI readiness.
 
-Preparation checks the device connection, downloads and mounts DDI when needed,
+Preparation first checks device access online, then checks the device connection,
+downloads and mounts DDI when needed,
 and verifies the result. The first download needs internet access and can take
 several minutes; keep the app in the foreground. A connected VPN alone does not
 prove that device services or JIT are ready. If another VPN prevents this local
@@ -114,15 +123,60 @@ running-process selection remain available under Tools → Processes; refresh af
 an app restarts because its PID changes. Invalid PIDs and the launcher's own
 process are rejected.
 
+## Device registration and online access
+
+Sign in to **wow-app.store** in Safari and complete identification for the device
+being used. The website's device-identification callback creates a device
+registration record. The launcher checks that record; it does not verify a
+currently logged-in browser session or a separate last-login timestamp. Pairing
+and connecting the local VPN are still needed so the launcher can read the actual
+device UDID. A value supplied by a URL, an input field, or an old permission result
+is not accepted as that identity.
+
+Every new protected operation reads that UDID from the connected device and sends
+it over HTTPS to **wow-app.store**, using two existing endpoints in order:
+
+1. `GET /api/checkVipInfo.action` must return `code: 0` with `data.device` matching
+   this device. Unrelated account/payment fields are not retained by the client.
+2. `GET /api/vip-license.action` must return a payload with a valid P-256 signature
+   under the app's fixed public key, the matching UDID and fresh request nonce,
+   and a timestamp within five minutes of the device clock. `isBanned` must be
+   explicitly `false`, and `status` must be one of `VALID`, `EXPIRED`, or `UNKNOWN`.
+   Missing or malformed required fields are rejected. Registered non-VIP
+   (`UNKNOWN`) and expired VIP (`EXPIRED`) devices are allowed; VIP status and
+   expiry do not grant access.
+
+This integration changes no backend code and deploys no backend service. The
+client uses ephemeral sessions without response caching, cookies, or stored
+credentials, refuses redirects, bounds responses to 1 MiB, and applies a 25-second
+total network deadline. It does not log the UDID or server response. A failed
+network, identity, schema, nonce, time, or signature check blocks the operation;
+there is no cached offline permission. The displayed last-check result is status
+information, not a reusable authorization grant.
+
+Protected operations include preparation, catalog/process refresh, app launch
+and JIT, process termination, device/profile tools, starting system logs, and
+starting or changing simulated location. Shortcut and URL actions use the same
+checks after confirmation. Pairing, VPN setup, and visiting the website remain
+available to complete setup. **Restore real location** skips the website check
+so recovery remains possible after a ban or network outage, provided the local
+device connection is usable. Stopping logs also remains available. These checks
+control new operations; they cannot revoke JIT that another process has already
+obtained, and they are not continuous monitoring of a running process.
+
 ## Application and script compatibility
 
-The current application list uses placeholder icons; device icon loading has not
-yet been connected to that list. This is separate from the launcher's own bundled
-Home Screen icon.
+The application list fetches real icons from the connected device's SpringBoard
+services as rows or details become visible. Loading runs off the main thread,
+produces bounded thumbnails, and uses a bounded in-memory cache. A missing,
+invalid, or unreadable icon falls back to a generic symbol without failing the
+catalog. This is separate from the launcher's own bundled Home Screen icon.
 
-The catalog reads `get-task-allow` from device-reported app entitlements. Apps
-without it are shown as launch-only; having it is necessary but does not guarantee
-that every app supports JIT on every iOS/device combination. On TXM/SPTM devices,
+The catalog reads `get-task-allow` from device-reported app entitlements. The
+Applications tab includes only apps with that entitlement and excludes this
+launcher; both ordinary launch and launch-with-JIT are available for those
+targets. Having the entitlement is necessary but does not guarantee that every
+app supports JIT on every iOS/device combination. On TXM/SPTM devices,
 the target must implement the protocol expected by its selected script. The
 launcher does not retrofit an app's allocator. See [INTEGRATION.md](INTEGRATION.md)
 for the target-side JIT protocol.
@@ -169,9 +223,10 @@ app's JIT workload; that still needs a device test.
   profile installation; these tools do not sign an IPA or renew a developer account.
 - **Location:** Choose a map point or enter finite, in-range latitude/longitude,
   confirm the change, and use **Restore real location** when finished. Disconnecting
-  VPN is not a location-reset action. This feature is a coordinate simulator; the
-  Pikmin branch's walking routes, step writing, HealthKit, VIP/subscription and
-  authorization features are not included.
+  VPN is not a location-reset action. Restoration remains available as recovery
+  without a successful website check. This feature is a coordinate simulator;
+  the Pikmin branch's walking routes, step writing, HealthKit, and VIP/subscription
+  workflows are not included. The device-registration check is described above.
 - **Shortcuts:** The **Enable app JIT** action opens the launcher with a Bundle ID.
   Confirm the request in the app after completing pairing, VPN, and JIT preparation.
   It does not silently grant trust, prepare the device, or execute imported scripts.
@@ -217,13 +272,17 @@ xcodebuild -project StikJIT.xcodeproj -scheme JITLauncherPreview \
 `JITLauncherPreview` uses the same SwiftUI interface without linking the
 device-only idevice archive. It reports that VPN, pairing, device tools, and JIT
 need real hardware; it does not fake successful connections or installed apps.
-Run `scripts/test-launcher.sh` for host-side storage/input/protocol checks. These
-checks and successful builds do not establish physical-device acceptance.
+Run `scripts/test-launcher.sh` for host-side storage/input/protocol checks and
+`scripts/test-wow-device-access.sh` for registration/signature policy and bounded
+network-client tests. The latter uses self-signed test fixtures and a local
+URLProtocol interceptor; it does not send real UDIDs to the website. These checks
+and successful builds do not establish physical-device acceptance.
 
 Signed-device verification remains required for VPN consent and extension launch,
 Bonjour host visibility, real PIN notifications, pairing/expiry/cancellation,
-DDI preparation, installed-app discovery and launch, each target/script JIT
-combination, logs, profile changes, and location restoration. The on-device pairing
+DDI preparation, installed-app discovery/icons and launch, website registration
+and ban handling, each target/script JIT combination, logs, profile changes, and
+location restoration after a failed access check. The on-device pairing
 sequence specifically needs an iOS/iPadOS 27+ device. Review all three languages,
 Dynamic Type, light/dark appearance, and compact iPhone/iPad layouts as well.
 
@@ -257,4 +316,7 @@ provide unlimited background execution.
   packet reflection, integration adaptations, and retained licenses are detailed
   in [ThirdParty/LocalDevVPN/PROVENANCE.md](ThirdParty/LocalDevVPN/PROVENANCE.md).
 - The user's local `codex/pikmin-helper` pairing guide informed the seven-step
-  presentation and readiness UX. Its unrelated product workflows were not merged.
+  presentation and readiness UX. Its signed-license implementation informed the
+  fixed-key verification contract; this launcher uses its own registration/non-ban
+  policy without the VIP requirement or offline permission cache. Its HealthKit
+  and walking/step-writing workflows were not merged.

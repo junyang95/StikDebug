@@ -187,3 +187,5 @@
 "App Bundle ID" = "应用 Bundle ID";
 "Open JIT Launcher and confirm a JIT request for an installed app." = "打开 JIT启动器，确认对已安装应用启用 JIT。";
 "error.operation_busy" = "另一项操作仍在进行，请等待完成后重新发起此请求。";
+"progress.verifying_access" = "正在验证设备…";
+"error.access_failed" = "设备验证未通过。";

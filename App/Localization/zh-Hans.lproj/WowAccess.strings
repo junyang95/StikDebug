@@ -1,0 +1,18 @@
+// Website device verification. Never include a device identifier in UI strings.
+
+"access.title" = "设备验证";
+"access.pending" = "尚未验证本机设备。";
+"access.checking" = "正在验证本机设备…";
+"access.verified" = "本机设备已通过验证。";
+"access.help" = "请先在 Safari 登录 wow-app.store，并完成本机设备识别。本机已登记且未被封禁即可，无需 VIP。";
+"access.login" = "前往 wow-app.store";
+"access.verify" = "验证本机设备";
+"access.privacy" = "验证时会将本机 UDID 发送至 wow-app.store。";
+"access.date" = "最近检查";
+"access.error.banned" = "此设备已被封禁，无法通过验证。请前往 wow-app.store 查看设备状态。";
+"access.error.not_registered" = "尚未登记本机设备。请在 Safari 登录 wow-app.store，完成本机设备识别后重试。";
+"access.error.server_unsupported" = "网站暂未提供兼容的设备验证服务，请稍后重试。";
+"access.error.invalid_response" = "网站返回的验证结果无效，请稍后重试。";
+"access.error.network_unavailable" = "无法连接设备验证网站。请检查网络连接后重试。";
+"access.error.device_unavailable" = "无法读取本机设备以完成验证。请先完成配对并连接本地 VPN，再重试。";
+"access.error.cancelled" = "设备验证已取消，可以重试。";

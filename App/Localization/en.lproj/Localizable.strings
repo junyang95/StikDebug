@@ -187,3 +187,5 @@
 "App Bundle ID" = "App Bundle ID";
 "Open JIT Launcher and confirm a JIT request for an installed app." = "Open JIT Launcher and confirm a JIT request for an installed app.";
 "error.operation_busy" = "Another operation is still running. Wait for it to finish, then try this request again.";
+"progress.verifying_access" = "Verifying device access…";
+"error.access_failed" = "Device verification failed.";

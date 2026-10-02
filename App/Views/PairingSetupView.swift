@@ -32,6 +32,9 @@ struct PairingSetupView: View {
                 pairingMessages
                 pairingGuide
                 readiness
+                WowDeviceAccessView(model: model)
+                    .padding(20)
+                    .background(Color(uiColor: .secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 20))
                 manualPairing
                 Text("setup.reuse_hint")
                     .font(.footnote)

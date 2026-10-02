@@ -2,7 +2,7 @@
 
 ## JIT启动器 — integrated iOS app
 
-This branch adds **JIT启动器** (2.0.1), a standalone SwiftUI app integrating
+This branch adds **JIT启动器** (2.0.2, build 13), a standalone SwiftUI app integrating
 StikDebug's installed-app launch/JIT workflow and device tools, on-device pairing,
 the StikJIT engine, and [LocalDevVPN](https://github.com/jkcoxson/LocalDevVPN).
 Four tabs cover applications, the seven-step pairing guide, debugging tools, and
@@ -11,6 +11,21 @@ selection, four bundled upstream scripts, custom script import/editing, process
 control, device logs, device information, provisioning profiles, location
 simulation, and confirmed Shortcut/URL requests. English, Simplified Chinese and
 Traditional Chinese are included. The app identifier remains **com.stik.StikPair**.
+The application list shows only targets with `get-task-allow`, excludes the
+launcher itself, and loads their real icons from the device. An unavailable icon
+uses a fallback without preventing the rest of the list from loading.
+
+Protected new operations require an online check of the actual device UDID with
+**wow-app.store** over HTTPS. Sign in to the website in Safari and complete device
+identification first: the check requires an existing device registration and a
+fresh, signed non-ban result. VIP is not required, and expired VIP is allowed.
+The app uses two existing website endpoints; no backend change or deployment is
+part of this release. It checks the registration record, not a current browser
+session or a separate last-login timestamp. Failed checks block new protected
+operations, and no offline permission is cached. Restoring real location remains
+available for recovery when the local device connection works. A later ban cannot
+revoke JIT already acquired by another process. See [LAUNCHER.md](LAUNCHER.md) for
+the verification contract and limits.
 
 A separate StikDebug, StikPair or LocalDevVPN app is not needed for these integrated
 workflows. On-device pairing requires iOS/iPadOS 27 or later; on earlier supported
@@ -37,8 +52,10 @@ StikDebug features and scripts are adapted from main commit
 The combined launcher and StikDebug-derived additions are distributed under
 AGPL-3.0 with corresponding source. See
 [`ThirdParty/StikDebug`](ThirdParty/StikDebug) for attribution and scope.
-The pairing guide also draws on the user's `codex/pikmin-helper` working tree,
-without modifying that branch or importing its unrelated product features.
+The pairing guide and signed-license verification reference the user's
+`codex/pikmin-helper` working tree without modifying that branch. This launcher's
+device-registration policy is separate from its VIP/subscription policy; HealthKit
+and walking/step-writing features are not included.
 
 The integrated VPN **uses code from LocalDevVPN**, based on StosVPN by the SideStore
 Team and contributors. It is an independently named integration, not an official
@@ -72,4 +89,7 @@ xcodebuild -create-xcframework \
 
 ## License
 
-StikJIT is licensed under the MPL-2.0 (see [`LICENSE`](LICENSE)). It uses StikDebug as a reference, with the bundled [idevice](https://github.com/jkcoxson/idevice), universal.js, and legacy.js retaining their own licenses.
+The original StikJIT framework is licensed under MPL-2.0 (see [`LICENSE`](LICENSE)).
+The integrated launcher's AGPL-3.0 distribution and retained component notices are
+described above. The bundled [idevice](https://github.com/jkcoxson/idevice) and
+upstream scripts retain their own licenses.
