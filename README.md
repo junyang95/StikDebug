@@ -2,7 +2,7 @@
 
 ## JIT启动器 — integrated iOS app
 
-This branch adds **JIT启动器** (2.0.2, build 13), a standalone SwiftUI app integrating
+This branch adds **JIT启动器** (2.0.3, build 14), a standalone SwiftUI app integrating
 StikDebug's installed-app launch/JIT workflow and device tools, on-device pairing,
 the StikJIT engine, and [LocalDevVPN](https://github.com/jkcoxson/LocalDevVPN).
 Four tabs cover applications, the seven-step pairing guide, debugging tools, and
@@ -14,6 +14,23 @@ Traditional Chinese are included. The app identifier remains **com.stik.StikPair
 The application list shows only targets with `get-task-allow`, excludes the
 launcher itself, and loads their real icons from the device. An unavailable icon
 uses a fallback without preventing the rest of the list from loading.
+
+Version 2.0.3 addresses downloads that appear stuck at **Downloading developer
+disk image**. It shows transferred bytes and progress, uses a versioned Qiniu
+mirror with a fixed upstream fallback, bounds connection/stall times, and verifies
+the complete DDI file group before replacing cached files. Settings includes
+**Download developer image again**, preserving the pairing record. The bundled
+asset catalog pins upstream commit `6eae353ae694bda1c421d4a3eee5459ae59c99a1`
+(build `27A5228h`); publishing new server files does not silently change that pin.
+Release preparation must upload the versioned mirror and verify its public
+URLs, sizes, and hashes before distributing the corresponding app.
+
+Cryptex mounting was already present in 2.0.2, with the same relevant FFI/core
+as pinned StikDebug 3.1.13. The
+[StikDebug 3.1.11 release](https://github.com/StikDebug/StikDebug/releases/tag/3.1.11)
+introduced that mounting path to address iPhone 18 Pro compatibility. This release
+repairs download handling, rather than introducing cryptex support. A successful
+download still needs physical-device mounting and target JIT verification.
 
 Protected new operations require an online check of the actual device UDID with
 **wow-app.store** over HTTPS. Sign in to the website in Safari and complete device
@@ -48,7 +65,8 @@ The original StikJIT framework and its scheme remain available below.
 ### Attribution
 
 StikDebug features and scripts are adapted from main commit
-`4bdfc92aa7cebd7a534f1e1ef56415f5727402de` (3.1.13, fetched 2026-10-01).
+`4bdfc92aa7cebd7a534f1e1ef56415f5727402de` (3.1.13, fetched 2026-10-01;
+remote main reconfirmed with `git ls-remote` on 2026-10-02).
 The combined launcher and StikDebug-derived additions are distributed under
 AGPL-3.0 with corresponding source. See
 [`ThirdParty/StikDebug`](ThirdParty/StikDebug) for attribution and scope.

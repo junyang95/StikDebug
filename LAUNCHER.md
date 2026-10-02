@@ -12,7 +12,24 @@ The display name is **JIT启动器**, or **JIT啟動器** in Traditional Chinese
 Simplified Chinese, and Traditional Chinese interfaces follow the system or the
 app's language preference in iOS Settings.
 
-## Current release: 2.0.2 (13)
+## Current release: 2.0.3 (14)
+
+This release addresses the reported iOS 27 stall at **Downloading developer disk
+image**. Downloads now show bytes and percentage, use a versioned Qiniu mirror
+with a fixed upstream fallback, and reject incomplete or mismatched files before
+publishing a complete cache. Settings provides **Download developer image again**
+without removing pairing. The DDI download and cache contract is described below.
+
+Cryptex mounting was already integrated in 2.0.2; it was not omitted from that
+release. Its relevant FFI and mounting core match the pinned StikDebug 3.1.13
+implementation. Upstream main was reconfirmed as
+`4bdfc92aa7cebd7a534f1e1ef56415f5727402de` on 2026-10-02. The
+[3.1.11 release notes](https://github.com/StikDebug/StikDebug/releases/tag/3.1.11)
+describe cryptex mounting for the iPhone 18 Pro series and persistence across
+reboots on iOS 26.4 and later. This change repairs the earlier download stage;
+it does not establish successful mounting or JIT on the reported physical device.
+
+## Application icons and device access (2.0.2)
 
 The Applications tab now shows only device-reported debuggable targets, loads
 their real icons through SpringBoard services, and excludes the launcher itself.
@@ -46,7 +63,7 @@ node-type semantics were separately checked against version 0.1.6.
 | Applications / 应用 | Show debuggable apps with device icons, search names and Bundle IDs, keep favorites/recent launches, choose an app-specific script, launch an app, or launch and enable JIT. |
 | Setup / 配对引导 | Follow the seven pairing steps, view/copy the actual pairing PIN, import a remote pairing record when needed, connect the embedded VPN, verify device registration, and check/prepare the developer disk image (DDI). |
 | Tools / 工具 | Manage scripts; inspect/terminate processes or enable JIT by PID; view JIT and system logs; read device metadata; inspect/import/export/remove provisioning profiles; simulate or restore device location. |
-| Settings / 设置 | Control the local VPN, inspect/remove the pairing record, check device verification, return to setup, open this app's system settings for language/permissions, and read upstream attribution/licenses. |
+| Settings / 设置 | Control the local VPN, download the developer image again, inspect/remove the pairing record, check device verification, return to setup, open this app's system settings for language/permissions, and read upstream attribution/licenses. |
 
 A launch without a stored pairing record opens Setup first. An existing
 record opens Applications, but it does not imply that VPN or JIT preparation is
@@ -122,6 +139,53 @@ starts the selected Bundle ID and obtains its actual PID. Manual PID entry and
 running-process selection remain available under Tools → Processes; refresh after
 an app restarts because its PID changes. Invalid PIDs and the launcher's own
 process are rejected.
+
+### DDI downloads and recovery
+
+`Resources/DDIAssets.json` fixes the DDI release to
+`doronz88/DeveloperDiskImage` commit
+`6eae353ae694bda1c421d4a3eee5459ae59c99a1`, build `27A5228h`. The selected mounting
+method determines which complete group is required:
+
+- Personalized: `BuildManifest.plist`, `Image.dmg`, and `Image.dmg.trustcache`.
+- Cryptex: the same three names plus `Image.dmg.cryptex_info` and
+  `Image.dmg.root_hash`, from the separate cryptex directory.
+
+Each file is tried first under the immutable mirror prefix
+`https://static.wow-app.store/Xcode_iOS_DDI_Personalized/releases/6eae353ae694bda1c421d4a3eee5459ae59c99a1`,
+then under the upstream raw URL at that exact commit. Each source must supply the
+catalog's expected byte count and SHA-256. A failure, mismatch, or timeout on the
+mirror switches that file to the upstream fallback; failure of both sources
+reports an error. The connection deadline is 15 seconds, an established transfer
+with no activity is stopped after 20 seconds, and each file/source attempt has a
+600-second total limit. Bytes are streamed to temporary files instead of holding
+the disk image in memory. The UI shows the current file, transferred bytes,
+source, and overall percentage, including source switches and verification.
+
+Downloads support cancellation. The previous cached group remains untouched
+during transfer and verification. Only after the entire new group passes checks
+does replacement begin, and a completion receipt is written last. Cache reuse
+requires a matching receipt plus the expected sizes and hashes; partial files,
+mixed groups, and old caches without that receipt are not accepted as ready.
+
+Normal preparation first checks whether the system already has a mounted DDI.
+It downloads a verified group when mounting is needed and the cache is unusable;
+it does not replace a DDI that is already mounted. To force a fresh cache download,
+connect the built-in VPN, then use **Settings → Developer image → Download
+developer image again**. Pairing and Developer Mode must already be ready, and
+the action performs fresh device-access verification. It downloads even when the
+system DDI is already mounted, then checks/prepares the device. It preserves
+pairing and does not forcibly unmount the system's existing DDI.
+
+The earlier backend upload script only covered the three-file personalized group,
+and the 2.0.2 download client did not use that CDN prefix. Updating those server
+objects alone therefore did not update the launcher's cryptex download path.
+Before distributing a version that relies on the mirror, upload both catalogued
+groups into their immutable versioned directories and verify every public URL,
+size, and hash. Preparing files locally does not publish them. A future DDI
+update requires reviewing and releasing the corresponding
+bundled catalog with the app; the client does not fetch an unverified replacement
+catalog in the background.
 
 ## Device registration and online access
 
@@ -272,6 +336,8 @@ xcodebuild -project StikJIT.xcodeproj -scheme JITLauncherPreview \
 `JITLauncherPreview` uses the same SwiftUI interface without linking the
 device-only idevice archive. It reports that VPN, pairing, device tools, and JIT
 need real hardware; it does not fake successful connections or installed apps.
+Run `scripts/test-ddi-downloads.sh` for host-side catalog, checksum/cache,
+fallback, timeout, and cancellation checks with intercepted responses.
 Run `scripts/test-launcher.sh` for host-side storage/input/protocol checks and
 `scripts/test-wow-device-access.sh` for registration/signature policy and bounded
 network-client tests. The latter uses self-signed test fixtures and a local
@@ -300,17 +366,19 @@ VPN profiles are not part of the integration.
 
 Blocking FFI work runs off the main thread. VPN loss, record changes, or revoking
 the Developer Mode confirmation invalidates readiness. Generation/operation
-checks prevent stale results from marking a changed connection ready. Other than
-the cancellable pairing session, blocking native operations are not forcibly
-interrupted: an expired background task reports failure while retaining ownership
-until the worker returns. Background time and the debugger heartbeat do not
+checks prevent stale results from marking a changed connection ready. Pairing
+sessions and DDI network transfers support cancellation; blocking native FFI
+operations are not forcibly interrupted. An expired background task reports
+failure while retaining ownership until the worker returns. Background time and
+the debugger heartbeat do not
 provide unlimited background execution.
 
 ## Source provenance
 
 - StikJIT starting point: `32287268fa5824f9edce4cb359f5833ce0cf7b00`.
 - StikDebug upstream main: `4bdfc92aa7cebd7a534f1e1ef56415f5727402de` (3.1.13),
-  checked during this integration on 2026-10-01. Exact scripts and adapted service
+  fetched during this integration on 2026-10-01 and reconfirmed against remote main
+  with `git ls-remote` on 2026-10-02. Exact scripts and adapted service
   behavior are detailed in [ThirdParty/StikDebug/PROVENANCE.md](ThirdParty/StikDebug/PROVENANCE.md).
 - LocalDevVPN: `af3fd697803ada4ac2b8d518358f5ab0a534844c`. Endpoints, CIDR validation,
   packet reflection, integration adaptations, and retained licenses are detailed

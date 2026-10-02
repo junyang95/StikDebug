@@ -49,9 +49,13 @@ struct PreparationProgress: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            if let fraction = model.progressFraction {
-                ProgressView(value: fraction) {
+            if let fraction = model.progressFraction, fraction.isFinite {
+                ProgressView(value: min(max(fraction, 0), 1)) {
                     Text(LocalizedStringKey(model.progressKey))
+                } currentValueLabel: {
+                    Text(min(max(fraction, 0), 1), format: .percent.precision(.fractionLength(0)))
+                        .font(.caption.monospacedDigit())
+                        .foregroundStyle(.secondary)
                 }
             } else {
                 HStack(spacing: 12) {
@@ -59,6 +63,12 @@ struct PreparationProgress: View {
                     Text(LocalizedStringKey(model.progressKey))
                         .font(.subheadline)
                 }
+            }
+            if let detail = model.progressDetail, !detail.isEmpty {
+                Text(verbatim: detail)
+                    .font(.caption.monospacedDigit())
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
             }
             Text(model.progressKey == "progress.enabling_jit" ? "launch.continue_in_target" : "common.keep_open")
                 .font(.caption)

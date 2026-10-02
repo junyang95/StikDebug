@@ -42,6 +42,8 @@ struct LauncherSettingsView: View {
                 Text("vpn.local_only")
             }
 
+            DDIRecoveryView(model: model)
+
             Section {
                 if let name = model.pairingFileName {
                     LabeledContent("settings.pairing_file", value: name)

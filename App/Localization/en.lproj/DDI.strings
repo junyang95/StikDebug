@@ -1,0 +1,15 @@
+"ddi.recovery.title" = "Developer image";
+"ddi.recovery.action" = "Download developer image again";
+"ddi.recovery.help" = "Use this if the download is stuck or the image is incomplete. Your pairing is kept.";
+"ddi.recovery.requirements" = "Complete pairing, enable Developer Mode, and connect the local VPN first. Device access is checked before downloading.";
+"ddi.download.bytes" = "%@ of %@";
+"ddi.download.received" = "Downloaded %@";
+"ddi.download.retrying" = "Download interrupted. Retrying…";
+"ddi.download.preparing" = "Connecting to the download server…";
+"ddi.download.complete" = "Download complete. Checking files…";
+"ddi.download.source.mirror" = "Qiniu mirror";
+"ddi.download.source.upstream" = "Official fallback server";
+"ddi.download.fallback" = "Switching to the fallback server…";
+"ddi.download.verifying" = "Checking downloaded files…";
+"ddi.download.committing" = "Saving the complete image…";
+"ddi.error.download_failed" = "Unable to download the developer image again.";

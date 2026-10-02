@@ -114,11 +114,14 @@ public enum StikJIT {
                                  script: Script = .universal,
                                  forceScript: Bool = false,
                                  preparationProgress: @escaping (PreparationStage) -> Void = { _ in },
-                                 progress: @escaping (String) -> Void = { _ in }) throws {
+                                 progress: @escaping (String) -> Void = { _ in },
+                                 cancellationCheck: @escaping () throws -> Void = {}) throws {
         let readiness = prepareDevice(pairingFile: pairingFile,
                                       paths: ddiPaths,
                                       configuration: configuration,
-                                      progress: preparationProgress)
+                                      progress: preparationProgress,
+                                      cancellationCheck: cancellationCheck)
+        try cancellationCheck()
         let securityState: DeviceSecurityState
         switch readiness {
         case .ready(let readySecurityState):
@@ -155,7 +158,10 @@ public enum StikJIT {
     public static func prepareDevice(pairingFile: URL,
                                      paths: DDIPaths,
                                      configuration: Configuration = .default,
-                                     progress: @escaping (PreparationStage) -> Void = { _ in }) -> JITReadiness {
+                                     progress: @escaping (PreparationStage) -> Void = { _ in },
+                                     cancellationCheck: @escaping () throws -> Void = {}) -> JITReadiness {
+        do { try cancellationCheck() }
+        catch { return .preparationFailed(reason: error.localizedDescription) }
         progress(.checkingReachability)
         if let reason = EndpointProbe.failureReason(address: configuration.deviceAddress,
                                                     port: configuration.rsdPort,
@@ -164,17 +170,20 @@ public enum StikJIT {
         }
 
         do {
+            try cancellationCheck()
             progress(.checkingDDI)
             let session = DDISession(pairingFilePath: pairingFile.path, configuration: configuration)
             if try !session.isMounted() {
                 if !paths.allFilesUsable {
-                    try SynchronousDDIDownloader.download(to: paths) { fraction, status in
+                    try SynchronousDDIDownloader.download(to: paths, progress: { fraction, status in
                         progress(.downloadingDDI(fraction: fraction, status: status))
-                    }
+                    }, cancellationCheck: cancellationCheck)
                 }
+                try cancellationCheck()
                 try session.mountDDI(paths: paths) { fraction in
                     progress(.mountingDDI(fraction: fraction))
                 }
+                try cancellationCheck()
                 progress(.verifyingDDI)
                 guard try session.isMounted() else {
                     throw StikJITError.ddiNotMounted
@@ -187,6 +196,16 @@ public enum StikJIT {
         } catch {
             return .preparationFailed(reason: error.localizedDescription)
         }
+    }
+
+    /// Downloads and validates a complete new asset set, including when the
+    /// device already has a mounted DDI. It preserves pairing credentials.
+    public static func redownloadDDI(to paths: DDIPaths,
+                                     progress: @escaping (PreparationStage) -> Void = { _ in },
+                                     cancellationCheck: @escaping () throws -> Void = {}) throws {
+        try SynchronousDDIDownloader.download(to: paths, progress: { fraction, status in
+            progress(.downloadingDDI(fraction: fraction, status: status))
+        }, cancellationCheck: cancellationCheck)
     }
 
     public static func resetCachedDDI(at paths: DDIPaths) throws {

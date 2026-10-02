@@ -24,6 +24,7 @@ final class LauncherModel: ObservableObject {
     @Published private(set) var isPrepared = false
     @Published private(set) var progressKey = "progress.idle"
     @Published private(set) var progressFraction: Double?
+    @Published private(set) var progressDetail: String?
     @Published private(set) var errorMessage: String?
     @Published private(set) var successMessage: String?
     @Published private(set) var processes: [LauncherProcess] = []
@@ -161,8 +162,21 @@ final class LauncherModel: ObservableObject {
         isPrepared = false
         let record = store.fileURL
         let cache = cacheDirectory
-        perform(progress: "progress.checking_device", failure: "error.preparation_failed") { report, _ in
-            try LauncherEngine.prepare(record: record, cache: cache, report: report)
+        perform(progress: "progress.checking_device", failure: "error.preparation_failed") { report, checkCancelled in
+            try LauncherEngine.prepare(record: record, cache: cache, report: report, cancellationCheck: checkCancelled)
+            return .prepared
+        }
+    }
+
+    func redownloadDDI() {
+        guard preflight() else { return }
+        isPrepared = false
+        let record = store.fileURL
+        let cache = cacheDirectory
+        perform(progress: "progress.downloading_ddi", failure: "ddi.error.download_failed") { report, checkCancelled in
+            try LauncherEngine.redownloadDDI(cache: cache, report: report, cancellationCheck: checkCancelled)
+            try checkCancelled()
+            try LauncherEngine.prepare(record: record, cache: cache, report: report, cancellationCheck: checkCancelled)
             return .prepared
         }
     }
@@ -195,8 +209,8 @@ final class LauncherModel: ObservableObject {
         } catch { errorMessage = error.localizedDescription; return }
         let record = store.fileURL
         let cache = cacheDirectory
-        perform(progress: "progress.enabling_jit", failure: "error.jit_failed") { report, _ in
-            try LauncherEngine.enable(pid: pid, record: record, cache: cache, script: data, report: report)
+        perform(progress: "progress.enabling_jit", failure: "error.jit_failed") { report, checkCancelled in
+            try LauncherEngine.enable(pid: pid, record: record, cache: cache, script: data, report: report, cancellationCheck: checkCancelled)
             return .enabled
         }
     }
@@ -299,7 +313,7 @@ final class LauncherModel: ObservableObject {
                 checkCancelled: checkCancelled,
                 enable: { pid in
                     if let script {
-                        try LauncherEngine.enable(pid: pid, record: record, cache: cache, script: script, report: report)
+                        try LauncherEngine.enable(pid: pid, record: record, cache: cache, script: script, report: report, cancellationCheck: checkCancelled)
                     }
                 },
                 resume: { try LauncherEngine.resume($0, record: record) }
@@ -458,10 +472,11 @@ final class LauncherModel: ObservableObject {
 
     private func perform(progress: String, failure: String, verifyAccess: Bool = true,
                          willRun: (() -> Void)? = nil,
-                         work: @escaping (@escaping LauncherEngine.Report, () throws -> Void) throws -> LauncherResult) {
+                         work: @escaping (@escaping LauncherEngine.Report, @escaping () throws -> Void) throws -> LauncherResult) {
         isBusy = true
         progressKey = verifyAccess ? "progress.verifying_access" : progress
         progressFraction = nil
+        progressDetail = nil
         operationExpired = false
         appendLog(localized(progress))
         let generation = preparationGeneration
@@ -520,7 +535,15 @@ final class LauncherModel: ObservableObject {
                             guard let self, self.operationID == operation, !self.operationExpired,
                                   generation == self.preparationGeneration else { return }
                             if key.hasPrefix("log:") { self.appendLog(String(key.dropFirst(4))) }
-                            else { self.progressKey = key; self.progressFraction = fraction }
+                            else if key.hasPrefix("ddi:") {
+                                self.progressKey = "progress.downloading_ddi"
+                                self.progressFraction = fraction
+                                self.progressDetail = DDIDownloadProgress(String(key.dropFirst(4)))?.displayText
+                            } else {
+                                self.progressKey = key
+                                self.progressFraction = fraction
+                                self.progressDetail = nil
+                            }
                         }
                     }, token.check)
                 })
@@ -544,6 +567,7 @@ final class LauncherModel: ObservableObject {
         operationTask = nil
         isBusy = false
         progressFraction = nil
+        progressDetail = nil
         // Recovery state must survive even if cancellation happened while a
         // blocking device operation was returning its actual side effect.
         if case .success(.location(let simulated)) = result {
@@ -643,7 +667,9 @@ final class LauncherModel: ObservableObject {
         }
     }
 
-    private func localized(_ key: String) -> String { NSLocalizedString(key, comment: "") }
+    private func localized(_ key: String) -> String {
+        NSLocalizedString(key, tableName: key.hasPrefix("ddi.") ? "DDI" : nil, comment: "")
+    }
     private func message(_ key: String, _ error: Error) -> String {
         localized(key) + "\n" + error.localizedDescription
     }
@@ -676,13 +702,25 @@ private enum LauncherEngine {
         #endif
     }
 
-    static func prepare(record: URL, cache: URL, report: @escaping Report) throws {
+    static func redownloadDDI(cache: URL, report: @escaping Report, cancellationCheck: @escaping () throws -> Void) throws {
         #if targetEnvironment(simulator)
         throw LauncherOperationError.deviceRequired
         #else
-        let result = StikJIT.prepareDevice(pairingFile: record, paths: .default(in: cache)) {
+        try StikJIT.redownloadDDI(to: .default(in: cache), progress: {
             reportStage($0, report: report)
-        }
+        }, cancellationCheck: cancellationCheck)
+        #endif
+    }
+
+    static func prepare(record: URL, cache: URL, report: @escaping Report,
+                        cancellationCheck: @escaping () throws -> Void) throws {
+        #if targetEnvironment(simulator)
+        throw LauncherOperationError.deviceRequired
+        #else
+        let result = StikJIT.prepareDevice(pairingFile: record, paths: .default(in: cache), progress: {
+            reportStage($0, report: report)
+        }, cancellationCheck: cancellationCheck)
+        try cancellationCheck()
         switch result {
         case .ready: return
         case .unreachable(let reason), .preparationFailed(let reason):
@@ -702,14 +740,15 @@ private enum LauncherEngine {
         #endif
     }
 
-    static func enable(pid: Int32, record: URL, cache: URL, script: Data, report: @escaping Report) throws {
+    static func enable(pid: Int32, record: URL, cache: URL, script: Data, report: @escaping Report,
+                       cancellationCheck: @escaping () throws -> Void) throws {
         #if targetEnvironment(simulator)
         throw LauncherOperationError.deviceRequired
         #else
         try StikJIT.enableJIT(targetPID: pid, pairingFile: record, ddiPaths: .default(in: cache),
                              script: .customBase64(script.base64EncodedString()),
                              preparationProgress: { reportStage($0, report: report) },
-                             progress: { report("log:" + $0, nil) })
+                             progress: { report("log:" + $0, nil) }, cancellationCheck: cancellationCheck)
         #endif
     }
 
@@ -804,7 +843,7 @@ private enum LauncherEngine {
         switch stage {
         case .checkingReachability: report("progress.checking_device", nil)
         case .checkingDDI: report("progress.checking_ddi", nil)
-        case .downloadingDDI(let fraction, _): report("progress.downloading_ddi", fraction)
+        case .downloadingDDI(let fraction, let status): report("ddi:" + status, fraction)
         case .mountingDDI(let fraction): report("progress.mounting_ddi", fraction)
         case .verifyingDDI: report("progress.verifying_ddi", nil)
         case .ready: report("progress.ready", nil)

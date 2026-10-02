@@ -1,0 +1,15 @@
+"ddi.recovery.title" = "開發者映像檔";
+"ddi.recovery.action" = "重新下載開發者映像檔";
+"ddi.recovery.help" = "下載停住或檔案不完整時，可重新下載。已完成的配對會保留。";
+"ddi.recovery.requirements" = "請先完成配對、開啟開發者模式並連接本機 VPN。下載前會重新驗證裝置。";
+"ddi.download.bytes" = "已下載 %@ / 共 %@";
+"ddi.download.received" = "已下載 %@";
+"ddi.download.retrying" = "下載中斷，正在重試…";
+"ddi.download.preparing" = "正在連接下載伺服器…";
+"ddi.download.complete" = "下載完成，正在檢查檔案…";
+"ddi.download.source.mirror" = "七牛鏡像";
+"ddi.download.source.upstream" = "官方備用來源";
+"ddi.download.fallback" = "正在切換到備用下載來源…";
+"ddi.download.verifying" = "正在檢查下載檔案…";
+"ddi.download.committing" = "正在儲存完整映像檔…";
+"ddi.error.download_failed" = "無法重新下載開發者映像檔。";

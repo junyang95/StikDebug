@@ -1,12 +1,13 @@
 # StikDebug integration provenance
 
-Current integrated launcher release: **2.0.2 (13)**.
+Current integrated launcher release: **2.0.3 (14)**.
 
 Upstream project: <https://github.com/StikDebug/StikDebug>
 
 Pinned commit: **`4bdfc92aa7cebd7a534f1e1ef56415f5727402de`** (3.1.13).
 This is the configured `upstream/main` fetched and inspected from the user's
-StikDebug repository on 2026-10-01. The upstream commit is dated 2026-09-28.
+StikDebug repository on 2026-10-01. Remote main was reconfirmed at this commit with
+`git ls-remote` on 2026-10-02. The upstream commit is dated 2026-09-28.
 The full upstream GNU Affero General Public License v3.0 text is retained,
 unmodified, in [LICENSE](LICENSE).
 
@@ -28,6 +29,26 @@ priority, followed by that mapping, then the selected default. Bundled scripts
 remain read-only; custom scripts are stored separately.
 
 ## Adapted behavior
+
+Cryptex DDI mounting was already present in launcher 2.0.2. Its relevant FFI and
+mounting core match the pinned StikDebug 3.1.13 implementation; 2.0.3 is not the
+initial port of this functionality. The upstream
+[3.1.11 release](https://github.com/StikDebug/StikDebug/releases/tag/3.1.11)
+introduced cryptex mounting to address iPhone 18 Pro compatibility and documented
+that on iOS 26.4 and later the mounted image persists across ordinary reboots.
+
+The 2.0.3 download changes are launcher-specific: a bundled file catalog pins
+DDI asset commit `6eae353ae694bda1c421d4a3eee5459ae59c99a1` (build `27A5228h`),
+tries a versioned Qiniu mirror and then the upstream fixed-commit URL, checks
+complete three-file personalized or five-file cryptex groups by size and SHA-256,
+and writes a cache completion receipt. Streaming progress, bounded timeouts,
+cancellation, and a pairing-preserving re-download action address download stalls.
+These adaptations do not change the upstream cryptex mounting protocol or force
+an already mounted system DDI to unmount. Publishing mirror files is a separate
+release operation; this source change does not assert that it has occurred.
+The DDI asset source is `doronz88/DeveloperDiskImage`, separate from StikDebug's
+application commit. See [LAUNCHER.md](../../LAUNCHER.md) for the cache and download
+contract and physical-device verification requirements.
 
 The application catalog, entitlement interpretation, app launch, process control,
 device metadata, provisioning-profile operations, and location-service calls

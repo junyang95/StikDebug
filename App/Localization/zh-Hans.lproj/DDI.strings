@@ -1,0 +1,15 @@
+"ddi.recovery.title" = "开发者镜像";
+"ddi.recovery.action" = "重新下载开发者镜像";
+"ddi.recovery.help" = "下载卡住或文件不完整时，可重新下载。已完成的配对会保留。";
+"ddi.recovery.requirements" = "请先完成配对、开启开发者模式并连接本机 VPN。下载前会重新验证设备。";
+"ddi.download.bytes" = "已下载 %@ / 共 %@";
+"ddi.download.received" = "已下载 %@";
+"ddi.download.retrying" = "下载中断，正在重试…";
+"ddi.download.preparing" = "正在连接下载服务器…";
+"ddi.download.complete" = "下载完成，正在检查文件…";
+"ddi.download.source.mirror" = "七牛镜像";
+"ddi.download.source.upstream" = "官方备用源";
+"ddi.download.fallback" = "正在切换到备用下载源…";
+"ddi.download.verifying" = "正在检查下载文件…";
+"ddi.download.committing" = "正在保存完整镜像…";
+"ddi.error.download_failed" = "无法重新下载开发者镜像。";
