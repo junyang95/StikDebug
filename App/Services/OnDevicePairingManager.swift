@@ -17,6 +17,7 @@ final class OnDevicePairingManager: NSObject, ObservableObject, UNUserNotificati
     @Published private(set) var notificationMessage: String?
 
     var canStart: () -> Bool = { true }
+    var connectionIsAvailable: () -> Bool = { true }
     var didComplete: ((URL, Data) throws -> Void)?
 
     var isSupported: Bool {
@@ -70,6 +71,12 @@ final class OnDevicePairingManager: NSObject, ObservableObject, UNUserNotificati
             allowed = false
         }
         guard isCurrent(id) else { return }
+        // Notification authorization may outlive the network that admitted it.
+        guard connectionIsAvailable() else {
+            errorMessage = localized("wifi.required")
+            stop(expired: false)
+            return
+        }
         notificationAllowed = allowed
         if !notificationAllowed {
             notificationMessage = localized("pairing.on_device.notifications_unavailable")

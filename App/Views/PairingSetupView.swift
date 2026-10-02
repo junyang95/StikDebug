@@ -28,6 +28,12 @@ struct PairingSetupView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
                 statusHeader
+                if !model.isWiFiAvailable {
+                    Label(LocalizedStringKey(model.wifiStatusKey), systemImage: "wifi.slash")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
                 if let code = pairing.pinCode { pinCard(code) }
                 pairingMessages
                 pairingGuide
@@ -71,6 +77,9 @@ struct PairingSetupView: View {
             } else if (status == .disconnected || status == .invalid) && !vpn.isBusy {
                 prepareWhenConnected = false
             }
+        }
+        .onChange(of: model.wifiState) { _, state in
+            if !state.isAvailable { prepareWhenConnected = false }
         }
         .onDisappear { prepareWhenConnected = false }
     }
@@ -200,7 +209,7 @@ struct PairingSetupView: View {
                     guideText("guide.pair_again")
                         .frame(minHeight: 44)
                 }
-                .disabled(operationInProgress || pairing.isRunning)
+                .disabled(operationInProgress || pairing.isRunning || !model.isWiFiAvailable)
             }
         }
     }
@@ -211,6 +220,12 @@ struct PairingSetupView: View {
                 .font(.title2.bold())
                 .accessibilityAddTraits(.isHeader)
             VStack(alignment: .leading, spacing: 16) {
+                PairingReadinessRow(
+                    title: Text("wifi.title"),
+                    detail: Text(LocalizedStringKey(model.wifiStatusKey)),
+                    systemImage: "wifi", isReady: model.isWiFiAvailable
+                )
+                Divider()
                 PairingReadinessRow(
                     title: guideText("guide.readiness.record"),
                     detail: guideText(hasRecord ? "guide.readiness.record.saved" : "guide.readiness.record.missing"),
@@ -320,6 +335,10 @@ struct PairingSetupView: View {
                 guideText("guide.action.waiting_hint")
                     .font(.caption)
                     .foregroundStyle(.secondary)
+            } else if !model.isWiFiAvailable {
+                Text(LocalizedStringKey(model.wifiStatusKey))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             } else if hasRecord && !model.developerModeConfirmed {
                 guideText("guide.action.confirm_developer")
                     .font(.caption)
@@ -354,11 +373,13 @@ struct PairingSetupView: View {
     private var primaryDisabled: Bool {
         if pairing.isRunning { return false }
         return operationInProgress || (hasRecord && !model.developerModeConfirmed)
+            || ((hasRecord || pairing.isSupported) && !model.isWiFiAvailable)
     }
 
     private func primaryAction() {
         if pairing.isRunning { pairing.cancel(); return }
         guard !operationInProgress else { return }
+        if hasRecord || pairing.isSupported { guard model.requireWiFi() else { return } }
         if model.isPrepared && vpn.isConnected { openLaunch(); return }
         if hasRecord {
             if vpn.isConnected {
@@ -366,7 +387,7 @@ struct PairingSetupView: View {
             } else {
                 prepareWhenConnected = true
                 Task {
-                    await vpn.connect()
+                    await model.connectVPN()
                     if vpn.isConnected && prepareWhenConnected {
                         prepareWhenConnected = false
                         prepareIfReady()
@@ -383,7 +404,7 @@ struct PairingSetupView: View {
     }
 
     private func prepareIfReady() {
-        guard hasRecord, model.developerModeConfirmed, vpn.isConnected,
+        guard hasRecord, model.isWiFiAvailable, model.developerModeConfirmed, vpn.isConnected,
               !model.isBusy, !pairing.isRunning else { return }
         model.prepareDevice()
     }

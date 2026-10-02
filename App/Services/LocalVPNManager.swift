@@ -13,6 +13,8 @@ final class LocalVPNManager: ObservableObject {
 
     var isConnected: Bool { status == .connected }
 
+    var canConnect: () -> Bool = { true }
+
     private var manager: NETunnelProviderManager?
     private var statusObserver: NSObjectProtocol?
     private var expectsConnection = false
@@ -66,6 +68,7 @@ final class LocalVPNManager: ObservableObject {
 
     func connect() async {
         guard !isBusy else { return }
+        guard canConnect() else { report("wifi.required"); return }
         isBusy = true
         errorMessage = nil
         defer { isBusy = false }
@@ -126,6 +129,7 @@ final class LocalVPNManager: ObservableObject {
             report("vpn.configuration_missing")
             return
         }
+        guard canConnect() else { report("wifi.required"); return }
         do {
             requestGeneration &+= 1
             expectsConnection = true

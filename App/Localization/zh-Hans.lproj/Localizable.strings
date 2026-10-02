@@ -189,3 +189,11 @@
 "error.operation_busy" = "另一项操作仍在进行，请等待完成后重新发起此请求。";
 "progress.verifying_access" = "正在验证设备…";
 "error.access_failed" = "设备验证未通过。";
+
+// Wi-Fi is required before device connection and preparation.
+"wifi.title" = "Wi-Fi 连接";
+"wifi.checking" = "正在检查 Wi-Fi，请稍候再连接。";
+"wifi.available" = "已连接 Wi-Fi";
+"wifi.required" = "请前往“设置”→“Wi-Fi”连接无线网络后返回。仅使用移动数据无法准备设备或启动 JIT。";
+"wifi.interrupted" = "Wi-Fi 已断开，本次操作已停止。请重新连接 Wi-Fi 后重试，已校验的开发者磁盘映像会保留。";
+"wifi.unavailable" = "未连接 Wi-Fi";

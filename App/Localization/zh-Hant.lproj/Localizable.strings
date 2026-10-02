@@ -189,3 +189,11 @@
 "error.operation_busy" = "另一項操作仍在進行，請等待完成後重新發起此請求。";
 "progress.verifying_access" = "正在驗證裝置…";
 "error.access_failed" = "裝置驗證未通過。";
+
+// Wi-Fi is required before device connection and preparation.
+"wifi.title" = "Wi-Fi 連線";
+"wifi.checking" = "正在檢查 Wi-Fi，請稍候再連接。";
+"wifi.available" = "已連接 Wi-Fi";
+"wifi.required" = "請前往「設定」→「Wi-Fi」連接無線網路後返回。僅使用行動數據無法準備裝置或啟動 JIT。";
+"wifi.interrupted" = "Wi-Fi 已中斷，本次操作已停止。請重新連接 Wi-Fi 後再試，已驗證的開發者磁碟映像會保留。";
+"wifi.unavailable" = "未連接 Wi-Fi";

@@ -8,6 +8,7 @@ private final class FixtureProtocol: URLProtocol, @unchecked Sendable {
     static var upstreamBehavior: Behavior = .success
     static var payloads: [String: Data] = [:]
     static var requests: [URL] = []
+    static var cellularPermissions: [Bool?] = []
     private let stateLock = NSLock()
     private var stopped = false
 
@@ -17,6 +18,9 @@ private final class FixtureProtocol: URLProtocol, @unchecked Sendable {
         let url = request.url!
         Self.lock.lock()
         Self.requests.append(url)
+        // Inspect the production task's request policy for both origins,
+        // rather than asserting against the fixture's supplied configuration.
+        Self.cellularPermissions.append(task?.currentRequest?.allowsCellularAccess)
         let behavior = url.host == "mirror.test" ? Self.mirrorBehavior : Self.upstreamBehavior
         let bytes = Self.payloads[url.lastPathComponent]!
         Self.lock.unlock()
@@ -44,7 +48,7 @@ private final class FixtureProtocol: URLProtocol, @unchecked Sendable {
     }
     override func stopLoading() { stateLock.lock(); stopped = true; stateLock.unlock() }
     static func configure(mirror: Behavior, upstream: Behavior = .success) {
-        lock.lock(); mirrorBehavior = mirror; upstreamBehavior = upstream; requests = []; lock.unlock()
+        lock.lock(); mirrorBehavior = mirror; upstreamBehavior = upstream; requests = []; cellularPermissions = []; lock.unlock()
     }
 }
 
@@ -106,6 +110,8 @@ enum DDIDownloadTests {
         let cryptex = try run("cryptex", progress: { fraction, status in eventLock.lock(); events.append((fraction, status)); eventLock.unlock() })
         check(DDICache.isUsable(paths: cryptex, method: .cryptex, catalog: catalog), "Five validated files and matching receipt are usable")
         check(FixtureProtocol.requests.count == 5 && FixtureProtocol.requests.allSatisfy { $0.host == "mirror.test" }, "Healthy mirror never contacts upstream")
+        check(FixtureProtocol.cellularPermissions.count == 5 && FixtureProtocol.cellularPermissions.allSatisfy { $0 == false },
+              "Every mirror task prohibits cellular access in its effective request: \(FixtureProtocol.cellularPermissions)")
         check(events.contains { $0.0 > 0 && $0.0 < 1 && $0.1.hasPrefix("ddi|downloading|") }, "Streaming bytes produce intermediate total progress")
         check(events.last?.1.hasPrefix("ddi|committing|") == true, "Verified group reports commit phase")
         check(!DDICache.isUsable(paths: cryptex, method: .personalized, catalog: catalog), "Mount method mismatch invalidates cache")
@@ -123,6 +129,8 @@ enum DDIDownloadTests {
         let fallback = try run("fallback")
         check(DDICache.isUsable(paths: fallback, method: .cryptex, catalog: catalog), "404 mirror recovers using pinned upstream")
         check(FixtureProtocol.requests.count == 10, "Every failed mirror asset gets one upstream attempt")
+        check(FixtureProtocol.cellularPermissions.count == 10 && FixtureProtocol.cellularPermissions.allSatisfy { $0 == false },
+              "Fallback tasks retain the cellular access restriction")
         FixtureProtocol.configure(mirror: .corrupt)
         check(DDICache.isUsable(paths: try run("checksum-fallback"), method: .cryptex, catalog: catalog), "Bad mirror hashes trigger upstream fallback")
         FixtureProtocol.configure(mirror: .oversized)

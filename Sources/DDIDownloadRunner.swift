@@ -142,7 +142,8 @@ private final class DDIFileTransfer: NSObject, URLSessionDataDelegate, @unchecke
         configuration.timeoutIntervalForRequest = max(timeouts.connection, timeouts.stalled)
         configuration.timeoutIntervalForResource = timeouts.resource
         configuration.waitsForConnectivity = false
-        configuration.allowsCellularAccess = true
+        // Do not hand a Wi-Fi download over to cellular while path callbacks arrive.
+        configuration.allowsCellularAccess = false
         configuration.allowsExpensiveNetworkAccess = true
         configuration.allowsConstrainedNetworkAccess = true
         let queue = OperationQueue()
@@ -150,6 +151,7 @@ private final class DDIFileTransfer: NSObject, URLSessionDataDelegate, @unchecke
         queue.qualityOfService = .utility
         let session = URLSession(configuration: configuration, delegate: self, delegateQueue: queue)
         var request = URLRequest(url: url)
+        request.allowsCellularAccess = false
         request.setValue("identity", forHTTPHeaderField: "Accept-Encoding")
         let task = session.dataTask(with: request)
         allowedHost = url.host

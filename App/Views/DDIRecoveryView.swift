@@ -13,7 +13,7 @@ struct DDIRecoveryView: View {
     }
 
     private var canRedownload: Bool {
-        !model.isBusy && !pairing.isRunning && !vpn.isBusy && vpn.isConnected
+        model.isWiFiAvailable && !model.isBusy && !pairing.isRunning && !vpn.isBusy && vpn.isConnected
             && model.pairingFileName != nil && model.developerModeConfirmed
     }
 
@@ -47,6 +47,7 @@ struct DDIRecoveryView: View {
             VStack(alignment: .leading, spacing: 6) {
                 Text("ddi.recovery.help", tableName: "DDI")
                 Text("ddi.recovery.requirements", tableName: "DDI")
+                if !model.isWiFiAvailable { Text(LocalizedStringKey(model.wifiStatusKey)) }
             }
         }
     }

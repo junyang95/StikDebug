@@ -21,25 +21,32 @@ struct LauncherSettingsView: View {
         Form {
             Section { WowDeviceAccessView(model: model) }
             Section {
+                LabeledContent("wifi.title") {
+                    Text(LocalizedStringKey(model.wifiState == .unavailable ? "wifi.unavailable" : model.wifiStatusKey))
+                        .foregroundStyle(.secondary)
+                }
                 LabeledContent("settings.local_connection") {
                     ConnectionStatusLabel(status: vpn.status)
                 }
                 Button {
                     Task {
                         if vpn.isConnected { await vpn.disconnect() }
-                        else { await vpn.connect() }
+                        else { await model.connectVPN() }
                     }
                 } label: {
                     Label(vpn.isConnected ? "vpn.disconnect" : "vpn.connect", systemImage: vpn.isConnected ? "pause.circle" : "play.circle")
                 }
-                .disabled(model.isBusy || vpn.isBusy || pairing.isRunning)
+                .disabled(model.isBusy || vpn.isBusy || pairing.isRunning || (!vpn.isConnected && !model.isWiFiAvailable))
                 if let message = vpn.errorMessage {
                     LauncherMessage(message: message, isError: true)
                 }
             } header: {
                 Text("settings.connection")
             } footer: {
-                Text("vpn.local_only")
+                VStack(alignment: .leading, spacing: 6) {
+                    if !model.isWiFiAvailable { Text(LocalizedStringKey(model.wifiStatusKey)) }
+                    Text("vpn.local_only")
+                }
             }
 
             DDIRecoveryView(model: model)

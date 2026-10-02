@@ -54,7 +54,7 @@ struct WowDeviceAccessView: View {
                 Text("access.verify", tableName: "WowAccess")
             }
             .buttonStyle(.bordered)
-            .disabled(model.isBusy || pairing.isRunning)
+            .disabled(model.isBusy || pairing.isRunning || !model.isWiFiAvailable)
 
             if let error = model.accessError,
                error != NSLocalizedString(model.accessStatusKey, tableName: "WowAccess", comment: "") {

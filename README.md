@@ -2,7 +2,7 @@
 
 ## JIT启动器 — integrated iOS app
 
-This branch adds **JIT启动器** (2.0.3, build 14), a standalone SwiftUI app integrating
+This branch adds **JIT启动器** (2.0.4, build 15), a standalone SwiftUI app integrating
 StikDebug's installed-app launch/JIT workflow and device tools, on-device pairing,
 the StikJIT engine, and [LocalDevVPN](https://github.com/jkcoxson/LocalDevVPN).
 Four tabs cover applications, the seven-step pairing guide, debugging tools, and
@@ -14,6 +14,13 @@ Traditional Chinese are included. The app identifier remains **com.stik.StikPair
 The application list shows only targets with `get-task-allow`, excludes the
 launcher itself, and loads their real icons from the device. An unavailable icon
 uses a fallback without preventing the rest of the list from loading.
+
+Version 2.0.4 requires an available Wi-Fi path before pairing, VPN connection,
+device verification, DDI preparation or new JIT operations. It shows Wi-Fi
+readiness, blocks cellular-only connections, rechecks after foreground entry,
+and cancels pending work when Wi-Fi disappears while retaining verified DDI
+files. Download requests disallow cellular handoff. Real-location restoration
+remains a recovery exception when the existing local device connection works.
 
 Version 2.0.3 addresses downloads that appear stuck at **Downloading developer
 disk image**. It shows transferred bytes and progress, uses a versioned Qiniu

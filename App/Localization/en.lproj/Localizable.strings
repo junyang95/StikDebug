@@ -189,3 +189,11 @@
 "error.operation_busy" = "Another operation is still running. Wait for it to finish, then try this request again.";
 "progress.verifying_access" = "Verifying device access…";
 "error.access_failed" = "Device verification failed.";
+
+// Wi-Fi is required before device connection and preparation.
+"wifi.title" = "Wi-Fi connection";
+"wifi.checking" = "Checking Wi-Fi… Please wait before connecting.";
+"wifi.available" = "Connected to Wi-Fi";
+"wifi.required" = "Connect to a Wi-Fi network in Settings → Wi-Fi, then return. Cellular data alone cannot prepare this device or enable JIT.";
+"wifi.interrupted" = "Wi-Fi disconnected and this operation stopped. Reconnect to Wi-Fi, then try again. Verified developer image files are kept.";
+"wifi.unavailable" = "Wi-Fi not connected";

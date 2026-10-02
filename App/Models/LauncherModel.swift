@@ -45,6 +45,20 @@ final class LauncherModel: ObservableObject {
     let scripts = ScriptLibrary()
     let console = LauncherConsole()
 
+    @Published private(set) var wifiState: WiFiRequirementState = .checking
+    var isWiFiAvailable: Bool { wifiState.isAvailable }
+    var wifiStatusKey: String {
+        switch wifiState {
+        case .checking: return "wifi.checking"
+        case .available: return "wifi.available"
+        case .unavailable: return "wifi.required"
+        }
+    }
+    private let wifi = WiFiRequirementMonitor()
+    private var wifiObservation: AnyCancellable?
+    private var operationWiFiInterrupted = false
+    private var operationRequiresWiFi = true
+
     let vpn = LocalVPNManager()
     let pairing = OnDevicePairingManager()
     private let defaults: UserDefaults
@@ -79,9 +93,24 @@ final class LauncherModel: ObservableObject {
             guard status != .connected else { return }
             self?.invalidatePreparation()
         }
+        vpn.canConnect = { [weak self] in self?.isWiFiAvailable == true }
+        wifiObservation = wifi.$state.removeDuplicates().sink { [weak self] state in
+            guard let self else { return }
+            self.wifiState = state
+            guard state == .unavailable else { return }
+            // Restoring the real location is recovery and can keep using an
+            // existing local tunnel even when internet/Wi-Fi is unavailable.
+            let cancelOperation = !self.isBusy || self.operationRequiresWiFi
+            let hadActiveConnection = cancelOperation && (self.isBusy || self.isPrepared || self.pairing.isRunning || self.console.isRunning)
+            if self.isBusy && cancelOperation { self.operationWiFiInterrupted = true }
+            self.invalidatePreparation(cancelOperation: cancelOperation)
+            self.pairing.cancel()
+            if hadActiveConnection { self.errorMessage = self.localized("wifi.interrupted") }
+        }
+        pairing.connectionIsAvailable = { [weak self] in self?.isWiFiAvailable == true }
         pairing.canStart = { [weak self] in
             guard let self else { return false }
-            return !self.isBusy && !self.vpn.isBusy && !self.console.isRunning && !self.locationIsSimulated
+            return self.isWiFiAvailable && !self.isBusy && !self.vpn.isBusy && !self.console.isRunning && !self.locationIsSimulated
         }
         pairing.didComplete = { [weak self] url, hostAltIRK in
             guard let self else { return }
@@ -98,7 +127,27 @@ final class LauncherModel: ObservableObject {
         }
     }
 
-    func enteredForeground() { isForeground = true }
+    func enteredForeground() {
+        // Permission sheets also emit .active; only a real background return
+        // needs to invalidate the path, otherwise VPN consent can race .checking.
+        guard !isForeground else { return }
+        isForeground = true
+        wifi.refresh()
+    }
+
+    @discardableResult
+    func requireWiFi() -> Bool {
+        guard isWiFiAvailable else {
+            errorMessage = localized(wifiStatusKey)
+            return false
+        }
+        return true
+    }
+
+    func connectVPN() async {
+        guard requireWiFi() else { return }
+        await vpn.connect()
+    }
 
     func refreshState() async {
         if !store.hasRecord {
@@ -106,7 +155,7 @@ final class LauncherModel: ObservableObject {
             invalidatePreparation()
         }
         await vpn.refresh()
-        if isForeground && store.hasRecord && vpn.isConnected && developerModeConfirmed && !isBusy && !pairing.isRunning {
+        if isForeground && isWiFiAvailable && store.hasRecord && vpn.isConnected && developerModeConfirmed && !isBusy && !pairing.isRunning {
             verifyDeviceAccess()
         }
     }
@@ -242,7 +291,7 @@ final class LauncherModel: ObservableObject {
     }
 
     func requestApplicationIcon(for app: LauncherApplication) {
-        guard isForeground, app.isDebuggable, isPrepared, isDeviceAccessVerified, vpn.isConnected, !isBusy,
+        guard isForeground, isWiFiAvailable, app.isDebuggable, isPrepared, isDeviceAccessVerified, vpn.isConnected, !isBusy,
               applicationIcons[app.id] == nil, iconRequests[app.id] == nil,
               !iconAttempts.contains(app.id), iconRequests.count < 64,
               applications.contains(where: { $0.id == app.id }) else { return }
@@ -397,7 +446,7 @@ final class LauncherModel: ObservableObject {
     }
 
     func restoreLocation() {
-        guard preflight() else { return }
+        guard preflight(requireWiFi: false) else { return }
         let record = store.fileURL
         // Restoring the real location is recovery, and must remain possible
         // after a ban or network outage. It cannot start a new simulation.
@@ -419,9 +468,10 @@ final class LauncherModel: ObservableObject {
         if operationLog.count > 500 { operationLog.removeFirst(operationLog.count - 500) }
     }
 
-    private func preflight(requirePreparation: Bool = false) -> Bool {
+    private func preflight(requirePreparation: Bool = false, requireWiFi: Bool = true) -> Bool {
         guard isForeground, !isBusy, !pairing.isRunning else { return false }
         clearMessages()
+        guard !requireWiFi || self.requireWiFi() else { return false }
         #if targetEnvironment(simulator)
         errorMessage = localized("error.device_required")
         return false
@@ -446,10 +496,12 @@ final class LauncherModel: ObservableObject {
         #endif
     }
 
-    private func invalidatePreparation() {
-        preparationGeneration += 1
-        operationToken?.cancel()
-        operationTask?.cancel()
+    private func invalidatePreparation(cancelOperation: Bool = true) {
+        if cancelOperation {
+            preparationGeneration += 1
+            operationToken?.cancel()
+            operationTask?.cancel()
+        }
         accessStatusKey = "access.pending"
         accessCheckedAt = nil
         accessError = nil
@@ -474,6 +526,8 @@ final class LauncherModel: ObservableObject {
                          willRun: (() -> Void)? = nil,
                          work: @escaping (@escaping LauncherEngine.Report, @escaping () throws -> Void) throws -> LauncherResult) {
         isBusy = true
+        operationWiFiInterrupted = false
+        operationRequiresWiFi = verifyAccess
         progressKey = verifyAccess ? "progress.verifying_access" : progress
         progressFraction = nil
         progressDetail = nil
@@ -519,7 +573,7 @@ final class LauncherModel: ObservableObject {
                     try token.check()
                     try Task.checkCancellation()
                     guard self.operationID == operation, generation == self.preparationGeneration,
-                          self.vpn.isConnected else { throw CancellationError() }
+                          self.vpn.isConnected, self.isWiFiAvailable else { throw CancellationError() }
                     self.accessStatusKey = "access.verified"
                     self.accessCheckedAt = Date()
                     self.accessError = nil
@@ -575,6 +629,11 @@ final class LauncherModel: ObservableObject {
             defaults.set(simulated, forKey: "locationIsSimulated")
         }
         guard !operationExpired else { progressKey = "progress.idle"; return }
+        if operationWiFiInterrupted {
+            errorMessage = localized("wifi.interrupted")
+            progressKey = "progress.idle"
+            return
+        }
         guard generation == preparationGeneration, vpn.isConnected else {
             errorMessage = localized("error.prepare_required")
             progressKey = "progress.idle"
@@ -627,7 +686,7 @@ final class LauncherModel: ObservableObject {
             self.locationIsSimulated = simulated
             self.defaults.set(simulated, forKey: "locationIsSimulated")
             self.successMessage = self.localized(simulated ? "success.location_set" : "success.location_reset")
-            self.progressKey = "progress.ready"
+            self.progressKey = self.isPrepared ? "progress.ready" : "progress.idle"
         case .success(.processes(let processes)):
             self.processes = processes.sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
             self.progressKey = "progress.ready"

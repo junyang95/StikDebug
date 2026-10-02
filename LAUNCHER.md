@@ -91,8 +91,9 @@ another application. Allow local network and notification access when prompted.
 The PIN comes from the pairing handshake; leading zeroes matter. Enter it in
 Settings. A large PIN and a copy action are also available at the top of the guide.
 Copying uses the local device's clipboard with a short expiration, not Universal
-Clipboard. The guide does not mark Wi-Fi or Settings actions as completed because
-the app cannot observe those actions. Completion means the handshake succeeded
+Clipboard. The seven instructions do not claim that manual Settings actions were
+completed. Wi-Fi readiness is shown separately from the observed network path.
+Pairing completion means the handshake succeeded
 and the resulting remote pairing record was validated and saved.
 
 If Developer Mode is off, enable it and complete any system restart/confirmation,
@@ -119,6 +120,20 @@ through Files or AirDrop. Legacy Lockdown pairing records are not accepted by th
 framework. A record must belong to the device being used.
 
 ### Connect and prepare
+
+Connect to a Wi-Fi network before starting pairing or preparing the device.
+The launcher monitors `NWPathMonitor(requiredInterfaceType: .wifi)` and admits new
+operations only when the path is satisfied and uses Wi-Fi. Turning on the radio
+without a usable connection, cellular-only access, and a VPN alone do not meet
+this prerequisite. The public API checks availability, not the Wi-Fi switch,
+SSID, or internet-server reachability; no location permission is requested.
+Unknown state blocks new actions until the first current path update. Foreground
+entry discards stale path state. Losing Wi-Fi invalidates preparation, cancels
+pairing and pending work, and reports an actionable connection message.
+Already-entered native calls must unwind before a new operation can begin.
+Existing verified DDI caches are retained. Download requests also disallow
+cellular access. Disconnecting the VPN, importing a record, and restoring real
+location through an existing local connection remain available for recovery.
 
 After pairing, confirm Developer Mode and tap **Connect VPN and prepare JIT**.
 Approve the system VPN configuration prompt. Preparation begins only after iOS
@@ -167,6 +182,15 @@ during transfer and verification. Only after the entire new group passes checks
 does replacement begin, and a completion receipt is written last. Cache reuse
 requires a matching receipt plus the expected sizes and hashes; partial files,
 mixed groups, and old caches without that receipt are not accepted as ready.
+
+The app reads this catalog from its bundle, not a mutable remote `latest` file.
+Publish new DDI versions under a new revision directory and keep previous
+revision URLs available for installed app versions. Updating the bundled catalog
+and shipping an app update is currently required to select a new revision or
+change both download origins; uploading new server files alone does not do so.
+A future remote catalog mechanism would need compatibility selection, validation,
+and a verified fallback before replacing this pin. Never overwrite an old
+revision with different bytes: the app will correctly reject its hash mismatch.
 
 Normal preparation first checks whether the system already has a mounted DDI.
 It downloads a verified group when mounting is needed and the cache is unusable;
@@ -336,6 +360,8 @@ xcodebuild -project StikJIT.xcodeproj -scheme JITLauncherPreview \
 `JITLauncherPreview` uses the same SwiftUI interface without linking the
 device-only idevice archive. It reports that VPN, pairing, device tools, and JIT
 need real hardware; it does not fake successful connections or installed apps.
+Run `scripts/test-wifi-requirement.sh` for Wi-Fi/cellular/VPN admission and
+monitor refresh, stale-callback, disconnection and cancellation lifecycle checks.
 Run `scripts/test-ddi-downloads.sh` for host-side catalog, checksum/cache,
 fallback, timeout, and cancellation checks with intercepted responses.
 Run `scripts/test-launcher.sh` for host-side storage/input/protocol checks and
