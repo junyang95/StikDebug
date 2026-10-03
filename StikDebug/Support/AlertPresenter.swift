@@ -19,21 +19,21 @@ enum AlertPresenter {
                 return
             }
 
-            let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
+            let alert = UIAlertController(title: title.localized, message: message.localized, preferredStyle: .alert)
 
             if showTryAgain {
-                alert.addAction(UIAlertAction(title: primaryButtonText ?? "Try Again", style: .default) { _ in
+                alert.addAction(UIAlertAction(title: primaryButtonText?.localized ?? "Try Again".localized, style: .default) { _ in
                     completion?(true)
                 })
-                alert.addAction(UIAlertAction(title: "Cancel", style: .cancel) { _ in
+                alert.addAction(UIAlertAction(title: "Cancel".localized, style: .cancel) { _ in
                     completion?(false)
                 })
             } else if showOk {
-                alert.addAction(UIAlertAction(title: primaryButtonText ?? "OK", style: .default) { _ in
+                alert.addAction(UIAlertAction(title: primaryButtonText?.localized ?? "OK".localized, style: .default) { _ in
                     completion?(true)
                 })
             } else {
-                alert.addAction(UIAlertAction(title: "OK", style: .default) { _ in
+                alert.addAction(UIAlertAction(title: "OK".localized, style: .default) { _ in
                     completion?(true)
                 })
             }

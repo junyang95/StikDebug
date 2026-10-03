@@ -2,7 +2,7 @@ name: Build Debug IPA
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "main", "codex/qiniu-ddi-zh" ]
     tags: [ "[0-9]*" ]
   pull_request:
     branches: [ "main" ]
@@ -40,6 +40,7 @@ jobs:
             -scheme "StikDebug" \
             -configuration Debug \
             -archivePath build/StikDebug.xcarchive \
+            -derivedDataPath build/DerivedData \
             -sdk iphoneos \
             -destination 'generic/platform=iOS' \
             ONLY_ACTIVE_ARCH=NO \
@@ -48,6 +49,9 @@ jobs:
             CODE_SIGNING_ALLOWED=NO \
             SWIFT_OPTIMIZATION_LEVEL="-Onone" \
             IPHONEOS_DEPLOYMENT_TARGET=17.4
+
+      - name: Verify Chinese translations
+        run: python3 Tools/verify-localizations.py --stringsdata-root build/DerivedData
 
       - name: 4. Package .app into .ipa
         run: |
@@ -59,14 +63,14 @@ jobs:
 
       - name: 5. Name workflow artifact
         id: artifact
-        if: env.UPLOAD_IPA == 'true' && (github.event_name == 'push' || github.event_name == 'pull_request')
+        if: env.UPLOAD_IPA == 'true'
         run: |
           file_name="StikDebug-${GITHUB_SHA::7}.ipa"
           cp StikDebug.ipa "$file_name"
           echo "file_name=$file_name" >> "$GITHUB_OUTPUT"
 
       - name: 6. Store IPA as Workflow Artifact
-        if: env.UPLOAD_IPA == 'true' && (github.event_name == 'push' || github.event_name == 'pull_request')
+        if: env.UPLOAD_IPA == 'true'
         uses: actions/upload-artifact@v7
         with:
           path: ${{ steps.artifact.outputs.file_name }}

@@ -149,7 +149,7 @@ struct EnableJITIntent: AppIntent, ForegroundContinuableIntent {
 
     func perform() async throws -> some IntentResult & ReturnsValue<String> {
         guard let bundleID = app?.id else {
-            return .result(value: "Select an app to enable JIT for.")
+            return .result(value: "Select an app to enable JIT for.".localized)
         }
 
         await ensureTunnel()
@@ -195,10 +195,10 @@ struct EnableJITIntent: AppIntent, ForegroundContinuableIntent {
 
         if success {
             LogManager.shared.addInfoLog("JIT enabled for \(target) via Shortcut")
-            return .result(value: "Successfully enabled JIT for \(target).")
+            return .result(value: String(format: "Successfully enabled JIT for %@.".localized, target))
         } else {
             LogManager.shared.addErrorLog("Failed to enable JIT for \(target) via Shortcut")
-            return .result(value: "Failed to enable JIT for \(target).")
+            return .result(value: String(format: "Failed to enable JIT for %@.".localized, target))
         }
     }
 }
@@ -237,12 +237,12 @@ struct KillProcessIntent: AppIntent {
 
             // Always re-resolve to get the current PID — the stored one may be stale
             guard let resolved = process.resolveCurrentPID() else {
-                return .result(value: "\(process.displayName) is no longer running.")
+                return .result(value: String(format: "%@ is no longer running.".localized, process.displayName))
             }
             targetPID = resolved
             targetName = process.displayName
         } else {
-            return .result(value: "Select a process or provide a PID.")
+            return .result(value: "Select a process or provide a PID.".localized)
         }
 
         var err: NSError?
@@ -250,11 +250,11 @@ struct KillProcessIntent: AppIntent {
 
         if success {
             LogManager.shared.addInfoLog("Killed \(targetName) via Shortcut")
-            return .result(value: "Successfully killed \(targetName).")
+            return .result(value: String(format: "Successfully killed %@.".localized, targetName))
         } else {
-            let reason = err?.localizedDescription ?? "Unknown error"
+            let reason = err?.localizedDescription ?? "Unknown error".localized
             LogManager.shared.addErrorLog("Failed to kill \(targetName) via Shortcut: \(reason)")
-            return .result(value: "Failed to kill \(targetName): \(reason)")
+            return .result(value: String(format: "Failed to kill %@: %@".localized, targetName, reason))
         }
     }
 }

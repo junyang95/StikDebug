@@ -140,7 +140,7 @@ final class SystemLogStream: ObservableObject {
         flushTimer = nil
         batchTimer?.invalidate()
         batchTimer = nil
-        lastError = error?.localizedDescription ?? "System log stream stopped"
+        lastError = error?.localizedDescription ?? "System log stream stopped".localized
         scheduleAutoRetry()
     }
 

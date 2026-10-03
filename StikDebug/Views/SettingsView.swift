@@ -206,17 +206,17 @@ struct SettingsView: View {
                 do {
                     try PairingFileStore.importFromPicker(url, fileManager: fileManager)
                     isImportingFile = false
-                    pairingImportMessage = ("Imported successfully", false)
+                    pairingImportMessage = ("Imported successfully".localized, false)
                     startTunnelInBackground()
                     schedulePairingStatusDismiss()
                 } catch {
                     isImportingFile = false
-                    pairingImportMessage = ("Import failed: \(error.localizedDescription)", true)
+                    pairingImportMessage = (String(format: "Import failed: %@".localized, error.localizedDescription), true)
                     schedulePairingStatusDismiss()
                 }
             case .failure(let error):
                 isImportingFile = false
-                pairingImportMessage = ("Import failed: \(error.localizedDescription)", true)
+                pairingImportMessage = (String(format: "Import failed: %@".localized, error.localizedDescription), true)
                 schedulePairingStatusDismiss()
             }
         }
@@ -234,11 +234,11 @@ struct SettingsView: View {
         let processInfo = ProcessInfo.processInfo
         let txmLabel: String
         if processInfo.isTXMOverridden {
-            txmLabel = "TXM (Override)"
+            txmLabel = "TXM (Override)".localized
         } else {
-            txmLabel = processInfo.hasTXM ? "TXM" : "Non TXM"
+            txmLabel = processInfo.hasTXM ? "TXM" : "Non TXM".localized
         }
-        return "Version \(appVersion) • iOS \(UIDevice.current.systemVersion) • \(txmLabel)"
+        return String(format: "Version %@ • iOS %@ • %@".localized, appVersion, UIDevice.current.systemVersion, txmLabel)
     }
 
     private func handleAudioKeepAliveChange(_ enabled: Bool) {
@@ -276,7 +276,7 @@ struct SettingsView: View {
             await MainActor.run {
                 isRedownloadingDDI = true
                 ddiDownloadProgress = 0
-                ddiStatusMessage = "Preparing download…"
+                ddiStatusMessage = "Preparing download…".localized
                 ddiResultMessage = nil
             }
             do {
@@ -288,12 +288,12 @@ struct SettingsView: View {
                 }
                 await MainActor.run {
                     isRedownloadingDDI = false
-                    ddiResultMessage = ("DDI files refreshed successfully.", false)
+                    ddiResultMessage = ("DDI files refreshed successfully.".localized, false)
                 }
             } catch {
                 await MainActor.run {
                     isRedownloadingDDI = false
-                    ddiResultMessage = ("Failed to redownload DDI files: \(error.localizedDescription)", true)
+                    ddiResultMessage = (String(format: "Failed to redownload DDI files: %@".localized, error.localizedDescription), true)
                 }
             }
         }

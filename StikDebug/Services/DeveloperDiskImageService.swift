@@ -74,7 +74,7 @@ final class DeveloperDiskImageService {
         let totalStages = Double(Self.downloadItems.count + 1)
         var completedStages = 0.0
 
-        progressHandler?(0.0, "Removing existing DDI files...")
+        progressHandler?(0.0, "Removing existing DDI files...".localized)
         if fileManager.fileExists(atPath: Self.mountMethodURL.path) {
             try fileManager.removeItem(at: Self.mountMethodURL)
         }
@@ -93,19 +93,19 @@ final class DeveloperDiskImageService {
         }
 
         completedStages += 1.0
-        progressHandler?(completedStages / totalStages, "Starting downloads...")
+        progressHandler?(completedStages / totalStages, "Starting downloads...".localized)
 
         for item in Self.downloadItems {
-            progressHandler?(completedStages / totalStages, "Downloading \(item.name)...")
+            progressHandler?(completedStages / totalStages, String(format: "Downloading %@...".localized, item.name.localized))
             let destinationURL = Self.directoryURL.appendingPathComponent(item.fileName)
             try await downloadFile(from: item.urlString, to: destinationURL)
             completedStages += 1.0
-            progressHandler?(completedStages / totalStages, "\(item.name) ready")
+            progressHandler?(completedStages / totalStages, String(format: "%@ ready".localized, item.name.localized))
         }
 
         try Self.mountMethod.rawValue.write(to: Self.mountMethodURL, atomically: true, encoding: .utf8)
 
-        progressHandler?(1.0, "DDI download complete.")
+        progressHandler?(1.0, "DDI download complete.".localized)
     }
 
     private func removeCryptexOnlyFiles() throws {
@@ -136,31 +136,34 @@ final class DeveloperDiskImageService {
         }
     }
 
+    // Keep both mount methods on the same immutable mirror release.
+    private static let ddiReleaseURL = "https://static.wow-app.store/Xcode_iOS_DDI_Personalized/releases/6eae353ae694bda1c421d4a3eee5459ae59c99a1"
+
     private static let cryptexDownloadItems: [DDIDownloadItem] = [
         .init(
             name: "Build Manifest",
             fileName: "BuildManifest.plist",
-            urlString: "https://github.com/doronz88/DeveloperDiskImage/raw/refs/heads/main/PersonalizedImages/Xcode_iOS_DDI_Cryptex/BuildManifest.plist"
+            urlString: "\(ddiReleaseURL)/Xcode_iOS_DDI_Cryptex/BuildManifest.plist"
         ),
         .init(
             name: "Image",
             fileName: "Image.dmg",
-            urlString: "https://github.com/doronz88/DeveloperDiskImage/raw/refs/heads/main/PersonalizedImages/Xcode_iOS_DDI_Cryptex/Image.dmg"
+            urlString: "\(ddiReleaseURL)/Xcode_iOS_DDI_Cryptex/Image.dmg"
         ),
         .init(
             name: "TrustCache",
             fileName: "Image.dmg.trustcache",
-            urlString: "https://github.com/doronz88/DeveloperDiskImage/raw/refs/heads/main/PersonalizedImages/Xcode_iOS_DDI_Cryptex/Image.dmg.trustcache"
+            urlString: "\(ddiReleaseURL)/Xcode_iOS_DDI_Cryptex/Image.dmg.trustcache"
         ),
         .init(
             name: "Cryptex Info",
             fileName: "Image.dmg.cryptex_info",
-            urlString: "https://github.com/doronz88/DeveloperDiskImage/raw/refs/heads/main/PersonalizedImages/Xcode_iOS_DDI_Cryptex/Image.dmg.cryptex_info"
+            urlString: "\(ddiReleaseURL)/Xcode_iOS_DDI_Cryptex/Image.dmg.cryptex_info"
         ),
         .init(
             name: "Root Hash",
             fileName: "Image.dmg.root_hash",
-            urlString: "https://github.com/doronz88/DeveloperDiskImage/raw/refs/heads/main/PersonalizedImages/Xcode_iOS_DDI_Cryptex/Image.dmg.root_hash"
+            urlString: "\(ddiReleaseURL)/Xcode_iOS_DDI_Cryptex/Image.dmg.root_hash"
         )
     ]
 
@@ -168,17 +171,17 @@ final class DeveloperDiskImageService {
         .init(
             name: "Build Manifest",
             fileName: "BuildManifest.plist",
-            urlString: "https://github.com/doronz88/DeveloperDiskImage/raw/refs/heads/main/PersonalizedImages/Xcode_iOS_DDI_Personalized/BuildManifest.plist"
+            urlString: "\(ddiReleaseURL)/Xcode_iOS_DDI_Personalized/BuildManifest.plist"
         ),
         .init(
             name: "Image",
             fileName: "Image.dmg",
-            urlString: "https://github.com/doronz88/DeveloperDiskImage/raw/refs/heads/main/PersonalizedImages/Xcode_iOS_DDI_Personalized/Image.dmg"
+            urlString: "\(ddiReleaseURL)/Xcode_iOS_DDI_Personalized/Image.dmg"
         ),
         .init(
             name: "TrustCache",
             fileName: "Image.dmg.trustcache",
-            urlString: "https://github.com/doronz88/DeveloperDiskImage/raw/refs/heads/main/PersonalizedImages/Xcode_iOS_DDI_Personalized/Image.dmg.trustcache"
+            urlString: "\(ddiReleaseURL)/Xcode_iOS_DDI_Personalized/Image.dmg.trustcache"
         )
     ]
 }
@@ -202,11 +205,11 @@ enum DDIDownloadError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .invalidURL(let string):
-            return "Invalid download URL: \(string)"
+            return String(format: "Invalid download URL: %@".localized, string)
         case .invalidResponse:
-            return "The DDI server returned an invalid response."
+            return "The DDI server returned an invalid response.".localized
         case .badStatus(let statusCode):
-            return "The DDI server returned HTTP \(statusCode)."
+            return String(format: "The DDI server returned HTTP %lld.".localized, Int64(statusCode))
         }
     }
 }

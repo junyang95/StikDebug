@@ -54,11 +54,11 @@ struct ScriptListView: View {
                     Section {
                         VStack(alignment: .leading, spacing: 4) {
                             Label(
-                                isPickerMode ? "No scripts available" : "No scripts found",
+                                isPickerMode ? "No scripts available".localized : "No scripts found".localized,
                                 systemImage: "doc.text.magnifyingglass"
                             )
                             .foregroundStyle(.secondary)
-                            Text(isPickerMode ? "Import a file or choose None." : "Tap New or Import to get started.")
+                            Text(isPickerMode ? "Import a file or choose None.".localized : "Tap New or Import to get started.".localized)
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                         }
@@ -104,7 +104,7 @@ struct ScriptListView: View {
                 placement: .navigationBarDrawer(displayMode: .always),
                 prompt: "Search scripts…"
             )
-            .navigationTitle(isPickerMode ? "Choose Script" : "Scripts")
+            .navigationTitle(isPickerMode ? "Choose Script".localized : "Scripts".localized)
             .toolbar {
                 ToolbarItemGroup(placement: .navigationBarTrailing) {
                     if !isPickerMode {
@@ -291,12 +291,12 @@ struct ScriptListView: View {
     // MARK: - Feedback
 
     private func presentError(title: String, message: String) {
-        alertTitle = title; alertMessage = message
+        alertTitle = title.localized; alertMessage = message.localized
         alertIsSuccess = false; alertVisible = true
     }
 
     private func presentSuccess(title: String, message: String) {
-        alertTitle = title; alertMessage = message
+        alertTitle = title.localized; alertMessage = message.localized
         alertIsSuccess = true; alertVisible = true
     }
 

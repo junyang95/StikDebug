@@ -102,7 +102,7 @@ final class JITEnableContext {
         NSError(
             domain: "StikDebug",
             code: code,
-            userInfo: [NSLocalizedDescriptionKey: message]
+            userInfo: [NSLocalizedDescriptionKey: message.localized]
         )
     }
 
@@ -500,7 +500,7 @@ final class JITEnableContext {
                     throw NSError(
                         domain: "StikDebug",
                         code: -1,
-                        userInfo: [NSLocalizedDescriptionKey: "Debug heartbeat context is unavailable"]
+                        userInfo: [NSLocalizedDescriptionKey: "Debug heartbeat context is unavailable".localized]
                     )
                 }
 
@@ -535,7 +535,7 @@ final class JITEnableContext {
 
     private func sendDebugCommand(_ command: String, debugProxy: OpaquePointer) throws -> String? {
         guard let commandHandle = debugserver_command_new(command, nil, 0) else {
-            throw makeError("Failed to create debugserver command: \(command)")
+            throw makeError(String(format: "Failed to create debugserver command: %@".localized, command))
         }
 
         var response: UnsafeMutablePointer<CChar>?
@@ -546,7 +546,7 @@ final class JITEnableContext {
             if let response {
                 idevice_string_free(response)
             }
-            throw error(from: ffiError, fallback: "Debugserver command failed: \(command)")
+            throw error(from: ffiError, fallback: String(format: "Debugserver command failed: %@".localized, command))
         }
 
         defer {

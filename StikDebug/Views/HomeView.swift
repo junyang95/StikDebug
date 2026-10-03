@@ -53,7 +53,7 @@ struct HomeView: View {
             handleExternalURL(url)
         }
         .confirmationDialog(
-            pendingExternalURLAction?.title ?? "External Request",
+            pendingExternalURLAction?.title ?? "External Request".localized,
             isPresented: Binding(
                 get: { pendingExternalURLAction != nil },
                 set: { isPresented in
@@ -382,7 +382,7 @@ struct HomeView: View {
 
             var callback: DebugAppCallback? = nil
             if ProcessInfo.processInfo.hasTXM, let sd = scriptData {
-                callback = getJsCallback(sd, name: scriptName ?? bundleID ?? "Script", resumeBundleID: resumeBundleID)
+                callback = getJsCallback(sd, name: scriptName ?? bundleID ?? "Script".localized, resumeBundleID: resumeBundleID)
             }
 
             var lastDebugMessage: String?

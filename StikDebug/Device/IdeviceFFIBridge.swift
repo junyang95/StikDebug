@@ -20,7 +20,7 @@ private enum IdeviceBridge {
         NSError(
             domain: domain,
             code: code,
-            userInfo: [NSLocalizedDescriptionKey: message]
+            userInfo: [NSLocalizedDescriptionKey: message.localized]
         )
     }
 
@@ -50,24 +50,24 @@ private enum IdeviceBridge {
         do {
             let data = try Data(contentsOf: url, options: .mappedIfSafe)
             guard !data.isEmpty else {
-                throw makeError(message: "\(description) is empty")
+                throw makeError(message: String(format: "%@ is empty".localized, description.localized))
             }
             return data
         } catch let error as NSError {
-            throw makeError(code: error.code, message: "Failed to read \(description): \(error.localizedDescription)")
+            throw makeError(code: error.code, message: String(format: "Failed to read %@: %@".localized, description.localized, error.localizedDescription))
         }
     }
 
     static func uint64Value(from plist: plist_t?, fieldName: String) throws -> UInt64 {
         guard let plist else {
-            throw makeError(message: "\(fieldName) was not returned by lockdownd")
+            throw makeError(message: String(format: "%@ was not returned by lockdownd".localized, fieldName))
         }
 
         var value: UInt64 = 0
         plist_get_uint_val(plist, &value)
 
         guard value != 0 else {
-            throw makeError(message: "Failed to decode \(fieldName)")
+            throw makeError(message: String(format: "Failed to decode %@".localized, fieldName))
         }
 
         return value
@@ -179,7 +179,7 @@ private enum IdeviceBridge {
         if let name = dictionary["CFBundleName"] as? String, !name.isEmpty {
             return name
         }
-        return "Unknown"
+        return "Unknown".localized
     }
 
     static func hasGetTaskAllow(_ dictionary: [String: Any]) -> Bool {
@@ -525,7 +525,7 @@ extension JITEnableContext {
                 }
 
                 if let ffiError {
-                    throw IdeviceBridge.consumeFFIError(ffiError, fallback: "Failed to send signal \(signal) to process")
+                    throw IdeviceBridge.consumeFFIError(ffiError, fallback: String(format: "Failed to send signal %d to process".localized, signal))
                 }
             }
         }
@@ -669,7 +669,7 @@ struct ProcessInfoEntry: Identifiable {
     init?(dictionary: NSDictionary) {
         guard let pidNumber = dictionary["pid"] as? NSNumber else { return nil }
         pid = pidNumber.intValue
-        rawPath = dictionary["path"] as? String ?? "Unknown"
+        rawPath = dictionary["path"] as? String ?? "Unknown".localized
         bundleID = dictionary["bundleID"] as? String
         name = dictionary["name"] as? String
     }
@@ -695,7 +695,7 @@ struct ProcessInfoEntry: Identifiable {
         if let component = executablePath.split(separator: "/").last {
             return String(component)
         }
-        return "Process \(pid)"
+        return String(format: "Process %lld".localized, Int64(pid))
     }
 
     var stableIdentifier: String {

@@ -253,7 +253,7 @@ private func fetchOpenStreetMapWays(for coordinates: [CLLocationCoordinate2D]) a
         throw NSError(
             domain: "OpenStreetMapSpeedLimits",
             code: httpResponse.statusCode,
-            userInfo: [NSLocalizedDescriptionKey: "Overpass returned HTTP \(httpResponse.statusCode)."]
+            userInfo: [NSLocalizedDescriptionKey: String(format: "Overpass returned HTTP %lld.".localized, Int64(httpResponse.statusCode))]
         )
     }
 
@@ -357,9 +357,9 @@ private enum CoordinateImportError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .emptyFile:
-            return "The selected file is empty."
+            return "The selected file is empty.".localized
         case .noCoordinates:
-            return "No valid coordinates were found. Use GPX, GeoJSON, JSON, CSV, or plain text with latitude and longitude values."
+            return "No valid coordinates were found. Use GPX, GeoJSON, JSON, CSV, or plain text with latitude and longitude values.".localized
         }
     }
 }
@@ -817,28 +817,28 @@ struct LocationSimulationView: View {
         ).formatted(.measurement(width: .abbreviated, usage: .road))
         let durationText = Self.routeDurationFormatter.string(from: routePlan.expectedTravelTime)
         if let durationText, !durationText.isEmpty {
-            return "\(distanceText) • ETA \(durationText)"
+            return String(format: "%@ • ETA %@".localized, distanceText, durationText)
         }
         return distanceText
     }
 
     private var routeStatusText: String {
         if simulationSession.routeCoordinates != nil {
-            return "Route simulation active."
+            return "Route simulation active.".localized
         }
         if isLoadingRoute {
-            return "Calculating route…"
+            return "Calculating route…".localized
         }
         if isPrefetchingRouteSpeeds {
-            return "Prefetching road speeds…"
+            return "Prefetching road speeds…".localized
         }
         if routePlan != nil {
-            return "Route ready."
+            return "Route ready.".localized
         }
         if routeStartSelection != nil || routeEndSelection != nil {
-            return "Pick both route endpoints to build the drive."
+            return "Pick both route endpoints to build the drive.".localized
         }
-        return "Plan a route from the toolbar."
+        return "Plan a route from the toolbar.".localized
     }
 
     private var routeAttributionLink: some View {
@@ -1037,10 +1037,10 @@ struct LocationSimulationView: View {
                 coordinate = nil
                 routePolyline = makeRoutePolyline(for: routeCoordinates)
                 routeStartSelection = routeCoordinates.first.map {
-                    RouteSearchSelection(title: "Route Start", coordinate: $0)
+                    RouteSearchSelection(title: "Route Start".localized, coordinate: $0)
                 }
                 routeEndSelection = routeCoordinates.last.map {
-                    RouteSearchSelection(title: "Route End", coordinate: $0)
+                    RouteSearchSelection(title: "Route End".localized, coordinate: $0)
                 }
                 if let routePolyline {
                     position = .rect(routePolyline.boundingMapRect)
@@ -1119,7 +1119,7 @@ struct LocationSimulationView: View {
 
         searchText = ""
         searchCompleter.results = []
-        applyImportedCoordinates(importedCoordinates, sourceName: "Imported")
+        applyImportedCoordinates(importedCoordinates, sourceName: "Imported".localized)
     }
 
     private func importCoordinates(_ result: Result<[URL], Error>) {
@@ -1139,7 +1139,7 @@ struct LocationSimulationView: View {
                         isImportingCoordinates = false
                         applyImportedCoordinates(
                             coordinates,
-                            sourceName: sourceName.isEmpty ? "Imported" : sourceName
+                            sourceName: sourceName.isEmpty ? "Imported".localized : sourceName
                         )
                     }
                 } catch {
@@ -1196,8 +1196,8 @@ struct LocationSimulationView: View {
 
         let distance = distanceAlong(displayCoordinates)
         let fallbackSpeed = RouteSimulationDefaults.importedRouteFallbackSpeedMetersPerSecond
-        routeStartSelection = RouteSearchSelection(title: "\(sourceName) Start", coordinate: firstCoordinate)
-        routeEndSelection = RouteSearchSelection(title: "\(sourceName) End", coordinate: lastCoordinate)
+        routeStartSelection = RouteSearchSelection(title: String(format: "%@ Start".localized, sourceName), coordinate: firstCoordinate)
+        routeEndSelection = RouteSearchSelection(title: String(format: "%@ End".localized, sourceName), coordinate: lastCoordinate)
         setRoutePlan(RouteSimulationPlan(
             displayCoordinates: displayCoordinates,
             distance: distance,
@@ -1226,7 +1226,7 @@ struct LocationSimulationView: View {
     }
 
     private func showImportError(_ error: Error) {
-        alertTitle = "Import Failed"
+        alertTitle = "Import Failed".localized
         alertMessage = error.localizedDescription
         showAlert = true
     }
@@ -1308,9 +1308,9 @@ struct LocationSimulationView: View {
     private func simulate() {
         guard pairingExists, let coord = coordinate, !isBusy else { return }
         runLocationCommand(
-            errorTitle: "Simulation Failed",
+            errorTitle: "Simulation Failed".localized,
             errorMessage: { code in
-                "Could not simulate location (error \(code)). Make sure the device is connected and the DDI is mounted."
+                String(format: "Could not simulate location (error %d). Make sure the device is connected and the DDI is mounted.".localized, code)
             },
             operation: { locationUpdateCode(for: coord) }
         ) {
@@ -1331,9 +1331,9 @@ struct LocationSimulationView: View {
         stopResendLoop()
         cancelRoutePlayback(resetMarker: false)
         runLocationCommand(
-            errorTitle: "Route Simulation Failed",
+            errorTitle: "Route Simulation Failed".localized,
             errorMessage: { code in
-                "Could not start route simulation (error \(code)). Make sure the device is connected and the DDI is mounted."
+                String(format: "Could not start route simulation (error %d). Make sure the device is connected and the DDI is mounted.".localized, code)
             },
             operation: { locationUpdateCode(for: firstCoordinate) }
         ) {
@@ -1380,8 +1380,8 @@ struct LocationSimulationView: View {
         stopResendLoop()
         LocationSimulationSession.shared.clearRoute()
         runLocationCommand(
-            errorTitle: "Clear Failed",
-            errorMessage: { code in "Could not clear simulated location (error \(code))." },
+            errorTitle: "Clear Failed".localized,
+            errorMessage: { code in String(format: "Could not clear simulated location (error %d).".localized, code) },
             operation: clear_simulated_location
         ) {
             endBackgroundTask()
@@ -1477,7 +1477,7 @@ struct LocationSimulationView: View {
                     throw NSError(
                         domain: "RouteSimulation",
                         code: -1,
-                        userInfo: [NSLocalizedDescriptionKey: "No drivable route was returned."]
+                        userInfo: [NSLocalizedDescriptionKey: "No drivable route was returned.".localized]
                     )
                 }
 
@@ -1532,7 +1532,7 @@ struct LocationSimulationView: View {
                     guard routeRequestID == requestID else { return }
                     isLoadingRoute = false
                     isPrefetchingRouteSpeeds = false
-                    alertTitle = "Route Failed"
+                    alertTitle = "Route Failed".localized
                     alertMessage = error.localizedDescription
                     showAlert = true
                 }
@@ -1560,8 +1560,8 @@ struct LocationSimulationView: View {
                         if let lastSuccessfulCoordinate {
                             startResendLoop(with: lastSuccessfulCoordinate)
                         }
-                        alertTitle = "Route Simulation Failed"
-                        alertMessage = "Could not continue route simulation (error \(code))."
+                        alertTitle = "Route Simulation Failed".localized
+                        alertMessage = String(format: "Could not continue route simulation (error %d).".localized, code)
                         showAlert = true
                     }
                     return
@@ -1648,7 +1648,7 @@ private struct RouteSearchSheet: View {
         NavigationStack {
             VStack(alignment: .leading, spacing: 16) {
                 routeField(
-                    title: "Start",
+                    title: "Start".localized,
                     icon: "circle.fill",
                     tint: .green,
                     text: $startQuery,
@@ -1657,7 +1657,7 @@ private struct RouteSearchSheet: View {
                 )
 
                 routeField(
-                    title: "End",
+                    title: "End".localized,
                     icon: "flag.checkered.circle.fill",
                     tint: .red,
                     text: $endQuery,
@@ -1814,7 +1814,7 @@ private struct RouteSearchSheet: View {
                 isResolvingSelection = false
 
                 guard let item = response?.mapItems.first else {
-                    errorMessage = error?.localizedDescription ?? "Could not resolve that location."
+                    errorMessage = error?.localizedDescription ?? "Could not resolve that location.".localized
                     return
                 }
 

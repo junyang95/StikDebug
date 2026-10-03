@@ -142,47 +142,47 @@ private func tunnelConnectionAlertMessage(for error: NSError) -> String {
     let recoverySteps: [String]
 
     if error.code == 48 || lowercasedMessage.contains("address already in use") || lowercasedMessage.contains("port already in use") {
-        likelyCause = "A port needed for the tunnel is already in use."
+        likelyCause = "A port needed for the tunnel is already in use.".localized
         recoverySteps = [
-            "Close other JIT, debugging, proxy, or VPN apps that may be using the tunnel.",
-            "Disconnect and reconnect LocalDevVPN.",
-            "Restart StikDebug, then try again.",
-            "If it keeps happening, reboot the device to clear the stuck port."
+            "Close other JIT, debugging, proxy, or VPN apps that may be using the tunnel.".localized,
+            "Disconnect and reconnect LocalDevVPN.".localized,
+            "Restart StikDebug, then try again.".localized,
+            "If it keeps happening, reboot the device to clear the stuck port.".localized
         ]
     } else if error.code == 54 || lowercasedMessage.contains("connection reset") {
-        likelyCause = "The device or VPN closed the tunnel connection before setup finished."
+        likelyCause = "The device or VPN closed the tunnel connection before setup finished.".localized
         recoverySteps = [
-            "Open LocalDevVPN and confirm the VPN is connected.",
-            "Make sure LocalDevVPN is using the default \(DeviceConnectionContext.defaultTargetIPAddress) address.",
-            "Reconnect Wi-Fi and LocalDevVPN, then try again.",
-            "If this keeps happening, select a fresh pairing file."
+            "Open LocalDevVPN and confirm the VPN is connected.".localized,
+            String(format: "Make sure LocalDevVPN is using the default %@ address.".localized, DeviceConnectionContext.defaultTargetIPAddress),
+            "Reconnect Wi-Fi and LocalDevVPN, then try again.".localized,
+            "If this keeps happening, select a fresh pairing file.".localized
         ]
     } else if error.code == -18 || lowercasedMessage.contains("parse target ip") {
-        likelyCause = "The configured target IP address is not valid."
+        likelyCause = "The configured target IP address is not valid.".localized
         recoverySteps = [
-            "Open Settings and check the target IP address.",
-            "Use the default \(DeviceConnectionContext.defaultTargetIPAddress)."
+            "Open Settings and check the target IP address.".localized,
+            String(format: "Use the default %@.".localized, DeviceConnectionContext.defaultTargetIPAddress)
         ]
-    } else if lowercasedMessage.contains("timed out") || lowercasedMessage.contains("timeout") {
-        likelyCause = "The app could not reach the device before the connection timed out."
+    } else if error.code == -19 || lowercasedMessage.contains("timed out") || lowercasedMessage.contains("timeout") {
+        likelyCause = "The app could not reach the device before the connection timed out.".localized
         recoverySteps = [
-            "Confirm Wi-Fi and LocalDevVPN are both connected.",
-            "Wake and unlock the target device.",
-            "Confirm LocalDevVPN is exposing the device at \(targetIP)."
+            "Confirm Wi-Fi and LocalDevVPN are both connected.".localized,
+            "Wake and unlock the target device.".localized,
+            String(format: "Confirm LocalDevVPN is exposing the device at %@.".localized, targetIP)
         ]
     } else if lowercasedMessage.contains("network is unreachable") || lowercasedMessage.contains("no route") {
-        likelyCause = "The VPN route to the device is not available."
+        likelyCause = "The VPN route to the device is not available.".localized
         recoverySteps = [
-            "Disconnect and reconnect LocalDevVPN.",
-            "Confirm iOS shows the VPN indicator.",
-            "Try switching Wi-Fi off and on."
+            "Disconnect and reconnect LocalDevVPN.".localized,
+            "Confirm iOS shows the VPN indicator.".localized,
+            "Try switching Wi-Fi off and on.".localized
         ]
     } else {
-        likelyCause = "The tunnel could not be created."
+        likelyCause = "The tunnel could not be created.".localized
         recoverySteps = [
-            "Confirm Wi-Fi and LocalDevVPN are connected.",
-            "Wake and unlock the target device.",
-            "Reconnect LocalDevVPN, then try again."
+            "Confirm Wi-Fi and LocalDevVPN are connected.".localized,
+            "Wake and unlock the target device.".localized,
+            "Reconnect LocalDevVPN, then try again.".localized
         ]
     }
 
@@ -190,16 +190,16 @@ private func tunnelConnectionAlertMessage(for error: NSError) -> String {
         .map { "\($0.offset + 1). \($0.element)" }
         .joined(separator: "\n")
 
-    return """
-    \(likelyCause)
-
-    Target: \(targetIP):49152
-    Expected LocalDevVPN IP: \(DeviceConnectionContext.defaultTargetIPAddress)
-
-    Try this:
-    \(steps)
-
-    Technical details:
-    Code \(error.code): \(rawMessage)
-    """
+    return [
+        likelyCause,
+        "",
+        String(format: "Target: %@:49152".localized, targetIP),
+        String(format: "Expected LocalDevVPN IP: %@".localized, DeviceConnectionContext.defaultTargetIPAddress),
+        "",
+        "Try this:".localized,
+        steps,
+        "",
+        "Technical details:".localized,
+        String(format: "Code %lld: %@".localized, Int64(error.code), rawMessage)
+    ].joined(separator: "\n")
 }

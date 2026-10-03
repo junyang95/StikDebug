@@ -16,7 +16,7 @@ final class RunJSViewModel: ObservableObject, Identifiable, @unchecked Sendable 
     let id = UUID()
     var context: JSContext?
     @Published var logs: [String] = []
-    @Published var scriptName: String = "Script"
+    @Published var scriptName: String = "Script".localized
     @Published var executionInterrupted = false
     var pid: Int
     var debugProxy: OpaquePointer?
@@ -40,7 +40,7 @@ final class RunJSViewModel: ObservableObject, Identifiable, @unchecked Sendable 
     }
     
     func runScript(data: Data, name: String? = nil) throws {
-        let displayName = name ?? "Script"
+        let displayName = name ?? "Script".localized
         DispatchQueue.main.async {
             self.scriptName = displayName
         }
@@ -111,8 +111,8 @@ final class RunJSViewModel: ObservableObject, Identifiable, @unchecked Sendable 
             if let exception = self.context?.exception {
                 self.logs.append(exception.debugDescription)
             }
-            self.logs.append("Script Execution Completed")
-            self.logs.append("You are safe to close this window.")
+            self.logs.append("Script Execution Completed".localized)
+            self.logs.append("You are safe to close this window.".localized)
         }
     }
     

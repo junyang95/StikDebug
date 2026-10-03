@@ -76,7 +76,7 @@ struct AppButton: View {
         .contextMenu {
             Button(action: toggleFavorite) {
                 Label(
-                    favoriteApps.contains(bundleID) ? "Remove Favorite" : "Add to Favorites",
+                    favoriteApps.contains(bundleID) ? "Remove Favorite".localized : "Add to Favorites".localized,
                     systemImage: favoriteApps.contains(bundleID) ? "star.slash" : "star"
                 )
                 .disabled(!favoriteApps.contains(bundleID) && favoriteApps.count >= 4)
@@ -104,7 +104,7 @@ struct AppButton: View {
             Button {
                 toggleFavorite()
             } label: {
-                Label(favoriteApps.contains(bundleID) ? "Unfavorite" : "Favorite", systemImage: "star")
+                Label(favoriteApps.contains(bundleID) ? "Unfavorite".localized : "Favorite".localized, systemImage: "star")
             }
             .tint(.yellow)
 

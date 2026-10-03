@@ -34,7 +34,7 @@ final class DeviceInfoManager: ObservableObject {
                 try JITEnableContext.shared.ensureTunnel()
             } catch {
                 await MainActor.run {
-                    self.error = ("Initialization Failed", error.localizedDescription)
+                    self.error = ("Initialization Failed".localized, error.localizedDescription)
                     self.busy = false
                 }
                 return
@@ -49,7 +49,7 @@ final class DeviceInfoManager: ObservableObject {
                 }
             } catch {
                 await MainActor.run {
-                    self.error = ("Initialization Failed", error.localizedDescription)
+                    self.error = ("Initialization Failed".localized, error.localizedDescription)
                     self.busy = false
                 }
             }
@@ -66,7 +66,7 @@ final class DeviceInfoManager: ObservableObject {
                 cXml = try JITEnableContext.shared.ideviceInfoGetXML(withLockdownClient: lockdownHandle?.raw)
             } catch {
                 await MainActor.run {
-                    self.error = ("Fetch Error", "Failed to fetch device info \(error)")
+                    self.error = ("Fetch Error".localized, String(format: "Failed to fetch device info %@".localized, error.localizedDescription))
                     self.busy = false
                 }
                 return
@@ -76,7 +76,7 @@ final class DeviceInfoManager: ObservableObject {
             defer { plist_mem_free(cXml) }
             guard let xml = String(validatingUTF8: cXml) else {
                 await MainActor.run {
-                    self.error = ("Parse Error", "Invalid XML data")
+                    self.error = ("Parse Error".localized, "Invalid XML data".localized)
                     self.busy = false
                 }
                 return
@@ -85,7 +85,7 @@ final class DeviceInfoManager: ObservableObject {
                 let data = Data(xml.utf8)
                 guard let dict = try PropertyListSerialization.propertyList(from: data, options: [], format: nil) as? [String: Any] else {
                     throw NSError(domain: "DeviceInfo", code: 0,
-                                  userInfo: [NSLocalizedDescriptionKey: "Expected dictionary"])
+                                  userInfo: [NSLocalizedDescriptionKey: "Expected dictionary".localized])
                 }
                 let formatted = dict.keys.sorted().map { ($0, Self.convertToString(dict[$0]!)) }
                 await MainActor.run {
@@ -94,7 +94,7 @@ final class DeviceInfoManager: ObservableObject {
                 }
             } catch {
                 await MainActor.run {
-                    self.error = ("Parse Error", error.localizedDescription)
+                    self.error = ("Parse Error".localized, error.localizedDescription)
                     self.busy = false
                 }
             }
@@ -365,10 +365,10 @@ struct DeviceInfoView: View {
     // MARK: - Alerts
 
     private func fail(_ title: String, _ msg: String) {
-        alertTitle = title; alertMsg = msg; alertSuccess = false; alert = true
+        alertTitle = title.localized; alertMsg = msg.localized; alertSuccess = false; alert = true
     }
     private func notify(_ title: String, _ msg: String) {
-        alertTitle = title; alertMsg = msg; alertSuccess = true; alert = true
+        alertTitle = title.localized; alertMsg = msg.localized; alertSuccess = true; alert = true
     }
 }
 

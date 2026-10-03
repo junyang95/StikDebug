@@ -23,53 +23,53 @@ enum AppFeature: String, CaseIterable, Identifiable {
     var title: String {
         switch self {
         case .home:
-            return "Apps"
+            return "Apps".localized
         case .scripts:
-            return "Scripts"
+            return "Scripts".localized
         case .tools:
-            return "Tools"
+            return "Tools".localized
         case .console:
-            return "Console"
+            return "Console".localized
         case .deviceInfo:
-            return "Device Info"
+            return "Device Info".localized
         case .profiles:
-            return "App Expiry"
+            return "App Expiry".localized
         case .processes:
-            return "Processes"
+            return "Processes".localized
         case .location:
-            return "Location"
+            return "Location".localized
         case .settings:
-            return "Settings"
+            return "Settings".localized
         }
     }
 
     var detail: String {
         switch self {
         case .home:
-            return "Manage installed apps"
+            return "Manage installed apps".localized
         case .scripts:
-            return "Manage and run JS scripts"
+            return "Manage and run JS scripts".localized
         case .tools:
-            return "Access additional tools"
+            return "Access additional tools".localized
         case .console:
-            return "Live device logs"
+            return "Live device logs".localized
         case .deviceInfo:
-            return "View detailed device metadata"
+            return "View detailed device metadata".localized
         case .profiles:
-            return "Check app expiration dates"
+            return "Check app expiration dates".localized
         case .processes:
-            return "Inspect running apps"
+            return "Inspect running apps".localized
         case .location:
-            return "Simulate GPS location"
+            return "Simulate GPS location".localized
         case .settings:
-            return "Configure StikDebug"
+            return "Configure StikDebug".localized
         }
     }
 
     var toolTitle: String {
         switch self {
         case .location:
-            return "Location Simulation"
+            return "Location Simulation".localized
         default:
             return title
         }

@@ -112,7 +112,7 @@ struct ConsoleLogsView: View {
         }
         .onChange(of: systemLogStream.lastError) { _, newError in
             if let error = newError {
-                presentAlert(title: "Syslog Error", message: error)
+                presentAlert(title: "Syslog Error".localized, message: error)
                 systemLogStream.lastError = nil
             }
         }
@@ -261,7 +261,7 @@ struct ConsoleLogsView: View {
             "[\(formatTime(date: $0.timestamp))] [\($0.type.rawValue)] \($0.message)"
         }.joined(separator: "\n")
         UIPasteboard.general.string = logsContent
-        presentAlert(title: "Logs Copied", message: "Logs have been copied to clipboard.")
+        presentAlert(title: "Logs Copied".localized, message: "Logs have been copied to clipboard.".localized)
     }
 
     @ViewBuilder
@@ -276,7 +276,7 @@ struct ConsoleLogsView: View {
             }
         } else {
             Button("Export Logs", systemImage: "square.and.arrow.up") {
-                presentAlert(title: "Export Failed", message: "No idevice logs found")
+                presentAlert(title: "Export Failed".localized, message: "No idevice logs found".localized)
             }
         }
     }
@@ -300,9 +300,9 @@ struct ConsoleLogsView: View {
 
     private func intervalLabel(for value: Double) -> String {
         if value <= 0 {
-            return "Live"
+            return "Live".localized
         }
-        return "\(String(format: "%.1f", value))s"
+        return String(format: "%.1fs".localized, value)
     }
     
     private func loadIdeviceLogsAsync() async {
@@ -424,8 +424,8 @@ struct ConsoleLogsView: View {
     private func copySyslogToClipboard() {
         let entries = filteredSyslogEntries
         guard !entries.isEmpty else {
-            let message = syslogSearchText.isEmpty ? "No syslog entries to copy." : "No matching syslog entries to copy."
-            presentAlert(title: "Export Failed", message: message)
+            let message = syslogSearchText.isEmpty ? "No syslog entries to copy.".localized : "No matching syslog entries to copy.".localized
+            presentAlert(title: "Export Failed".localized, message: message)
             return
         }
 
@@ -435,9 +435,9 @@ struct ConsoleLogsView: View {
 
         UIPasteboard.general.string = content
         let message = syslogSearchText.isEmpty
-            ? "Latest syslog entries copied to clipboard."
-            : "\(entries.count) filtered syslog entries copied to clipboard."
-        presentAlert(title: "Logs Copied", message: message)
+            ? "Latest syslog entries copied to clipboard.".localized
+            : String(format: "%lld filtered syslog entries copied to clipboard.".localized, Int64(entries.count))
+        presentAlert(title: "Logs Copied".localized, message: message)
     }
 
     private var syslogControlIcon: String {
@@ -449,9 +449,9 @@ struct ConsoleLogsView: View {
 
     private var syslogControlLabel: String {
         if !systemLogStream.isStreaming {
-            return "Start syslog relay"
+            return "Start syslog relay".localized
         }
-        return systemLogStream.isPaused ? "Resume syslog stream" : "Pause syslog stream"
+        return systemLogStream.isPaused ? "Resume syslog stream".localized : "Pause syslog stream".localized
     }
 
     private func presentAlert(title: String, message: String) {

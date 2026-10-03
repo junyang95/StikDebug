@@ -320,7 +320,7 @@ struct InstalledAppsListView: View {
                     Button {
                         toggleSystemPin(bundleID: app.bundleID, appName: app.name)
                     } label: {
-                        Label((isPinned ? "Unpin" : "Pin").localized, systemImage: "star")
+                        Label((isPinned ? "Unpin from Home" : "Pin to Home").localized, systemImage: "star")
                     }
                     .tint(.yellow)
                 }
@@ -511,7 +511,7 @@ private enum AppListTab: Int, CaseIterable, Identifiable {
         case .debuggable:
             return "JIT"
         case .launch:
-            return "Other"
+            return "Other".localized
         }
     }
 

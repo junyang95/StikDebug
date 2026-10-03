@@ -1,0 +1,75 @@
+{
+  "sourceLanguage": "en",
+  "strings": {
+    "NSLocalNetworkUsageDescription": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "StikDebug needs access to devices on your local network so it can connect to the targets you add to the Device Library."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "StikDebug 需要访问局域网中的设备，以连接你添加到设备库中的目标设备。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "StikDebug 需要存取區域網路中的裝置，以連接你加入裝置資料庫的目標裝置。"
+          }
+        }
+      }
+    },
+    "NSLocationAlwaysAndWhenInUseUsageDescription": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "StikDebug uses location to stay running in the background and maintain your JIT connection."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "StikDebug 使用定位功能来维持后台运行和 JIT 连接。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "StikDebug 使用定位功能來維持背景執行和 JIT 連線。"
+          }
+        }
+      }
+    },
+    "NSLocationWhenInUseUsageDescription": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "StikDebug uses location to stay running in the background and maintain your JIT connection."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "StikDebug 使用定位功能来维持后台运行和 JIT 连接。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "StikDebug 使用定位功能來維持背景執行和 JIT 連線。"
+          }
+        }
+      }
+    }
+  },
+  "version": "1.0"
+}

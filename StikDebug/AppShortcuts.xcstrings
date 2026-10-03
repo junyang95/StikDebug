@@ -1,0 +1,244 @@
+{
+  "sourceLanguage": "en",
+  "strings": {
+    "${applicationName} enable JIT": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "${applicationName} 启用 JIT"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "${applicationName} 啟用 JIT"
+          }
+        }
+      }
+    },
+    "${applicationName} enable JIT for ${app}": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "${applicationName} 为 ${app} 启用 JIT"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "${applicationName} 為 ${app} 啟用 JIT"
+          }
+        }
+      }
+    },
+    "${applicationName} kill ${process}": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "${applicationName} 终止 ${process}"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "${applicationName} 終止 ${process}"
+          }
+        }
+      }
+    },
+    "${applicationName} kill process": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "${applicationName} 终止进程"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "${applicationName} 終止處理程序"
+          }
+        }
+      }
+    },
+    "Enable JIT for ${app} in ${applicationName}": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "在 ${applicationName} 中为 ${app} 启用 JIT"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "在 ${applicationName} 中為 ${app} 啟用 JIT"
+          }
+        }
+      }
+    },
+    "Enable JIT for ${app} using ${applicationName}": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "使用 ${applicationName} 为 ${app} 启用 JIT"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "使用 ${applicationName} 為 ${app} 啟用 JIT"
+          }
+        }
+      }
+    },
+    "Enable JIT for ${app} with ${applicationName}": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "通过 ${applicationName} 为 ${app} 启用 JIT"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "透過 ${applicationName} 為 ${app} 啟用 JIT"
+          }
+        }
+      }
+    },
+    "Kill ${process} in ${applicationName}": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "在 ${applicationName} 中终止 ${process}"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "在 ${applicationName} 中終止 ${process}"
+          }
+        }
+      }
+    },
+    "Kill ${process} using ${applicationName}": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "使用 ${applicationName} 终止 ${process}"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "使用 ${applicationName} 終止 ${process}"
+          }
+        }
+      }
+    },
+    "Kill ${process} with ${applicationName}": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "通过 ${applicationName} 终止 ${process}"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "透過 ${applicationName} 終止 ${process}"
+          }
+        }
+      }
+    },
+    "Use ${applicationName} to enable JIT": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "用 ${applicationName} 启用 JIT"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "用 ${applicationName} 啟用 JIT"
+          }
+        }
+      }
+    },
+    "Use ${applicationName} to enable JIT for ${app}": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "用 ${applicationName} 为 ${app} 启用 JIT"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "用 ${applicationName} 為 ${app} 啟用 JIT"
+          }
+        }
+      }
+    },
+    "Use ${applicationName} to kill ${process}": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "用 ${applicationName} 终止 ${process}"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "用 ${applicationName} 終止 ${process}"
+          }
+        }
+      }
+    },
+    "Use ${applicationName} to stop ${process}": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "用 ${applicationName} 停止 ${process}"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "用 ${applicationName} 停止 ${process}"
+          }
+        }
+      }
+    }
+  },
+  "version": "1.0"
+}
