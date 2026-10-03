@@ -262,9 +262,19 @@ private enum IdeviceBridge {
 }
 
 extension JITEnableContext {
-    func getMountedDeviceCount() throws -> Int {
+    func isDeveloperDiskImageMounted() throws -> Bool {
         try IdeviceBridge.withTunnelHandles(for: self) { adapter, handshake in
-            try IdeviceBridge.withConnectedClient(
+            var installed: UnsafeMutablePointer<InstalledCryptexC>?
+            let ffiError = cryptexd_installed_ddi(adapter, handshake, &installed)
+            let queryError = ffiError.map {
+                IdeviceBridge.consumeFFIError($0, fallback: "Failed to query installed DDI cryptex")
+            }
+            defer { cryptexd_free_installed_cryptex(installed) }
+            if installed != nil {
+                return true
+            }
+
+            let legacyMounted = (try? IdeviceBridge.withConnectedClient(
                 fallback: "Failed to connect to image mounter",
                 missingClientMessage: "Image mounter client was not created",
                 connect: { image_mounter_connect_rsd(adapter, handshake, $0) },
@@ -272,10 +282,9 @@ extension JITEnableContext {
             ) { client in
                 var devices: UnsafeMutablePointer<plist_t?>?
                 var deviceCount = 0
-                if let ffiError = image_mounter_copy_devices(client, &devices, &deviceCount) {
-                    throw IdeviceBridge.consumeFFIError(ffiError, fallback: "Failed to fetch mounted devices")
+                if let error = image_mounter_copy_devices(client, &devices, &deviceCount) {
+                    throw IdeviceBridge.consumeFFIError(error, fallback: "Failed to fetch mounted devices")
                 }
-
                 if let devices {
                     for index in 0..<deviceCount {
                         plist_free(devices[index])
@@ -285,8 +294,32 @@ extension JITEnableContext {
                         UInt(deviceCount * MemoryLayout<plist_t?>.stride)
                     )
                 }
+                return deviceCount > 0
+            }) ?? false
+            if legacyMounted {
+                return true
+            }
+            if let queryError {
+                throw queryError
+            }
+            return false
+        }
+    }
 
-                return deviceCount
+    func installCryptexDDI(from directoryPath: String) throws {
+        var assets: OpaquePointer?
+        if let ffiError = cryptex1_assets_load(directoryPath, &assets) {
+            throw IdeviceBridge.consumeFFIError(ffiError, fallback: "Failed to load DDI cryptex assets")
+        }
+
+        guard let assets else {
+            throw IdeviceBridge.makeError(message: "DDI cryptex assets were not loaded")
+        }
+        defer { cryptex1_assets_free(assets) }
+
+        try IdeviceBridge.withTunnelHandles(for: self) { adapter, handshake in
+            if let ffiError = cryptexd_install_ddi(adapter, handshake, assets, nil) {
+                throw IdeviceBridge.consumeFFIError(ffiError, fallback: "Failed to install DDI cryptex")
             }
         }
     }
@@ -307,13 +340,7 @@ extension JITEnableContext {
                 if let ffiError = lockdownd_get_value(lockdownClient, "UniqueChipID", nil, &uniqueChipIDPlist) {
                     throw IdeviceBridge.consumeFFIError(ffiError, fallback: "Failed to query UniqueChipID")
                 }
-
-                defer {
-                    if let uniqueChipIDPlist {
-                        plist_free(uniqueChipIDPlist)
-                    }
-                }
-
+                defer { plist_free(uniqueChipIDPlist) }
                 return try IdeviceBridge.uint64Value(from: uniqueChipIDPlist, fieldName: "UniqueChipID")
             }
 
@@ -323,10 +350,10 @@ extension JITEnableContext {
                 connect: { image_mounter_connect_rsd(adapter, handshake, $0) },
                 cleanup: { image_mounter_free($0) }
             ) { imageMounterClient in
-                let ffiError = imageData.withUnsafeBytes { imageBuffer -> UnsafeMutablePointer<IdeviceFfiError>? in
-                    trustcacheData.withUnsafeBytes { trustcacheBuffer -> UnsafeMutablePointer<IdeviceFfiError>? in
-                        manifestData.withUnsafeBytes { manifestBuffer -> UnsafeMutablePointer<IdeviceFfiError>? in
-                            image_mounter_mount_personalized_with_callback_rsd(
+                let ffiError = imageData.withUnsafeBytes { imageBuffer in
+                    trustcacheData.withUnsafeBytes { trustcacheBuffer in
+                        manifestData.withUnsafeBytes { manifestBuffer in
+                            image_mounter_mount_personalized_rsd(
                                 imageMounterClient,
                                 adapter,
                                 handshake,
@@ -337,9 +364,7 @@ extension JITEnableContext {
                                 manifestBuffer.bindMemory(to: UInt8.self).baseAddress,
                                 manifestData.count,
                                 nil,
-                                uniqueChipID,
-                                progressCallback,
-                                nil
+                                uniqueChipID
                             )
                         }
                     }

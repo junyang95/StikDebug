@@ -19,6 +19,7 @@ struct SettingsView: View {
     @AppStorage("keepAliveAudio") private var keepAliveAudio = true
     @AppStorage("keepAliveLocation") private var keepAliveLocation = true
     @AppStorage(UserDefaults.Keys.targetDeviceIP) private var targetDeviceIP = DeviceConnectionContext.defaultTargetIPAddress
+    @AppStorage(UserDefaults.Keys.mallocDebug) private var mallocDebug = false
 
     @State private var isShowingPairingFilePicker = false
     @State private var isImportingFile = false
@@ -55,15 +56,15 @@ struct SettingsView: View {
 
                 Section {
                     Link(destination: SettingsLinks.githubStars) {
-                        Label("GitHub 点赞", systemImage: "star")
+                        Label("Star on GitHub", systemImage: "star")
                     }
                 }
 
-                Section("配对文件") {
+                Section("Pairing File") {
                     Button {
                         isShowingPairingFilePicker = true
                     } label: {
-                        Label("导入配对文件", systemImage: "doc.badge.plus")
+                        Label("Import Pairing File", systemImage: "doc.badge.plus")
                     }
                     .disabled(isImportingFile)
 
@@ -71,7 +72,7 @@ struct SettingsView: View {
                         HStack(spacing: 10) {
                             ProgressView()
                                 .controlSize(.small)
-                            Text("正在导入配对文件…")
+                            Text("Importing pairing file…")
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                         }
@@ -88,52 +89,61 @@ struct SettingsView: View {
                 Section {
                     Toggle(isOn: $keepAliveAudio) {
                         VStack(alignment: .leading, spacing: 2) {
-                            Text("静默音频")
-                            Text("播放无声音频，防止应用被系统杀掉")
+                            Text("Silent Audio")
+                            Text("Plays inaudible audio so iOS keeps the app running.")
                                 .font(.caption).foregroundStyle(.secondary)
                         }
                     }
                     .onChange(of: keepAliveAudio) { _, enabled in
-                        if enabled { BackgroundAudioManager.shared.start() }
-                        else { BackgroundAudioManager.shared.stop() }
+                        handleAudioKeepAliveChange(enabled)
                     }
 
                     Toggle(isOn: $keepAliveLocation) {
                         VStack(alignment: .leading, spacing: 2) {
-                            Text("后台定位")
-                            Text("使用低精度定位保持应用在后台运行")
+                            Text("Background Location")
+                            Text("Uses low-accuracy location to stay alive when an activity needs it.")
                                 .font(.caption).foregroundStyle(.secondary)
                         }
                     }
                     .onChange(of: keepAliveLocation) { _, enabled in
-                        if !enabled { BackgroundLocationManager.shared.stop() }
+                        handleLocationKeepAliveChange(enabled)
                     }
 
                 } header: {
-                    Text("后台保活")
+                    Text("Background Keep-Alive")
                 }
 
-                Section("行为") {
+                Section("Behavior") {
                     Toggle(isOn: $confirmExternalJITRequests) {
                         VStack(alignment: .leading, spacing: 2) {
-                            Text("确认 JIT 链接")
-                            Text("外部链接启用 JIT 或运行脚本前先确认")
+                            Text("Confirm JIT Links")
+                            Text("Ask before external links enable JIT or run scripts.")
                                 .font(.caption).foregroundStyle(.secondary)
                         }
                     }
 
                     Toggle(isOn: $overrideTXMDetection) {
                         VStack(alignment: .leading, spacing: 2) {
-                            Text("强制运行脚本")
-                            Text("跳过硬件检测，视为支持 TXM 的设备")
+                            Text("Always Run Scripts")
+                            Text("Treats device as TXM-capable to bypass hardware checks.")
                                 .font(.caption).foregroundStyle(.secondary)
                         }
                     }
                 }
 
-                Section("高级") {
+                Section("Debugging") {
+                    Toggle(isOn: $mallocDebug) {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Malloc Debugging")
+                            Text("Attaches processes with MallocGuardEdges and MallocScribble to detect memory corruption.")
+                                .font(.caption).foregroundStyle(.secondary)
+                        }
+                    }
+                }
+
+                Section("Advanced") {
                     HStack {
-                        Text("目标设备 IP")
+                        Text("Target Device IP")
                         Spacer()
                         TextField(DeviceConnectionContext.defaultTargetIPAddress, text: $targetDeviceIP)
                             .multilineTextAlignment(.trailing)
@@ -144,10 +154,10 @@ struct SettingsView: View {
                             .frame(maxWidth: 160)
                     }
                     Button { openAppFolder() } label: {
-                        Label("应用文件夹", systemImage: "folder")
+                        Label("App Folder", systemImage: "folder")
                     }.foregroundStyle(.primary)
                     Button { showDDIConfirmation = true } label: {
-                        Label("重新下载 DDI", systemImage: "arrow.down.circle")
+                        Label("Redownload DDI", systemImage: "arrow.down.circle")
                     }.foregroundStyle(.primary).disabled(isRedownloadingDDI)
                     if isRedownloadingDDI {
                         VStack(alignment: .leading, spacing: 4) {
@@ -159,15 +169,15 @@ struct SettingsView: View {
                     }
                 }
 
-                Section("帮助") {
+                Section("Help") {
                     Link(destination: SettingsLinks.pairingFileGuide) {
-                        Label("配对文件教程", systemImage: "questionmark.circle")
+                        Label("Pairing File Guide", systemImage: "questionmark.circle")
                     }
                     Link(destination: SettingsLinks.localDevVPN) {
-                        Label("下载 LocalDevVPN", systemImage: "arrow.down.circle")
+                        Label("Download LocalDevVPN", systemImage: "arrow.down.circle")
                     }
                     Link(destination: SettingsLinks.discord) {
-                        Label("Discord 支持", systemImage: "bubble.left.and.bubble.right")
+                        Label("Discord Support", systemImage: "bubble.left.and.bubble.right")
                     }
                 }
 
@@ -178,7 +188,7 @@ struct SettingsView: View {
                         .listRowBackground(Color.clear)
                 }
             }
-            .navigationTitle("设置")
+            .navigationTitle("Settings")
         }
         .fileImporter(
             isPresented: $isShowingPairingFilePicker,
@@ -196,27 +206,27 @@ struct SettingsView: View {
                 do {
                     try PairingFileStore.importFromPicker(url, fileManager: fileManager)
                     isImportingFile = false
-                    pairingImportMessage = ("导入成功", false)
+                    pairingImportMessage = ("Imported successfully", false)
                     startTunnelInBackground()
                     schedulePairingStatusDismiss()
                 } catch {
                     isImportingFile = false
-                    pairingImportMessage = ("导入失败: \(error.localizedDescription)", true)
+                    pairingImportMessage = ("Import failed: \(error.localizedDescription)", true)
                     schedulePairingStatusDismiss()
                 }
             case .failure(let error):
                 isImportingFile = false
-                pairingImportMessage = ("导入失败: \(error.localizedDescription)", true)
+                pairingImportMessage = ("Import failed: \(error.localizedDescription)", true)
                 schedulePairingStatusDismiss()
             }
         }
-        .confirmationDialog("重新下载 DDI 文件？", isPresented: $showDDIConfirmation, titleVisibility: .visible) {
-            Button("重新下载", role: .destructive) {
+        .confirmationDialog("Redownload DDI Files?", isPresented: $showDDIConfirmation, titleVisibility: .visible) {
+            Button("Redownload", role: .destructive) {
                 redownloadDDIPressed()
             }
-            Button("取消", role: .cancel) { }
+            Button("Cancel", role: .cancel) { }
         } message: {
-            Text("将删除现有 DDI 文件并重新下载。")
+            Text("Existing DDI files will be removed before downloading fresh copies.")
         }
     }
 
@@ -229,6 +239,25 @@ struct SettingsView: View {
             txmLabel = processInfo.hasTXM ? "TXM" : "Non TXM"
         }
         return "Version \(appVersion) • iOS \(UIDevice.current.systemVersion) • \(txmLabel)"
+    }
+
+    private func handleAudioKeepAliveChange(_ enabled: Bool) {
+        if !enabled, !keepAliveLocation {
+            keepAliveLocation = true
+            BackgroundLocationManager.shared.requestAuthorizationIfNeeded()
+        }
+        BackgroundAudioManager.shared.configurationDidChange()
+        BackgroundLocationManager.shared.configurationDidChange()
+    }
+
+    private func handleLocationKeepAliveChange(_ enabled: Bool) {
+        if enabled {
+            BackgroundLocationManager.shared.requestAuthorizationIfNeeded()
+        } else if !keepAliveAudio {
+            keepAliveAudio = true
+        }
+        BackgroundAudioManager.shared.configurationDidChange()
+        BackgroundLocationManager.shared.configurationDidChange()
     }
 
     // MARK: - Business Logic
@@ -247,7 +276,7 @@ struct SettingsView: View {
             await MainActor.run {
                 isRedownloadingDDI = true
                 ddiDownloadProgress = 0
-                ddiStatusMessage = "准备下载…"
+                ddiStatusMessage = "Preparing download…"
                 ddiResultMessage = nil
             }
             do {
@@ -259,12 +288,12 @@ struct SettingsView: View {
                 }
                 await MainActor.run {
                     isRedownloadingDDI = false
-                    ddiResultMessage = ("DDI 文件已更新", false)
+                    ddiResultMessage = ("DDI files refreshed successfully.", false)
                 }
             } catch {
                 await MainActor.run {
                     isRedownloadingDDI = false
-                    ddiResultMessage = ("DDI 下载失败: \(error.localizedDescription)", true)
+                    ddiResultMessage = ("Failed to redownload DDI files: \(error.localizedDescription)", true)
                 }
             }
         }

@@ -26,7 +26,7 @@ struct ToolsView: View {
                     }
                 }
             }
-            .navigationTitle("工具")
+            .navigationTitle("Tools")
         }
     }
 }

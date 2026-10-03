@@ -7,6 +7,7 @@
 
 import SwiftUI
 import Foundation
+import CoreLocation
 
 private enum ExternalLocationAction: Identifiable {
     case simulate(URL, Double, Double)
@@ -24,27 +25,27 @@ private enum ExternalLocationAction: Identifiable {
     var title: String {
         switch self {
         case .simulate:
-            return "模拟定位？"
+            return "Simulate Location?"
         case .clear:
-            return "清除定位？"
+            return "Clear Location?"
         }
     }
 
     var message: String {
         switch self {
         case .simulate(_, let latitude, let longitude):
-            return String(format: "外部链接请求将模拟定位设置为 %.6f, %.6f", latitude, longitude)
+            return String(format: "An external link wants to set the simulated location to %.6f, %.6f.", latitude, longitude)
         case .clear:
-            return "外部链接请求清除模拟定位。"
+            return "An external link wants to clear the simulated location."
         }
     }
 
     var confirmationTitle: String {
         switch self {
         case .simulate:
-            return "设置定位"
+            return "Set Location"
         case .clear:
-            return "清除定位"
+            return "Clear Location"
         }
     }
 }
@@ -93,7 +94,7 @@ struct MainTabView: View {
                     performLocationAction(action)
                     pendingLocationAction = nil
                 }
-                Button("取消", role: .cancel) {
+                Button("Cancel", role: .cancel) {
                     pendingLocationAction = nil
                 }
             } message: { action in
@@ -104,7 +105,7 @@ struct MainTabView: View {
                     feature.destination
                         .toolbar {
                             ToolbarItem(placement: .cancellationAction) {
-                                Button("关闭") {
+                                Button("Close") {
                                     detachedFeature = nil
                                 }
                             }
@@ -156,8 +157,8 @@ struct MainTabView: View {
     private func confirmSimulatedLocation(from url: URL) {
         guard let coordinate = coordinate(from: url) else {
             showAlert(
-                title: "无效的定位链接",
-                message: "格式：stikdebug://simulate-location?lat=37.3349&lon=-122.0090",
+                title: "Invalid Location URL",
+                message: "Use stikdebug://simulate-location?lat=37.3349&lon=-122.0090",
                 showOk: true
             )
             return
@@ -165,8 +166,8 @@ struct MainTabView: View {
 
         guard coordinateIsValid(latitude: coordinate.latitude, longitude: coordinate.longitude) else {
             showAlert(
-                title: "无效坐标",
-                message: "纬度范围 -90 到 90，经度范围 -180 到 180。",
+                title: "Invalid Coordinates",
+                message: "Latitude must be between -90 and 90. Longitude must be between -180 and 180.",
                 showOk: true
             )
             return
@@ -187,8 +188,8 @@ struct MainTabView: View {
     private func simulateLocation(from url: URL) {
         guard let coordinate = coordinate(from: url) else {
             showAlert(
-                title: "无效的定位链接",
-                message: "格式：stikdebug://simulate-location?lat=37.3349&lon=-122.0090",
+                title: "Invalid Location URL",
+                message: "Use stikdebug://simulate-location?lat=37.3349&lon=-122.0090",
                 showOk: true
             )
             return
@@ -196,8 +197,8 @@ struct MainTabView: View {
 
         guard coordinateIsValid(latitude: coordinate.latitude, longitude: coordinate.longitude) else {
             showAlert(
-                title: "无效坐标",
-                message: "纬度范围 -90 到 90，经度范围 -180 到 180。",
+                title: "Invalid Coordinates",
+                message: "Latitude must be between -90 and 90. Longitude must be between -180 and 180.",
                 showOk: true
             )
             return
@@ -206,8 +207,8 @@ struct MainTabView: View {
         let pairingFile = PairingFileStore.prepareURL()
         guard FileManager.default.fileExists(atPath: pairingFile.path) else {
             showAlert(
-                title: "需要配对文件",
-                message: "请先导入配对文件再使用链接模拟定位。",
+                title: "Pairing File Required",
+                message: "Import a pairing file before simulating location from a URL.",
                 showOk: true
             )
             return
@@ -223,14 +224,29 @@ struct MainTabView: View {
 
             DispatchQueue.main.async {
                 if code == 0 {
-                    BackgroundLocationManager.shared.requestStart()
+                    LocationSimulationSession.shared.clearRoute()
+                    LocationSimulationSession.shared.startResending(
+                        at: CLLocationCoordinate2D(
+                            latitude: coordinate.latitude,
+                            longitude: coordinate.longitude
+                        )
+                    ) {
+                        LocationSimulationCommandQueue.shared.async {
+                            _ = simulate_location(
+                                DeviceConnectionContext.targetIPAddress,
+                                coordinate.latitude,
+                                coordinate.longitude,
+                                pairingFile.path
+                            )
+                        }
+                    }
                     LogManager.shared.addInfoLog(
                         String(format: "Simulated location from URL: %.6f, %.6f", coordinate.latitude, coordinate.longitude)
                     )
                 } else {
                     showAlert(
-                        title: "定位模拟失败",
-                        message: "无法通过链接模拟定位（错误 \(code)）。请确认设备已连接且 DDI 已挂载。",
+                        title: "Location Simulation Failed",
+                        message: "Could not simulate location from URL (error \(code)). Make sure the device is connected and the DDI is mounted.",
                         showOk: true
                     )
                 }
@@ -243,12 +259,12 @@ struct MainTabView: View {
             let code = clear_simulated_location()
             DispatchQueue.main.async {
                 if code == 0 {
-                    BackgroundLocationManager.shared.requestStop()
+                    LocationSimulationSession.shared.stop()
                     LogManager.shared.addInfoLog("Cleared simulated location from URL")
                 } else {
                     showAlert(
-                        title: "清除定位失败",
-                        message: "无法通过链接清除模拟定位（错误 \(code)）。",
+                        title: "Clear Location Failed",
+                        message: "Could not clear simulated location from URL (error \(code)).",
                         showOk: true
                     )
                 }

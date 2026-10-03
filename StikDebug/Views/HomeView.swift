@@ -12,16 +12,13 @@ struct HomeView: View {
     @AppStorage("bundleID") private var bundleID: String = ""
     @AppStorage(UserDefaults.Keys.confirmExternalJITRequests) private var confirmExternalJITRequests = true
 
-    @ObservedObject private var mounting = MountingProgress.shared
-
     @State private var hasAppeared = false
     @State private var pendingJITEnableConfiguration: JITEnableConfiguration?
     @State private var isShowingPairingFilePicker = false
     @State private var debugFeedback: DebugFeedback?
     @State private var pendingExternalURLAction: HomeExternalAction?
+    @State private var pendingLiveContainerApp: LiveContainerApp?
     @State private var scriptRunModel: RunJSViewModel?
-
-    private let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
 
     private struct DebugFeedback: Identifiable {
         let id = UUID()
@@ -30,11 +27,18 @@ struct HomeView: View {
         let isWorking: Bool
     }
 
+    private struct LiveContainerApp {
+        let bundleID: String
+        let name: String
+    }
+
     var body: some View {
         InstalledAppsListView(onSelectApp: { selectedBundle, selectedName in
-            bundleID = selectedBundle
-            Haptics.medium()
-            startJITInBackground(bundleID: selectedBundle, displayName: selectedName)
+            if selectedName.localizedCaseInsensitiveContains("LiveContainer") {
+                pendingLiveContainerApp = LiveContainerApp(bundleID: selectedBundle, name: selectedName)
+            } else {
+                enableJITForSelectedApp(bundleID: selectedBundle, name: selectedName)
+            }
         }, showDoneButton: false, onImportPairingFile: { isShowingPairingFilePicker = true })
         .overlay(alignment: .bottom) {
             if let debugFeedback {
@@ -45,9 +49,6 @@ struct HomeView: View {
         }
         .onAppear(perform: handleAppear)
         .onReceive(NotificationCenter.default.publisher(for: .intentJSScriptReady), perform: handleScriptReadyNotification)
-        .onReceive(timer) { _ in
-            refreshMountStatusIfNeeded()
-        }
         .onOpenURL { url in
             handleExternalURL(url)
         }
@@ -68,11 +69,33 @@ struct HomeView: View {
                 performExternalURLAction(action)
                 pendingExternalURLAction = nil
             }
-            Button("取消", role: .cancel) {
+            Button("Cancel", role: .cancel) {
                 pendingExternalURLAction = nil
             }
         } message: { action in
             Text(action.message)
+        }
+        .alert(
+            "Enable JIT for LiveContainer?",
+            isPresented: Binding(
+                get: { pendingLiveContainerApp != nil },
+                set: { isPresented in
+                    if !isPresented {
+                        pendingLiveContainerApp = nil
+                    }
+                }
+            ),
+            presenting: pendingLiveContainerApp
+        ) { app in
+            Button("Cancel", role: .cancel) {
+                pendingLiveContainerApp = nil
+            }
+            Button("Proceed") {
+                pendingLiveContainerApp = nil
+                enableJITForSelectedApp(bundleID: app.bundleID, name: app.name)
+            }
+        } message: { _ in
+            Text("StikDebug isn't meant to enable JIT for LiveContainer manually. Select StikDebug in LiveContainer settings, enable \"Run with JIT\" for your app, then open your app normally. It will automatically jump back here.")
         }
         .fileImporter(
             isPresented: $isShowingPairingFilePicker,
@@ -84,7 +107,7 @@ struct HomeView: View {
                 RunJSView(model: model)
                     .toolbar {
                         ToolbarItem(placement: .topBarTrailing) {
-                            Button("完成") { scriptRunModel = nil }
+                            Button("Done") { scriptRunModel = nil }
                         }
                     }
                     .navigationBarTitleDisplayMode(.inline)
@@ -92,9 +115,14 @@ struct HomeView: View {
         }
     }
 
+    private func enableJITForSelectedApp(bundleID selectedBundle: String, name: String) {
+        bundleID = selectedBundle
+        Haptics.medium()
+        startJITInBackground(bundleID: selectedBundle, displayName: name)
+    }
+
     private func handleAppear() {
         startTunnelInBackground()
-        MountingProgress.shared.checkforMounted()
         hasAppeared = true
 
         if let config = pendingJITEnableConfiguration {
@@ -115,13 +143,6 @@ struct HomeView: View {
         }
 
         scriptRunModel = model
-    }
-
-    private func refreshMountStatusIfNeeded() {
-        guard mounting.mountingThread == nil, !mounting.coolisMounted else {
-            return
-        }
-        MountingProgress.shared.checkforMounted()
     }
 
     private func importPairingFile(_ result: Result<URL, Error>) {
@@ -284,15 +305,15 @@ struct HomeView: View {
             } catch {
                 semaphore.signal()
                 DispatchQueue.main.async {
-                    showAlert(title: "脚本执行出错", message: error.localizedDescription, showOk: true)
+                    showAlert(title: "Error Occurred While Executing Script.".localized, message: error.localizedDescription, showOk: true)
                 }
             }
         }
     }
 
     private func startJITInBackground(bundleID: String? = nil, pid: Int? = nil, scriptData: Data? = nil, scriptName: String? = nil, triggeredByURLScheme: Bool = false, displayName: String? = nil) {
-        let targetName = displayName ?? bundleID ?? pid.map { String(format: "进程 %d", $0) } ?? "应用"
-        let startingMessage = String(format: "正在为 %@ 启用 JIT", targetName)
+        let targetName = displayName ?? bundleID ?? pid.map { String(format: "process %d".localized, $0) } ?? "app".localized
+        let startingMessage = String(format: "Starting JIT for %@".localized, targetName)
         LogManager.shared.addInfoLog("Starting Debug for \(bundleID ?? String(pid ?? 0))")
         withAnimation {
             debugFeedback = DebugFeedback(message: startingMessage, isError: false, isWorking: true)
@@ -325,8 +346,8 @@ struct HomeView: View {
             let finishProcessing: (Bool, String?) -> Void = { success, detail in
                 DispatchQueue.main.async {
                     let message = success
-                        ? String(format: "%@ JIT 已启用", targetName)
-                        : String(format: "%@ JIT 启用失败", targetName)
+                        ? String(format: "JIT request completed for %@".localized, targetName)
+                        : String(format: "JIT failed for %@".localized, targetName)
                     let feedback = DebugFeedback(message: message, isError: !success, isWorking: false)
                     withAnimation {
                         debugFeedback = feedback
@@ -342,16 +363,8 @@ struct HomeView: View {
                     }
 
                     if !success {
-                        if let detail, detail.localizedCaseInsensitiveContains("ServiceNotFound") {
-                            showAlert(
-                                title: "请稍候",
-                                message: "DDI 尚未挂载完成，请等待挂载完成后重试（通常需要 1~2 分钟）。",
-                                showOk: true
-                            )
-                        } else {
-                            let failureMessage = detail ?? "无法启动或附加到所选应用。请检查 VPN 是否开启、配对文件是否有效、应用是否已安装。"
-                            showAlert(title: "JIT 启用失败", message: failureMessage, showOk: true)
-                        }
+                        let failureMessage = detail ?? "StikDebug could not launch or attach to the selected app. Check that the VPN is enabled, the pairing file is current, and the app is still installed.".localized
+                        showAlert(title: "Failed to Enable JIT".localized, message: failureMessage, showOk: true)
                     }
                 }
             }
@@ -385,7 +398,7 @@ struct HomeView: View {
             } else if let bundleID {
                 success = JITEnableContext.shared.debugApp(withBundleID: bundleID, logger: logger, jsCallback: callback)
             } else {
-                lastDebugMessage = "需要指定 Bundle ID 或 PID。"
+                lastDebugMessage = "Either bundle ID or PID should be specified.".localized
                 success = false
             }
 

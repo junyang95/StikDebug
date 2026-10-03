@@ -15,11 +15,11 @@ struct ProcessInspectorView: View {
     var body: some View {
         NavigationStack {
             content
-                .navigationTitle("进程管理")
+                .navigationTitle("Process Inspector")
                 .toolbar {
                     ToolbarItem(placement: .navigationBarTrailing) {
                         Button(action: viewModel.refresh) {
-                            Label("刷新", systemImage: "arrow.clockwise")
+                            Label("Refresh", systemImage: "arrow.clockwise")
                         }
                         .disabled(viewModel.isRefreshing)
                     }
@@ -38,7 +38,7 @@ struct ProcessInspectorView: View {
             Text(viewModel.actionAlertMessage)
         }
         .alert(viewModel.errorAlertTitle, isPresented: $viewModel.showErrorAlert) {
-            Button("重试") { viewModel.refresh() }
+            Button("Try Again") { viewModel.refresh() }
             Button("OK", role: .cancel) { }
         } message: {
             Text(viewModel.errorAlertMessage)
@@ -48,15 +48,15 @@ struct ProcessInspectorView: View {
     @ViewBuilder
     private var content: some View {
         List {
-            Section("概览") {
-                LabeledContent("进程总数") {
+            Section("Overview") {
+                LabeledContent("Total Processes") {
                     Text("\(viewModel.processes.count)")
                         .font(.title2.bold())
                 }
             }
-            Section("进程列表") {
+            Section("Processes") {
                 if viewModel.filteredProcesses.isEmpty {
-                    Text("没有匹配的进程")
+                    Text("No matching processes.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 } else {

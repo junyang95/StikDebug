@@ -14,16 +14,16 @@ extension ScriptStore {
             appNames: [
                 "Amethyst",
                 "MeloNX",
-                "Melo",
                 "XeniOS",
-                "MeloCafe",
+                "MeloCafé",
                 "Manic EMU",
-                "Manic",
                 "DukeX",
                 "TachyonU",
                 "touchHLE",
                 "HyperHLE",
-                "Applesauce"
+                "Applesauce",
+                "RPCS3",
+                "AetherPS4"
             ],
             resource: ScriptResource(resourceName: "universal", fileName: "universal.js")
         ),

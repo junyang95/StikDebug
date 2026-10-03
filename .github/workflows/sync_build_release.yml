@@ -11,6 +11,7 @@ permissions:
 jobs:
   sync:
     name: Sync Upstream
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     outputs:
       has_changes: ${{ steps.sync.outputs.has_changes }}
@@ -20,6 +21,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
+          ref: main
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
 
@@ -29,11 +31,8 @@ jobs:
           git config user.name 'GitHub Action'
           git config user.email 'action@github.com'
 
-          git remote add upstream https://github.com/StephenDev0/StikDebug.git
+          git remote add upstream https://github.com/StikDebug/StikDebug.git
           git fetch upstream main
-
-          LOCAL=$(git rev-parse HEAD)
-          UPSTREAM=$(git rev-parse upstream/main)
 
           # Generate version
           SHORT_SHA=$(git rev-parse --short upstream/main)
@@ -50,20 +49,12 @@ jobs:
 
           echo "has_changes=true" >> $GITHUB_OUTPUT
 
-          # 让 .gitattributes 里 `merge=ours` 的路径生效（冲突时保留我方版本）
-          git config merge.ours.driver true
-
-          # Merge upstream (preserves our custom commits)
-          git merge upstream/main --no-edit -m "Merge upstream $(date +%Y-%m-%d)"
-
-          # GITHUB_TOKEN 无权推送 .github/workflows/ 下的任何改动（这是 GitHub 的硬性
-          # 限制，permissions 里没有可以打开的开关），所以合并后把该目录还原成我方版本。
-          if ! git diff --quiet "$LOCAL" HEAD -- .github/workflows; then
-            echo "Upstream touched .github/workflows/, restoring our version."
-            git rm -r -q --cached .github/workflows
-            git checkout "$LOCAL" -- .github/workflows
-            git commit -q -m "Keep our workflows (GITHUB_TOKEN cannot push workflow changes)"
-          fi
+          # Record upstream history, then match its file tree except our workflows.
+          # Only main runs this job; feature branches are never merge sources.
+          git merge --strategy=ours --no-commit --no-ff upstream/main
+          git restore --source=upstream/main --staged --worktree -- . ':!.github/workflows'
+          git diff --cached --quiet upstream/main -- . ':!.github/workflows'
+          git commit -m "Sync official main $(date +%Y-%m-%d)"
 
           git push origin main
 
@@ -133,6 +124,6 @@ jobs:
           tag_name: v${{ needs.sync.outputs.version }}
           name: StikDebug ${{ needs.sync.outputs.version }}
           body: |
-            Auto-built from upstream [StephenDev0/StikDebug](https://github.com/StephenDev0/StikDebug) @ ${{ needs.sync.outputs.version }}
+            Auto-built from upstream [StikDebug/StikDebug](https://github.com/StikDebug/StikDebug) @ ${{ needs.sync.outputs.version }}
           files: StikDebug.ipa
           make_latest: true

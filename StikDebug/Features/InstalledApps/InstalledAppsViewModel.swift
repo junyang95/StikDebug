@@ -20,13 +20,26 @@ final class InstalledAppsViewModel: ObservableObject {
     private let cacheKeyDebuggable = "cachedDebuggableApps"
     private let cacheKeyNonDebuggable = "cachedNonDebuggableApps"
     private let cacheKeySystem = "cachedSystemApps"
+    private var cancellables: Set<AnyCancellable> = []
+    private var refreshInProgress = false
+    private var refreshPending = false
 
     init() {
         loadCachedApps()
-        refreshAppLists()
+        TunnelManager.shared.$isConnected
+            .removeDuplicates()
+            .filter { $0 }
+            .sink { [weak self] _ in self?.refreshAppLists() }
+            .store(in: &cancellables)
     }
 
     func refreshAppLists() {
+        guard !refreshInProgress else {
+            refreshPending = true
+            return
+        }
+
+        refreshInProgress = true
         isLoading = true
         lastError = nil
 
@@ -42,6 +55,11 @@ final class InstalledAppsViewModel: ObservableObject {
                     debuggable: debuggable,
                     hiddenSystem: hiddenSystem
                 )
+                self.cacheApps(
+                    debuggable: debuggable,
+                    nonDebuggable: classifiedApps.nonDebuggable,
+                    system: classifiedApps.system
+                )
 
                 DispatchQueue.main.async {
                     self.apply(
@@ -49,20 +67,24 @@ final class InstalledAppsViewModel: ObservableObject {
                         nonDebuggable: classifiedApps.nonDebuggable,
                         system: classifiedApps.system
                     )
-                    self.isLoading = false
-                    self.cacheApps(
-                        debuggable: debuggable,
-                        nonDebuggable: classifiedApps.nonDebuggable,
-                        system: classifiedApps.system
-                    )
+                    self.finishRefresh()
                 }
             } catch {
                 DispatchQueue.main.async {
-                    self.isLoading = false
                     self.lastError = error.localizedDescription
+                    self.finishRefresh()
                 }
             }
         }
+    }
+
+    private func finishRefresh() {
+        refreshInProgress = false
+        isLoading = false
+
+        guard refreshPending else { return }
+        refreshPending = false
+        refreshAppLists()
     }
 
     func displayName(for bundleID: String) -> String? {

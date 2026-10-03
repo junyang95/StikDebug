@@ -83,7 +83,9 @@ struct InstalledAppsListView: View {
             handleLoadingChange(isLoading)
         }
         .onReceive(NotificationCenter.default.publisher(for: .pairingFileImported)) { _ in
-            viewModel.refreshAppLists()
+            if TunnelManager.shared.isConnected {
+                viewModel.refreshAppLists()
+            }
         }
     }
 
@@ -155,7 +157,7 @@ struct InstalledAppsListView: View {
     private var trailingToolbarItem: some ToolbarContent {
         ToolbarItem(placement: .navigationBarTrailing) {
             if showDoneButton {
-                Button("完成") {
+                Button("Done") {
                     dismiss()
                 }
                 .fontWeight(.semibold)
@@ -208,10 +210,10 @@ struct InstalledAppsListView: View {
             if snapshot.apps.isEmpty && !viewModel.isLoading {
                 EmptyAppListState(
                     systemImage: snapshot.searchIsActive ? "text.magnifyingglass" : "magnifyingglass",
-                    title: snapshot.searchIsActive ? "没有匹配的应用" : "未找到 JIT 应用",
+                    title: snapshot.searchIsActive ? "No matching apps".localized : "No JIT Apps Found".localized,
                     message: snapshot.searchIsActive
-                        ? "试试其他名称或 Bundle ID"
-                        : "StikDebug 只能连接拥有 \"get-task-allow\" 权限的应用。"
+                        ? "Try a different name or bundle identifier.".localized
+                        : "StikDebug can only connect to apps with the \"get-task-allow\" entitlement.".localized
                 )
             } else {
                 debuggableAppSections(snapshot: snapshot)
@@ -229,10 +231,10 @@ struct InstalledAppsListView: View {
             if snapshot.apps.isEmpty {
                 EmptyAppListState(
                     systemImage: "magnifyingglass",
-                    title: snapshot.searchIsActive ? "无匹配结果" : "未找到应用",
+                    title: snapshot.searchIsActive ? "No matches".localized : "No Apps Found".localized,
                     message: snapshot.searchIsActive
-                        ? "试试其他名称或 Bundle ID"
-                        : "导入配对文件并连接 CoreDevice 后，所有应用将显示在这里。"
+                        ? "Try another name or bundle identifier.".localized
+                        : "Once your device pairing file is imported and CoreDevice is connected, all apps will appear here.".localized
                 )
             } else {
                 launchAppSection(snapshot: snapshot)
@@ -255,7 +257,7 @@ struct InstalledAppsListView: View {
     @ViewBuilder
     private func debuggableAppSections(snapshot: DebuggableAppListSnapshot) -> some View {
         if !snapshot.favoriteBundles.isEmpty {
-            Section(String(format: "收藏 (%d/4)", snapshot.favoriteBundles.count)) {
+            Section(String(format: "Favorites (%d/4)".localized, snapshot.favoriteBundles.count)) {
                 ForEach(snapshot.favoriteBundles, id: \.self) { bundleID in
                     debugAppRow(
                         bundleID: bundleID,
@@ -266,7 +268,7 @@ struct InstalledAppsListView: View {
         }
 
         if !snapshot.recentBundles.isEmpty {
-            Section("最近使用") {
+            Section("Recents".localized) {
                 ForEach(snapshot.recentBundles, id: \.self) { bundleID in
                     debugAppRow(
                         bundleID: bundleID,
@@ -276,7 +278,7 @@ struct InstalledAppsListView: View {
             }
         }
 
-        Section("支持 JIT 的应用") {
+        Section("Apps with get-task-allow".localized) {
             ForEach(snapshot.apps) { app in
                 debugAppRow(bundleID: app.bundleID, appName: app.name)
             }
@@ -284,7 +286,7 @@ struct InstalledAppsListView: View {
     }
 
     private func launchAppSection(snapshot: LaunchAppListSnapshot) -> some View {
-        Section("全部应用") {
+        Section("All Apps".localized) {
             ForEach(snapshot.apps) { app in
                 let isPinned = pinnedSystemApps.contains(app.bundleID)
 
@@ -305,11 +307,11 @@ struct InstalledAppsListView: View {
                     }
                 }
                 .contextMenu {
-                    Button(isPinned ? "从主页移除" : "添加到主页",
+                    Button((isPinned ? "Remove from Home" : "Add to Home").localized,
                            systemImage: isPinned ? "star.slash" : "star") {
                         toggleSystemPin(bundleID: app.bundleID, appName: app.name)
                     }
-                    Button("复制 Bundle ID", systemImage: "doc.on.doc") {
+                    Button("Copy Bundle ID".localized, systemImage: "doc.on.doc") {
                         UIPasteboard.general.string = app.bundleID
                         Haptics.light()
                     }
@@ -318,7 +320,7 @@ struct InstalledAppsListView: View {
                     Button {
                         toggleSystemPin(bundleID: app.bundleID, appName: app.name)
                     } label: {
-                        Label(isPinned ? "取消置顶" : "置顶", systemImage: "star")
+                        Label((isPinned ? "Unpin" : "Pin").localized, systemImage: "star")
                     }
                     .tint(.yellow)
                 }
@@ -430,14 +432,14 @@ struct InstalledAppsListView: View {
 
         launchingBundles.insert(bundleID)
         Haptics.selection()
-        AccessibilityAnnouncer.announce(String(format: "正在启动 %@", appName))
+        AccessibilityAnnouncer.announce(String(format: "Launching %@".localized, appName))
 
         viewModel.launchWithoutDebug(bundleID: bundleID) { success in
             launchingBundles.remove(bundleID)
 
             let message = success
-                ? String(format: "%@ 启动请求已发送", appName)
-                : String(format: "%@ 启动失败", appName)
+                ? String(format: "Launch request sent for %@".localized, appName)
+                : String(format: "Launch failed for %@".localized, appName)
             let feedback = LaunchFeedback(message: message, success: success)
 
             if success {
@@ -509,25 +511,25 @@ private enum AppListTab: Int, CaseIterable, Identifiable {
         case .debuggable:
             return "JIT"
         case .launch:
-            return "其他"
+            return "Other"
         }
     }
 
     var navigationTitle: String {
         switch self {
         case .debuggable:
-            return "启用 JIT"
+            return "Enable JIT".localized
         case .launch:
-            return "启动应用"
+            return "Launch Apps".localized
         }
     }
 
     var searchPrompt: String {
         switch self {
         case .debuggable:
-            return "搜索应用名称或 Bundle ID"
+            return "Search apps or bundle ID".localized
         case .launch:
-            return "搜索"
+            return "Search".localized
         }
     }
 }

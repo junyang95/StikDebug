@@ -23,53 +23,53 @@ enum AppFeature: String, CaseIterable, Identifiable {
     var title: String {
         switch self {
         case .home:
-            return "应用"
+            return "Apps"
         case .scripts:
-            return "脚本"
+            return "Scripts"
         case .tools:
-            return "工具"
+            return "Tools"
         case .console:
-            return "控制台"
+            return "Console"
         case .deviceInfo:
-            return "设备信息"
+            return "Device Info"
         case .profiles:
-            return "证书有效期"
+            return "App Expiry"
         case .processes:
-            return "进程"
+            return "Processes"
         case .location:
-            return "定位"
+            return "Location"
         case .settings:
-            return "设置"
+            return "Settings"
         }
     }
 
     var detail: String {
         switch self {
         case .home:
-            return "管理已安装的应用"
+            return "Manage installed apps"
         case .scripts:
-            return "管理和运行 JS 脚本"
+            return "Manage and run JS scripts"
         case .tools:
-            return "更多工具"
+            return "Access additional tools"
         case .console:
-            return "实时设备日志"
+            return "Live device logs"
         case .deviceInfo:
-            return "查看设备详细信息"
+            return "View detailed device metadata"
         case .profiles:
-            return "查看应用签名到期时间"
+            return "Check app expiration dates"
         case .processes:
-            return "查看运行中的进程"
+            return "Inspect running apps"
         case .location:
-            return "模拟 GPS 定位"
+            return "Simulate GPS location"
         case .settings:
-            return "配置 StikDebug"
+            return "Configure StikDebug"
         }
     }
 
     var toolTitle: String {
         switch self {
         case .location:
-            return "位置模拟"
+            return "Location Simulation"
         default:
             return title
         }

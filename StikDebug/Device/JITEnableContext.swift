@@ -17,6 +17,37 @@ typealias SyslogErrorHandler = (NSError?) -> Void
 final class JITEnableContext {
     static let shared = JITEnableContext()
 
+    private static func withCStringArray<R>(
+        _ strings: [String], _ body: (UnsafePointer<UnsafePointer<CChar>?>?, UInt) -> R
+    ) -> R {
+        if strings.isEmpty {
+            return body(nil, 0)
+        }
+        var cStrings: [UnsafeMutablePointer<CChar>?] = strings.map { strdup($0) }
+        defer { cStrings.forEach { free($0) } }
+        return cStrings.withUnsafeBufferPointer { buffer in
+            buffer.baseAddress!.withMemoryRebound(to: UnsafePointer<CChar>?.self, capacity: buffer.count) { rebound in
+                body(rebound, UInt(buffer.count))
+            }
+        }
+    }
+
+    private static func mallocDebugEnvVars() -> [String] {
+        let defaults = UserDefaults.standard
+        let enableAll = defaults.bool(forKey: UserDefaults.Keys.mallocDebug)
+        let guardEdges = enableAll || defaults.bool(forKey: UserDefaults.Keys.mallocGuardEdges)
+        let scribble = enableAll || defaults.bool(forKey: UserDefaults.Keys.mallocScribble)
+
+        var envVars: [String] = []
+        if guardEdges {
+            envVars.append("MallocGuardEdges=1")
+        }
+        if scribble {
+            envVars.append("MallocScribble=1")
+        }
+        return envVars
+    }
+
     private struct TunnelHandles {
         var adapter: OpaquePointer?
         var handshake: OpaquePointer?
@@ -51,11 +82,7 @@ final class JITEnableContext {
     var handshakeHandle: OpaquePointer? { handshake }
 
     private init() {
-        let logURL = FileManager.default
-            .urls(for: .documentDirectory, in: .userDomainMask)[0]
-            .appendingPathComponent("idevice_log.txt")
-
-        var path = Array(logURL.path.utf8CString)
+        var path = Array(IdeviceLogFileManager.logURL.path.utf8CString)
         path.withUnsafeMutableBufferPointer { buffer in
             _ = idevice_init_logger(Info, Debug, buffer.baseAddress)
         }
@@ -188,7 +215,9 @@ final class JITEnableContext {
             tunnelLock.unlock()
 
             if let waitSemaphore {
-                waitSemaphore.wait()
+                guard waitSemaphore.wait(timeout: .now() + .seconds(15)) == .success else {
+                    throw makeError("Timed out waiting for the tunnel connection", code: -19)
+                }
                 waitSemaphore.signal()
             }
 
@@ -601,7 +630,9 @@ final class JITEnableContext {
             try withProcessControl(remoteServer: remoteServer) { processControl in
                 var pid: UInt64 = 0
                 let ffiError = bundleID.withCString { bundleID in
-                    process_control_launch_app(processControl, bundleID, nil, 0, nil, 0, true, false, &pid)
+                    Self.withCStringArray(Self.mallocDebugEnvVars()) { envPtr, envCount in
+                        process_control_launch_app(processControl, bundleID, envPtr, envCount, nil, 0, true, false, &pid)
+                    }
                 }
 
                 if let ffiError {
