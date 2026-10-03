@@ -99,3 +99,6 @@ iOSInjectionProject/
 .DS_Store
 .vscode/settings.json
 .vscode 
+
+# JetBrains local project settings
+/.idea/
