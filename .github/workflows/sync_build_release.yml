@@ -37,17 +37,17 @@ jobs:
           # Generate version
           SHORT_SHA=$(git rev-parse --short upstream/main)
           DATE=$(date +%Y%m%d)
-          echo "version=${DATE}-${SHORT_SHA}" >> $GITHUB_OUTPUT
+          echo "version=${DATE}-${SHORT_SHA}" >> "$GITHUB_OUTPUT"
 
           # Check if upstream has new commits not in our branch
           NEW_COMMITS=$(git rev-list HEAD..upstream/main --count)
           if [ "$NEW_COMMITS" -eq 0 ]; then
-            echo "has_changes=false" >> $GITHUB_OUTPUT
+            echo "has_changes=false" >> "$GITHUB_OUTPUT"
             echo "No new upstream changes."
             exit 0
           fi
 
-          echo "has_changes=true" >> $GITHUB_OUTPUT
+          echo "has_changes=true" >> "$GITHUB_OUTPUT"
 
           # Record upstream history, then match its file tree except our workflows.
           # Only main runs this job; feature branches are never merge sources.
