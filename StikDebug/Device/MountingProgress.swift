@@ -28,6 +28,7 @@ final class MountingProgress: ObservableObject {
     }
 
     func progressCallback(progress: size_t, total: size_t, context: UnsafeMutableRawPointer?) {
+        guard total > 0 else { return }
         let percentage = Double(progress) / Double(total) * 100.0
         DispatchQueue.main.async {
             self.mountProgress = percentage
@@ -39,48 +40,52 @@ final class MountingProgress: ObservableObject {
     }
 
     private func mount() {
-        guard !installationInProgress else { return }
-        let currentlyMounted = isMounted()
-        DispatchQueue.main.async {
-            self.coolisMounted = currentlyMounted
-        }
-
-        guard isPairing(), !currentlyMounted else {
+        guard Thread.isMainThread else {
+            DispatchQueue.main.async { self.mount() }
             return
         }
-
-        if let mountingThread {
-            mountingThread.cancel()
-            self.mountingThread = nil
-        }
+        guard !installationInProgress, mountingThread == nil, !DeveloperConnectionGate.isBlocked else { return }
 
         let thread = Thread { [weak self] in
             guard let self else { return }
-            let mountError = mountPersonalDDI(
-                imagePath: URL.documentsDirectory.appendingPathComponent("DDI/Image.dmg").path,
-                trustcachePath: URL.documentsDirectory.appendingPathComponent("DDI/Image.dmg.trustcache").path,
-                manifestPath: URL.documentsDirectory.appendingPathComponent("DDI/BuildManifest.plist").path
-            )
+            guard isPairing() else {
+                DispatchQueue.main.async {
+                    self.coolisMounted = false
+                    self.mountingThread = nil
+                }
+                return
+            }
+            var confirmedMounted = isMounted()
+            var mountError: String?
+            if !confirmedMounted {
+                mountError = mountDeveloperDiskImage(from: DeveloperDiskImageService.directoryURL.path)
+                if mountError == nil {
+                    confirmedMounted = isMounted()
+                    if !confirmedMounted {
+                        mountError = "文件已下载，但未确认 DDI 挂载成功。请检查内置 VPN 和开发者模式后重试。".localized
+                    }
+                }
+            }
 
+            let resultMounted = confirmedMounted
+            let resultError = mountError
             DispatchQueue.main.async {
-                if let mountError {
+                self.coolisMounted = resultMounted
+                self.mountingThread = nil
+                if let mountError = resultError {
                     showAlert(title: "DDI Mount Failed", message: mountError, showOk: true, showTryAgain: true) { shouldTryAgain in
                         if shouldTryAgain {
                             self.mount()
                         }
                     }
-                } else {
-                    self.coolisMounted = true
-                    self.checkforMounted()
                 }
-                self.mountingThread = nil
             }
         }
 
         thread.qualityOfService = .background
         thread.name = "mounting"
-        thread.start()
         mountingThread = thread
+        thread.start()
     }
 }
 
@@ -88,7 +93,8 @@ func isPairing() -> Bool {
     let pairingPath = PairingFileStore.prepareURL().path
     var pairingFile: RpPairingFileHandle?
     let error = rp_pairing_file_read(pairingPath, &pairingFile)
-    if error != nil {
+    if let error {
+        idevice_error_free(error)
         return false
     }
     rp_pairing_file_free(pairingFile)

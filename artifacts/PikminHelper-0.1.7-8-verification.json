@@ -1,0 +1,350 @@
+{
+  "ipa": "/Users/junyang/IdeaProjects/StikDebug/artifacts/PikminHelper-0.1.7-8-unsigned.ipa",
+  "bytes": 12314358,
+  "sha256": "bd7590c3de58ec461e62249990057f64daa8bc4a83081d6f637bc371f83b4ca3",
+  "verifiedAt": "2026-10-03T14:11:13.588849+00:00",
+  "sourceBranch": "codex/pikmin-helper",
+  "sourceBaseCommit": "f0663d54dc9d49a3a5647f5807596d991ff2f6c1",
+  "configuration": "Release",
+  "toolchain": "Xcode 16.2\nBuild version 16C5032a",
+  "sdk": "18.2",
+  "buildCommand": "xcodebuild archive -project StikDebug.xcodeproj -scheme StikDebug -configuration Release -sdk iphoneos -destination generic/platform=iOS -derivedDataPath /private/tmp/pikmin-f0663d5-unsigned/DerivedData -clonedSourcePackagesDirPath /private/tmp/pikmin-f0663d5-unsigned/SourcePackages -archivePath /private/tmp/pikmin-0.1.7-unsigned/PikminHelper.xcarchive -disableAutomaticPackageResolution -onlyUsePackageVersionsFromResolvedFile -skipPackageUpdates CODE_SIGN_IDENTITY= CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO ONLY_ACTIVE_ARCH=NO",
+  "dependencyPins": [
+    {
+      "identity": "swift-asn1",
+      "kind": "remoteSourceControl",
+      "location": "https://github.com/apple/swift-asn1.git",
+      "state": {
+        "revision": "ae33e5941bb88d88538d0a6b19ca0b01e6c76dcf",
+        "version": "1.3.1"
+      }
+    },
+    {
+      "identity": "swift-certificates",
+      "kind": "remoteSourceControl",
+      "location": "https://github.com/apple/swift-certificates.git",
+      "state": {
+        "revision": "24ccdeeeed4dfaae7955fcac9dbf5489ed4f1a25",
+        "version": "1.18.0"
+      }
+    },
+    {
+      "identity": "swift-crypto",
+      "kind": "remoteSourceControl",
+      "location": "https://github.com/apple/swift-crypto.git",
+      "state": {
+        "revision": "e8d6eba1fef23ae5b359c46b03f7d94be2f41fed",
+        "version": "3.12.3"
+      }
+    }
+  ],
+  "signed": false,
+  "embeddedProvisioningProfiles": 0,
+  "bundles": [
+    {
+      "bundle": "StikDebug.app",
+      "identifier": "com.jy.stikdebug.pikmin",
+      "version": "0.1.7",
+      "build": "8",
+      "architecture": "arm64",
+      "minimumOSVersion": "17.4",
+      "sdk": "iphoneos18.2"
+    },
+    {
+      "bundle": "PikminLiveActivity.appex",
+      "identifier": "com.jy.stikdebug.pikmin.liveactivity",
+      "version": "0.1.7",
+      "build": "8",
+      "architecture": "arm64",
+      "minimumOSVersion": "17.4",
+      "sdk": "iphoneos18.2"
+    },
+    {
+      "bundle": "PikminTunnel.appex",
+      "identifier": "com.jy.stikdebug.pikmin.networkextension",
+      "version": "0.1.7",
+      "build": "8",
+      "architecture": "arm64",
+      "minimumOSVersion": "17.4",
+      "sdk": "iphoneos18.2"
+    }
+  ],
+  "unsignedBinaries": [
+    {
+      "binary": "PlugIns/PikminLiveActivity.appex/PikminLiveActivity",
+      "codeSignResult": "code object is not signed at all",
+      "architecture": "arm64",
+      "sha256": "6df1942d54b77700f90eec6f9909121ddf6d97ff230bffe073de39d120709bd4"
+    },
+    {
+      "binary": "PlugIns/PikminTunnel.appex/PikminTunnel",
+      "codeSignResult": "code object is not signed at all",
+      "architecture": "arm64",
+      "sha256": "8544d99a36cb77c70b6a6fc331902303dbb5b96e5631323789d0ad09ca3fc3d8"
+    },
+    {
+      "binary": "StikDebug",
+      "codeSignResult": "code object is not signed at all",
+      "architecture": "arm64",
+      "sha256": "72733d6d79a5fa3519805fefbfe1985b6cab89af6118872ddb7cd8872908df7f"
+    }
+  ],
+  "zipIntegrityPassed": true,
+  "zipEntryCount": 46,
+  "checksPerformed": [
+    "Release archive rebuilt from recorded working tree snapshot; compilation inputs unchanged throughout build",
+    "Fixed package revisions match Package.resolved",
+    "Three app/extension versions and arm64 architectures match",
+    "All packaged Mach-O binaries report not signed at all",
+    "No embedded provisioning profiles or code signature directories",
+    "ZIP CRC integrity, payload structure, metadata and binary SHA256 verified",
+    "All three new DDI strings are present in English/Traditional Chinese resources and Simplified Chinese source-language keys",
+    "Qiniu release identifier and Cryptex resource names found in packaged executable"
+  ],
+  "localizationChecks": [
+    {
+      "locale": "zh-Hans",
+      "key": "DDI 文件尚未下载完成，请先安装 DDI。",
+      "value": "DDI 文件尚未下载完成，请先安装 DDI。",
+      "matched": true,
+      "sourceLanguageKeyFallback": true
+    },
+    {
+      "locale": "zh-Hans",
+      "key": "DDI 文件校验失败：%@，请重新下载。",
+      "value": "DDI 文件校验失败：%@，请重新下载。",
+      "matched": true,
+      "sourceLanguageKeyFallback": true
+    },
+    {
+      "locale": "zh-Hans",
+      "key": "DDI 正在下载，请等待当前任务完成。",
+      "value": "DDI 正在下载，请等待当前任务完成。",
+      "matched": true,
+      "sourceLanguageKeyFallback": true
+    },
+    {
+      "locale": "zh-Hant",
+      "key": "DDI 文件尚未下载完成，请先安装 DDI。",
+      "value": "DDI 檔案尚未下載完成，請先安裝 DDI。",
+      "matched": true,
+      "sourceLanguageKeyFallback": false
+    },
+    {
+      "locale": "zh-Hant",
+      "key": "DDI 文件校验失败：%@，请重新下载。",
+      "value": "DDI 檔案驗證失敗：%@，請重新下載。",
+      "matched": true,
+      "sourceLanguageKeyFallback": false
+    },
+    {
+      "locale": "zh-Hant",
+      "key": "DDI 正在下载，请等待当前任务完成。",
+      "value": "DDI 正在下載，請等待目前的工作完成。",
+      "matched": true,
+      "sourceLanguageKeyFallback": false
+    },
+    {
+      "locale": "en",
+      "key": "DDI 文件尚未下载完成，请先安装 DDI。",
+      "value": "DDI files are not ready. Please install DDI first.",
+      "matched": true,
+      "sourceLanguageKeyFallback": false
+    },
+    {
+      "locale": "en",
+      "key": "DDI 文件校验失败：%@，请重新下载。",
+      "value": "DDI file verification failed: %@. Please download it again.",
+      "matched": true,
+      "sourceLanguageKeyFallback": false
+    },
+    {
+      "locale": "en",
+      "key": "DDI 正在下载，请等待当前任务完成。",
+      "value": "DDI is downloading. Please wait for the current task to finish.",
+      "matched": true,
+      "sourceLanguageKeyFallback": false
+    }
+  ],
+  "newDDIContentChecks": [
+    {
+      "string": "6eae353ae694bda1c421d4a3eee5459ae59c99a1",
+      "presentInExecutable": true
+    },
+    {
+      "string": "https://static.wow-app.store/Xcode_iOS_DDI_Personalized/releases/",
+      "presentInExecutable": true
+    },
+    {
+      "string": "Xcode_iOS_DDI_Cryptex",
+      "presentInExecutable": true
+    },
+    {
+      "string": "Image.dmg.cryptex_info",
+      "presentInExecutable": true
+    },
+    {
+      "string": "Image.dmg.root_hash",
+      "presentInExecutable": true
+    }
+  ],
+  "physicalDeviceValidationPerformed": false,
+  "buildWarnings": {
+    "total": 333,
+    "debugSymbolObjectFileWarnings": 332,
+    "otherWarnings": [
+      "ld: warning: object file (/Users/junyang/IdeaProjects/StikDebug/StikDebug/idevice/libpairable_host.a[2](pikmin_pairable_isolated.o)) was built for newer 'iOS' version (18.0) than being linked (17.4)"
+    ],
+    "fullLog": "/private/tmp/pikmin-0.1.7-unsigned/archive.log"
+  },
+  "sourceStateAtBuild": "Working tree changes on sourceBaseCommit; compiled inputs verified unchanged during archive.",
+  "sourceInputFilesVerifiedUnchanged": 118,
+  "releaseArchiveSucceeded": true,
+  "clientTestsPassed": 87,
+  "clientTestCommand": "CLANG_MODULE_CACHE_PATH=/tmp/pikmin-ddi-clang-cache SWIFTPM_MODULECACHE_OVERRIDE=/tmp/pikmin-ddi-clang-cache Tools/test-pikmin-runtime.sh --disable-sandbox",
+  "ddiResources": {
+    "baseURL": "https://static.wow-app.store/Xcode_iOS_DDI_Personalized/releases/6eae353ae694bda1c421d4a3eee5459ae59c99a1",
+    "files": [
+      {
+        "path": "Xcode_iOS_DDI_Cryptex/BuildManifest.plist",
+        "bytes": 804946,
+        "sha256": "27385d7582b03b36bb3104e22b520aee0c47d72fecb4e8ecfe12ef5d966c7012",
+        "verified": true
+      },
+      {
+        "path": "Xcode_iOS_DDI_Cryptex/Image.dmg",
+        "bytes": 15895040,
+        "sha256": "873097f695a8b9734e2abc54f795a8874d40ff6fd11208ecb01ef29534c7c176",
+        "verified": true
+      },
+      {
+        "path": "Xcode_iOS_DDI_Cryptex/Image.dmg.trustcache",
+        "bytes": 1895,
+        "sha256": "f7f21986074eee03a215aca16ecfc78d6bf183600d8a0d2fb691f9896782e6f0",
+        "verified": true
+      },
+      {
+        "path": "Xcode_iOS_DDI_Cryptex/Image.dmg.cryptex_info",
+        "bytes": 430,
+        "sha256": "edf49aef55aacc063d4d7be05b713bb545ce2993b3f62bcc15eccd75e610ee6c",
+        "verified": true
+      },
+      {
+        "path": "Xcode_iOS_DDI_Cryptex/Image.dmg.root_hash",
+        "bytes": 229,
+        "sha256": "3543fad2805b88119695c417e12679380b3b5a2742994bbcc839c8e2de5d7302",
+        "verified": true
+      },
+      {
+        "path": "Xcode_iOS_DDI_Personalized/BuildManifest.plist",
+        "bytes": 801505,
+        "sha256": "8edd4a2f4f4ef1fbd7bfe49785d8badc673d1395d1d94d85b132ca8ab5ecaf54",
+        "verified": true
+      },
+      {
+        "path": "Xcode_iOS_DDI_Personalized/Image.dmg",
+        "bytes": 15733248,
+        "sha256": "05fd807da5e19f030fa4941f24800c965c6c77982ab572dd5d1ef778fb69f9ca",
+        "verified": true
+      },
+      {
+        "path": "Xcode_iOS_DDI_Personalized/Image.dmg.trustcache",
+        "bytes": 1895,
+        "sha256": "36af60889ff5a737874a26daeb8e1a0139ebfebec6ec2e4d8f6a3c1bf1dce35c",
+        "verified": true
+      }
+    ]
+  },
+  "sourceChanges": [
+    {
+      "path": "PikminRuntimeTests/DDIAssetTests.swift",
+      "oldSha256": null,
+      "newSha256": "7bbf96dd509fdf6f153d619c8c7422906a41dca6379e0ef589ffb22ba0bd17d6"
+    },
+    {
+      "path": "README.md",
+      "oldSha256": "5fc8834233f3a8230c3ec20448a17d500c01456fc798aba97246ac06a22db6fe",
+      "newSha256": "eba4c1254fc978f875e87d0eb670bc75a933621a748dad8dc35c6b469569dc7b"
+    },
+    {
+      "path": "StikDebug.xcodeproj/project.pbxproj",
+      "oldSha256": "b118393dc391fa7103bda41146fd19e384d978595f642e9b9f4dda1ca0989083",
+      "newSha256": "dd5c2cad6cc73136ad9c16dcc18c37a517e2507c9b0abbc1b458a3784a0c1a90"
+    },
+    {
+      "path": "StikDebug/Core/DDIAssetSet.swift",
+      "oldSha256": null,
+      "newSha256": "3dd290d849497ab946c1fbbae7d0f056f6d988f3f01d883304c2ff22bc461861"
+    },
+    {
+      "path": "StikDebug/Device/IdeviceFFIBridge.swift",
+      "oldSha256": "5c63c5713cf8210a695be9dcafe5cb17caa4e7f61b1e7cab0f20c9837208153a",
+      "newSha256": "0d092f285296ca53b88033c2fb048a5997458d726c661e8c366d95eee8d268f5"
+    },
+    {
+      "path": "StikDebug/Device/JITEnableContext.swift",
+      "oldSha256": "203c8e491d6c57e35bb0d572bf5b04cb3540ad2cb11e990c440effbfec9bfd79",
+      "newSha256": "fa9607540c4dcaeda25192ab4f8aca80b310978813055da3168a2473b1398261"
+    },
+    {
+      "path": "StikDebug/Device/MountingProgress.swift",
+      "oldSha256": "f098d1ccb7d937a864bc1e9ff0470079abab64068728766baa6b1c2b4464bc20",
+      "newSha256": "910e93afd2371a3c6988e88772ba16b68396089ef530779af114504ba62ea341"
+    },
+    {
+      "path": "StikDebug/Device/mountDDI.swift",
+      "oldSha256": "56003ac967d478e9012b1b65c9650803f32e1eb70592387c8e065b360934cafa",
+      "newSha256": "c6b4f2246c7ee4bd3705f3eb95c7d135c25085477c71d70b9d121e21b3503ac0"
+    },
+    {
+      "path": "StikDebug/Localizable.xcstrings",
+      "oldSha256": "25f8d7bc51d735649e77170a88ef8dbceb0005ba951ec1bc6a067debe7498e95",
+      "newSha256": "c72a049650f5f8f6cabe0ddcc749d71d3442d913728265f176095ff4d66de5ba"
+    },
+    {
+      "path": "StikDebug/Services/DDIInstallationLive.swift",
+      "oldSha256": "61e622327ef7641d9f9c3119445fa89ab56f165035bfdf4452820685c9572dec",
+      "newSha256": "79631a8b7f0261f81c39a88484d978108b49569d3cfc62382793a5d79563374b"
+    },
+    {
+      "path": "StikDebug/Services/DeveloperDiskImageService.swift",
+      "oldSha256": "3180865c96b8dc43fe5226bd2588181efbf98df209c0097bf732d43fca5c22e6",
+      "newSha256": "2fd1c98f21f64298999638dc68ec6fd597f2ce4c5470d48c73a4625dbafba696"
+    },
+    {
+      "path": "StikDebug/Services/DiagnosticsReport.swift",
+      "oldSha256": "bbca4414559851f3752968b0c56ffa80cc5887261a682052a77f8bc5c234b290",
+      "newSha256": "7f7620425ebf43845175ae94d0b0ea3870537edd1e665129b94c09ce36f8806b"
+    },
+    {
+      "path": "StikDebug/Services/EnvironmentPreflightService.swift",
+      "oldSha256": "aed28b9e6e32942dd511ccc978dfe57654c05be464a3ac61026d49edc78f0efa",
+      "newSha256": "0c13c1ee0e08393f40a862b44e1fa9059f008104f10996c7785c3af4b333445e"
+    },
+    {
+      "path": "StikDebug/Services/TunnelManager.swift",
+      "oldSha256": "bc4d080e9c97a394f2fe00944ba7add7084e631e55e6aafff4db3bd6fa2a261d",
+      "newSha256": "32f48918564a9cb391a0756ead5dbad0b6d01b3a4126bc5bf37620d1f12e10c5"
+    },
+    {
+      "path": "StikDebug/idevice/idevice.h",
+      "oldSha256": "664d80e75ebebac3935d3d0a232cd94a55f1dedc04e515ba36d0905997ff0200",
+      "newSha256": "af66dc12f755497a72bf5069f049dcd7de9bb29fd8238252fdfcf2049761ba0d"
+    },
+    {
+      "path": "StikDebug/idevice/libidevice_ffi.a",
+      "oldSha256": "6524066d54ef23e00d46445c04dfc694e180196d54119d718f68434fa225be35",
+      "newSha256": "4db23fe1d342927b9480bb9a8577f219994365621dc28aa0018e23ea1990ecc8"
+    },
+    {
+      "path": "Tools/test-pikmin-runtime.sh",
+      "oldSha256": "1770795ff785dc906b2074e62b3602f6a60fd15893e51d7cd58f5f1b36a3b168",
+      "newSha256": "b08300be2aa518489460f2e6cd9a65a00b3908dcedfababbbc3b076ad8ce149a"
+    },
+    {
+      "path": "docs/ddi-cryptex-qiniu-2026-10.md",
+      "oldSha256": null,
+      "newSha256": "3af07b5c9971154ba8f237f89157ffb91bcdcfdc136b553bc1b620b3fc5450ec"
+    }
+  ]
+}

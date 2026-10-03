@@ -246,6 +246,16 @@ final class JITEnableContext {
         }
     }
 
+    /// DDI operations own their handles until all blocking native work finishes.
+    /// A preflight refresh can replace the shared tunnel without invalidating them.
+    func withDDITunnel<T>(_ body: (OpaquePointer, OpaquePointer) throws -> T) throws -> T {
+        guard DeveloperConnectionGate.beginDeveloperOperation() else {
+            throw makeError("请先停止本机 WLOC 连接测试。")
+        }
+        defer { DeveloperConnectionGate.endDeveloperOperation() }
+        return try withFreshDebugTunnel(hostname: "StikDebug-DDI", body)
+    }
+
     private func withFreshDebugTunnel<T>(
         hostname: String,
         _ body: (OpaquePointer, OpaquePointer) throws -> T

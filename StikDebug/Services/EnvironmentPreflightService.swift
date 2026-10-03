@@ -138,7 +138,10 @@ final class EnvironmentPreflightService: ObservableObject {
         set(pairingResult, for: .pairing)
         guard !DeveloperConnectionGate.isBlocked else { finishRefresh(); return }
 
-        let missingDDIFiles = Self.missingDDIFiles()
+        let missingDDIFiles = await Task.detached(priority: .userInitiated) {
+            DeveloperDiskImageService.missingFiles
+        }.value
+        guard !DeveloperConnectionGate.isBlocked else { finishRefresh(); return }
         ddiFilesMissing = !missingDDIFiles.isEmpty
         if missingDDIFiles.isEmpty {
             set(.warning("DDI 文件可用，等待 CoreDevice/RSD 后挂载".localized), for: .ddi)
@@ -314,17 +317,6 @@ final class EnvironmentPreflightService: ObservableObject {
         }
     }
 
-    nonisolated private static func missingDDIFiles() -> [String] {
-        let requiredFiles = ["Image.dmg", "Image.dmg.trustcache", "BuildManifest.plist"]
-        return requiredFiles.filter { name in
-            !FileManager.default.fileExists(
-                atPath: URL.documentsDirectory
-                    .appendingPathComponent("DDI")
-                    .appendingPathComponent(name)
-                    .path
-            )
-        }
-    }
 }
 
 private final class RouteProbe {

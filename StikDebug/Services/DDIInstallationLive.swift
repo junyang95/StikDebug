@@ -44,13 +44,8 @@ extension DDIInstallationDependencies {
                     throw DDIInstallationError.message("文件已下载。请先停止路线、摇杆或连接测试，再重试安装。".localized)
                 }
                 try await Task.detached(priority: .userInitiated) {
-                    try JITEnableContext.shared.startTunnel()
                     if checkMountStatus() == .mounted { return }
-                    let directory = URL.documentsDirectory.appendingPathComponent("DDI")
-                    if let error = mountPersonalDDI(
-                        imagePath: directory.appendingPathComponent("Image.dmg").path,
-                        trustcachePath: directory.appendingPathComponent("Image.dmg.trustcache").path,
-                        manifestPath: directory.appendingPathComponent("BuildManifest.plist").path) {
+                    if let error = mountDeveloperDiskImage(from: DeveloperDiskImageService.directoryURL.path) {
                         throw DDIInstallationError.message(error)
                     }
                     guard checkMountStatus() == .mounted else {

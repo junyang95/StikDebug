@@ -92,7 +92,14 @@ enum DiagnosticsReport {
         if pairingExists {
             row("pairing file 可解析", pairingFileParseable(pairingURL) ? "是" : "否（内容无效）")
         }
-        row("DDI 缺失文件", ddiMissingFiles().isEmpty ? "无（3 个文件齐全）" : ddiMissingFiles().joined(separator: ", "))
+        let ddiAssets = DDIAssetSet.current()
+        let missingDDI = await Task.detached(priority: .utility) {
+            DeveloperDiskImageService.missingFiles
+        }.value
+        row("DDI 类型", ddiAssets.method.directoryName)
+        row("DDI 资源版本", ddiAssets.release)
+        row("DDI 缺失或校验失败文件", missingDDI.isEmpty
+            ? "无（\(ddiAssets.files.count) 个文件校验通过）" : missingDDI.joined(separator: ", "))
 
         // MARK: 环境检查清单
         section("环境检查清单（当前 UI 状态）")
@@ -239,14 +246,6 @@ enum DiagnosticsReport {
         guard let handle else { return false }
         rp_pairing_file_free(handle)
         return true
-    }
-
-    private static func ddiMissingFiles() -> [String] {
-        ["Image.dmg", "Image.dmg.trustcache", "BuildManifest.plist"].filter { name in
-            !FileManager.default.fileExists(
-                atPath: URL.documentsDirectory.appendingPathComponent("DDI").appendingPathComponent(name).path
-            )
-        }
     }
 
     private static func vpnStatusText(_ status: NEVPNStatus) -> String {

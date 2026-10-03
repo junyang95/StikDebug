@@ -73,13 +73,15 @@ final class TunnelManager: ObservableObject {
 
     private func mountDeveloperDiskImageIfNeeded() {
         guard !DeveloperConnectionGate.isBlocked else { return }
-        let trustcachePath = URL.documentsDirectory.appendingPathComponent("DDI/Image.dmg.trustcache").path
-        guard FileManager.default.fileExists(atPath: trustcachePath),
-              !MountingProgress.shared.coolisMounted,
-              MountingProgress.shared.mountingThread == nil else {
-            return
+        Task { @MainActor in
+            let filesReady = await Task.detached(priority: .userInitiated) {
+                DeveloperDiskImageService.filesAreReady
+            }.value
+            guard !DeveloperConnectionGate.isBlocked, isConnected, filesReady,
+                  !MountingProgress.shared.coolisMounted,
+                  MountingProgress.shared.mountingThread == nil else { return }
+            MountingProgress.shared.pubMount()
         }
-        MountingProgress.shared.pubMount()
     }
 
     private func handleStartFailure(_ error: NSError, showErrorUI: Bool) {

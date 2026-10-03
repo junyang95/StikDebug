@@ -417,6 +417,54 @@
         }
       }
     },
+    "DDI 文件校验失败：%@，请重新下载。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "DDI file verification failed: %@. Please download it again."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "DDI 檔案驗證失敗：%@，請重新下載。"
+          }
+        }
+      }
+    },
+    "DDI 正在下载，请等待当前任务完成。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "DDI is downloading. Please wait for the current task to finish."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "DDI 正在下載，請等待目前的工作完成。"
+          }
+        }
+      }
+    },
+    "DDI 文件尚未下载完成，请先安装 DDI。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "DDI files are not ready. Please install DDI first."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "DDI 檔案尚未下載完成，請先安裝 DDI。"
+          }
+        }
+      }
+    },
     "DDI 下载地址无效：": {
       "localizations": {
         "en": {

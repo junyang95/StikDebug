@@ -71,3 +71,5 @@ GPS spoofing 违反 Pikmin Bloom 服务政策，可能导致账号受限或永�
 坐标校正、停止后保持位置及原生 VIP 校验的行为与发布顺序见 [修复说明](docs/buyer-fixes-2026-09.md)。
 
 0.1.6 (7) 的蜂窝网络重试、离线授权边界及 DDI 安装入口见 [说明与复测步骤](docs/cellular-authorization-and-ddi-2026-10.md)。
+
+0.1.7 (8) 支持 Personalized / Cryptex 两套 DDI，均从七牛版本目录下载，见 [资源与验证说明](docs/ddi-cryptex-qiniu-2026-10.md)。
