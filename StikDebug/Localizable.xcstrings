@@ -8144,6 +8144,11 @@
         }
       }
     },
+    "idevice_log.txt": {
+      "comment": "Exported log filename; keep it unchanged in every language.",
+      "extractionState": "manual",
+      "shouldTranslate": false
+    },
     "process %d": {
       "extractionState": "manual",
       "localizations": {
