@@ -7,24 +7,16 @@
   <p><i>An on-device debugger/JIT enabler for iOS versions 17.4+ powered by <a href="https://github.com/jkcoxson/idevice">idevice</a>.</i></p>
 </div>
 
-<h6 align="center">
-  <a href="https://discord.gg/ZnNcrRT3M8">
-    <img src="https://img.shields.io/badge/Discord-join%20us-7289DA?logo=discord&logoColor=white&style=for-the-badge&labelColor=23272A" />
-  </a>
-  <a href="https://github.com/StikDebug/StikDebug/blob/main/LICENSE">
-    <img src="https://img.shields.io/github/license/StikDebug/StikDebug?label=License&color=5865F2&style=for-the-badge&labelColor=23272A" />
-  </a>
-  <a href="https://github.com/StikDebug/StikDebug/stargazers">
-    <img src="https://img.shields.io/github/stars/StikDebug/StikDebug?label=Stars&color=FEE75C&style=for-the-badge&labelColor=23272A" />
-  </a>
-  <a href="https://github.com/StikDebug/StikDebug/releases">
-    <img src="https://img.shields.io/github/v/release/StikDebug/StikDebug?label=Latest&color=00BFFF&style=for-the-badge&labelColor=23272A" />
-  </a>
-  <br />
+<h3 align="center">
+  <a href="https://discord.gg/ZnNcrRT3M8"><img src="https://img.shields.io/badge/Discord-join%20us-7289DA?logo=discord&logoColor=white&style=for-the-badge&labelColor=23272A" /></a>&nbsp;
+  <a href="https://github.com/StikDebug/StikDebug/blob/main/LICENSE"><img src="https://img.shields.io/github/license/StikDebug/StikDebug?label=License&color=5865F2&style=for-the-badge&labelColor=23272A" /></a>&nbsp;
+  <a href="https://github.com/StikDebug/StikDebug/stargazers"><img src="https://img.shields.io/github/stars/StikDebug/StikDebug?label=Stars&color=FEE75C&style=for-the-badge&labelColor=23272A" /></a>&nbsp;
+  <a href="https://github.com/StikDebug/StikDebug/releases"><img src="https://img.shields.io/github/v/release/StikDebug/StikDebug?label=Latest&color=00BFFF&style=for-the-badge&labelColor=23272A" /></a>
+   <br />
 </h6>
 
 ## Features
-- **JIT:** Enable Just In Time compilation for sideloaded apps that have the `get-task-allow` entitlement.
+- **JIT:** Enable Just-In-Time compilation for sideloaded apps that have the `get-task-allow` entitlement.
 - **App Launching:** Launch every app installed on your device.
 - **Console:** Live app and system logs.
 - **Scripts:** Manage automation scripts (mainly used for iOS 26 JIT). 
@@ -69,12 +61,12 @@ StikDebug enables **JIT** for sideloaded apps on iOS 17.4+ without needing a com
    - Launch LocalDevVPN and enable the VPN.
 
 4. **Enable JIT for an app**  
-   - Launch StikDebug and tapp the `Enable JIT` button.
+   - Launch StikDebug and tap the `Enable JIT` button.
    - Select your sideloaded app from the list in StikDebug.  
 
 **Troubleshooting**  
 - "Connection dropped" or loopback errors → Check iOS version compatibility / beta warnings.  
-- Heartbeat errors → Ensure that the VPN is on and that you are connecected to Wi-Fi. It may be a pairing file issue.
+- Heartbeat errors → Ensure that the VPN is on and that you are connected to Wi-Fi. It may be a pairing file issue.
 - Pairing file issues → Replace file with device unlocked & trusted.  
 - Still stuck? Join the [Discord](https://discord.gg/ZnNcrRT3M8) with logs/screenshots.
 
@@ -147,13 +139,15 @@ To propose a new feature, open a feature request issue and provide:
 
 ### Code Contributions (Best Practices)
 - Follow normal Swift and SwiftUI style.
-- Write clear and easy to understand code.
+- Write clear and easy-to-understand code.
 - Keep your changes consistent with how the project is already set up.
 - Make sure everything builds and works without errors.
 
 We appreciate your time and effort in helping improve this project.
 
 ## Code Help
-[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/StikDebug/stikdebug)
+
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/StikDebug/StikDebug)
+
 ## License
 StikDebug is licensed under **AGPL-3.0**. See [`LICENSE`](LICENSE) for details.
