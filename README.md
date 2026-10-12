@@ -10,7 +10,7 @@
 <h3 align="center">
   <a href="https://discord.gg/ZnNcrRT3M8"><img src="https://img.shields.io/badge/Discord-join%20us-7289DA?logo=discord&logoColor=white&style=for-the-badge&labelColor=23272A" /></a>&nbsp;
   <a href="https://github.com/StikDebug/StikDebug/blob/main/LICENSE"><img src="https://img.shields.io/github/license/StikDebug/StikDebug?label=License&color=5865F2&style=for-the-badge&labelColor=23272A" /></a>&nbsp;
-  <a href="https://github.com/StikDebug/StikDebug/stargazers"><img src="https://img.shields.io/github/stars/StikDebug/StikDebug?label=Stars&color=FEE75C&style=for-the-badge&labelColor=23272A" /></a>&nbsp;
+  <a href="https://github.com/StikDebug/StikDebug"><img src="https://img.shields.io/github/stars/StikDebug/StikDebug?label=Stars&color=FEE75C&style=for-the-badge&labelColor=23272A" /></a>&nbsp;
   <a href="https://github.com/StikDebug/StikDebug/releases"><img src="https://img.shields.io/github/v/release/StikDebug/StikDebug?label=Latest&color=00BFFF&style=for-the-badge&labelColor=23272A" /></a>
    <br />
 </h6>
