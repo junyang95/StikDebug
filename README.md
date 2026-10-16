@@ -11,9 +11,10 @@
   <a href="https://discord.gg/ZnNcrRT3M8"><img src="https://img.shields.io/badge/Discord-join%20us-7289DA?logo=discord&logoColor=white&style=for-the-badge&labelColor=23272A" /></a>&nbsp;
   <a href="https://github.com/StikDebug/StikDebug/blob/main/LICENSE"><img src="https://img.shields.io/github/license/StikDebug/StikDebug?label=License&color=5865F2&style=for-the-badge&labelColor=23272A" /></a>&nbsp;
   <a href="https://github.com/StikDebug/StikDebug"><img src="https://img.shields.io/github/stars/StikDebug/StikDebug?label=Stars&color=FEE75C&style=for-the-badge&labelColor=23272A" /></a>&nbsp;
-  <a href="https://github.com/StikDebug/StikDebug/releases"><img src="https://img.shields.io/github/v/release/StikDebug/StikDebug?label=Latest&color=00BFFF&style=for-the-badge&labelColor=23272A" /></a>
+  <a href="https://github.com/StikDebug/StikDebug/releases"><img src="https://img.shields.io/github/v/release/StikDebug/StikDebug?label=Latest&color=00BFFF&style=for-the-badge&labelColor=23272A" /></a>&nbsp;
+   <a href="https://deepwiki.com/StikDebug/StikDebug"><img src="https://img.shields.io/badge/Ask-DeepWiki-grey?style=for-the-badge&labelColor=23272A&color=007ec6" /></a>
    <br />
-</h6>
+</h3>
 
 ## Features
 - **JIT:** Enable Just-In-Time compilation for sideloaded apps that have the `get-task-allow` entitlement.
@@ -32,7 +33,7 @@
 <h3 align="center">
 <a href="https://altdirect.app/?url=https://stikdebug.xyz/index.json" target="_blank"><img src="https://altdirect.app/assets/png/AltSource_Blue.png" alt="Add AltSource" width="200"></a>
 &nbsp;
-<a href="https://github.com/StikDebug/StikDebug/releases/latest/download/StikDebug-3.1.14.ipa" target="_blank"><img src="https://altdirect.app/assets/png/Download_Blue.png" alt="Download .ipa" width="200"></a>
+<a href="https://github.com/StikDebug/StikDebug/releases/latest/download/StikDebug-3.1.15.ipa" target="_blank"><img src="https://altdirect.app/assets/png/Download_Blue.png" alt="Download .ipa" width="200"></a>
 </h3>
 
 ## Compatibility
@@ -144,10 +145,6 @@ To propose a new feature, open a feature request issue and provide:
 - Make sure everything builds and works without errors.
 
 We appreciate your time and effort in helping improve this project.
-
-## Code Help
-
-[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/StikDebug/StikDebug)
 
 ## License
 StikDebug is licensed under **AGPL-3.0**. See [`LICENSE`](LICENSE) for details.
