@@ -17,7 +17,8 @@ struct HomeView: View {
     @State private var isShowingPairingFilePicker = false
     @State private var debugFeedback: DebugFeedback?
     @State private var pendingExternalURLAction: HomeExternalAction?
-    @State private var pendingLiveContainerApp: LiveContainerApp?
+    @State private var pendingLiveContainerApp: JITWarningApp?
+    @State private var pendingStikDebugApp: JITWarningApp?
     @State private var scriptRunModel: RunJSViewModel?
 
     private struct DebugFeedback: Identifiable {
@@ -27,15 +28,17 @@ struct HomeView: View {
         let isWorking: Bool
     }
 
-    private struct LiveContainerApp {
+    private struct JITWarningApp {
         let bundleID: String
         let name: String
     }
 
     var body: some View {
         InstalledAppsListView(onSelectApp: { selectedBundle, selectedName in
-            if selectedName.localizedCaseInsensitiveContains("LiveContainer") {
-                pendingLiveContainerApp = LiveContainerApp(bundleID: selectedBundle, name: selectedName)
+            if selectedBundle == Bundle.main.bundleIdentifier {
+                pendingStikDebugApp = JITWarningApp(bundleID: selectedBundle, name: selectedName)
+            } else if selectedName.localizedCaseInsensitiveContains("LiveContainer") {
+                pendingLiveContainerApp = JITWarningApp(bundleID: selectedBundle, name: selectedName)
             } else {
                 enableJITForSelectedApp(bundleID: selectedBundle, name: selectedName)
             }
@@ -96,6 +99,28 @@ struct HomeView: View {
             }
         } message: { _ in
             Text("StikDebug isn't meant to enable JIT for LiveContainer manually. Select StikDebug in LiveContainer settings, enable \"Run with JIT\" for your app, then open your app normally. It will automatically jump back here.")
+        }
+        .alert(
+            "Enable JIT for StikDebug?",
+            isPresented: Binding(
+                get: { pendingStikDebugApp != nil },
+                set: { isPresented in
+                    if !isPresented {
+                        pendingStikDebugApp = nil
+                    }
+                }
+            ),
+            presenting: pendingStikDebugApp
+        ) { app in
+            Button("Cancel", role: .cancel) {
+                pendingStikDebugApp = nil
+            }
+            Button("Proceed") {
+                pendingStikDebugApp = nil
+                enableJITForSelectedApp(bundleID: app.bundleID, name: app.name)
+            }
+        } message: { _ in
+            Text("StikDebug isn't meant to attach to itself. Enabling JIT for StikDebug serves no purpose. Select the app you want to enable JIT for instead.")
         }
         .fileImporter(
             isPresented: $isShowingPairingFilePicker,
