@@ -78,6 +78,11 @@ final class EnvironmentPreflightService: ObservableObject {
     private var pairingNotificationObserver: NSObjectProtocol?
     private var lastPairingSignature = PairingFileStore.stateSignature()
 
+    private var deviceSetupEnabled: Bool {
+        let authorization = VipAuthorizationService.shared
+        return authorization.hasStartedSetup && (authorization.isSetupVerified || authorization.isAuthorized)
+    }
+
     var blockingItems: [PreflightItem] {
         items.filter { item in
             switch item.kind {
@@ -90,7 +95,7 @@ final class EnvironmentPreflightService: ObservableObject {
     }
 
     var canStartSession: Bool {
-        !DeveloperConnectionGate.isBlocked && blockingItems.isEmpty
+        deviceSetupEnabled && !DeveloperConnectionGate.isBlocked && blockingItems.isEmpty
     }
 
     private init() {
@@ -120,7 +125,8 @@ final class EnvironmentPreflightService: ObservableObject {
     }
 
     func refresh() async {
-        guard !DeveloperConnectionGate.isBlocked, !isRefreshing else { return }
+        guard deviceSetupEnabled,
+              !DeveloperConnectionGate.isBlocked, !isRefreshing else { return }
         isRefreshing = true
         for kind in PreflightKind.allCases {
             set(.checking, for: kind)
@@ -136,12 +142,12 @@ final class EnvironmentPreflightService: ObservableObject {
             Self.validatePairingFile()
         }.value
         set(pairingResult, for: .pairing)
-        guard !DeveloperConnectionGate.isBlocked else { finishRefresh(); return }
+        guard deviceSetupEnabled, !DeveloperConnectionGate.isBlocked else { finishRefresh(); return }
 
         let missingDDIFiles = await Task.detached(priority: .userInitiated) {
             DeveloperDiskImageService.missingFiles
         }.value
-        guard !DeveloperConnectionGate.isBlocked else { finishRefresh(); return }
+        guard deviceSetupEnabled, !DeveloperConnectionGate.isBlocked else { finishRefresh(); return }
         ddiFilesMissing = !missingDDIFiles.isEmpty
         if missingDDIFiles.isEmpty {
             set(.warning("DDI 文件可用，等待 CoreDevice/RSD 后挂载".localized), for: .ddi)
@@ -153,7 +159,7 @@ final class EnvironmentPreflightService: ObservableObject {
         }
 
         let routeReachable = await Self.probeLocalDevRoute()
-        guard !DeveloperConnectionGate.isBlocked else { finishRefresh(); return }
+        guard deviceSetupEnabled, !DeveloperConnectionGate.isBlocked else { finishRefresh(); return }
         let vpnConnected = EmbeddedVPNService.shared.status.isConnected
         LogManager.shared.addLog(
             message: "内置 VPN 路由探测 \(DeviceConnectionContext.targetIPAddress):49152 → \(routeReachable ? "可达" : "不可达")（VPN \(vpnConnected ? "已连接" : "未连接")）",
@@ -198,7 +204,7 @@ final class EnvironmentPreflightService: ObservableObject {
             return
         }
 
-        guard !DeveloperConnectionGate.isBlocked else { finishRefresh(); return }
+        guard deviceSetupEnabled, !DeveloperConnectionGate.isBlocked else { finishRefresh(); return }
         guard missingDDIFiles.isEmpty else {
             finishRefresh()
             return
@@ -230,6 +236,7 @@ final class EnvironmentPreflightService: ObservableObject {
     }
 
     private func refreshAfterPairingFileChange() async {
+        guard deviceSetupEnabled else { return }
         let beforeMigrationSignature = PairingFileStore.stateSignature()
         guard beforeMigrationSignature != lastPairingSignature else { return }
 
@@ -243,7 +250,8 @@ final class EnvironmentPreflightService: ObservableObject {
     }
 
     func connectDevice() {
-        guard !DeveloperConnectionGate.isBlocked else { return }
+        guard deviceSetupEnabled,
+              !DeveloperConnectionGate.isBlocked else { return }
         startTunnelInBackground(showErrorUI: true)
         Task {
             for _ in 0..<24 {

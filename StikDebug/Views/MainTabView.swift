@@ -18,6 +18,8 @@ private enum TabState {
 struct MainTabView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.openURL) private var openURL
+    @Environment(\.deviceSetupEnabled) private var deviceSetupEnabled
+    @Environment(\.beginDeviceSetup) private var beginDeviceSetup
     @EnvironmentObject private var session: WalkingSessionController
     @EnvironmentObject private var health: HealthStepService
     @AppStorage(AppearancePreference.storageKey) private var appearanceRaw = AppearancePreference.system.rawValue
@@ -63,38 +65,33 @@ struct MainTabView: View {
     }
 
     var body: some View {
-        TabView(selection: $selectedTab) {
-            TodayDashboardView(selectedTab: $selectedTab)
-                .tabItem { Label("首页", systemImage: "house.fill") }
-                .tag(MainTab.home)
-
-            MovementControlView()
-                .tabItem { Label("路线", systemImage: "point.topleft.down.to.point.bottomright.curvepath") }
-                .tag(MainTab.route)
-
-            SessionHistoryView()
-                .tabItem { Label("记录", systemImage: "calendar.badge.clock") }
-                .tag(MainTab.history)
-
-            HelperSettingsView()
-                .tabItem { Label("设置", systemImage: "gearshape.fill") }
-                .tag(MainTab.settings)
-        }
-        .safeAreaInset(edge: .top, spacing: 0) {
-            if !authorization.isAuthorized {
+        VStack(spacing: 0) {
+            if !deviceSetupEnabled || !authorization.isAuthorized {
                 VStack(alignment: .leading, spacing: 6) {
-                    Text(authorization.message).font(.caption)
-                    AdaptiveActionStack {
-                        Button(action: authorization.verifyManually) {
-                            HStack {
-                                if authorization.isChecking { ProgressView() }
-                                Text(authorization.isChecking ? "取消验证" : "验证")
-                            }
-                            .frame(minHeight: 44)
+                    if !deviceSetupEnabled {
+                        if authorization.hasStartedSetup, !authorization.isSetupVerified,
+                           !authorization.isAuthorized, !authorization.isChecking {
+                            Text(authorization.message)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
                         }
-                        if authorization.needsNetworkSettings {
-                            Link("打开网络设置", destination: URL(string: UIApplication.openSettingsURLString)!)
+                        DeviceSetupPrompt()
+                    } else {
+                        Text("下一步：连接设备")
+                            .font(.subheadline.weight(.semibold))
+                        Text(authorization.message).font(.caption)
+                        AdaptiveActionStack {
+                            Button(action: beginDeviceSetup) {
+                                HStack {
+                                    if authorization.isChecking { ProgressView() }
+                                    Text(authorization.isChecking ? "取消验证" : "继续设置")
+                                }
                                 .frame(minHeight: 44)
+                            }
+                            if authorization.needsNetworkSettings {
+                                Link("打开网络设置", destination: URL(string: UIApplication.openSettingsURLString)!)
+                                    .frame(minHeight: 44)
+                            }
                         }
                     }
                 }
@@ -102,6 +99,24 @@ struct MainTabView: View {
                 .padding(10)
                 .frame(maxWidth: .infinity)
                 .background(.regularMaterial)
+            }
+
+            TabView(selection: $selectedTab) {
+                TodayDashboardView(selectedTab: $selectedTab)
+                    .tabItem { Label("首页", systemImage: "house.fill") }
+                    .tag(MainTab.home)
+
+                MovementControlView()
+                    .tabItem { Label("路线", systemImage: "point.topleft.down.to.point.bottomright.curvepath") }
+                    .tag(MainTab.route)
+
+                SessionHistoryView()
+                    .tabItem { Label("记录", systemImage: "calendar.badge.clock") }
+                    .tag(MainTab.history)
+
+                HelperSettingsView()
+                    .tabItem { Label("设置", systemImage: "gearshape.fill") }
+                    .tag(MainTab.settings)
             }
         }
         .tint(PikminUI.green)

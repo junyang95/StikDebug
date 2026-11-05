@@ -5,8 +5,9 @@ BUILD="${PIKMIN_LAYOUT_BUILD:-/tmp/pikmin-layout-preview}"
 APP="$BUILD/PikminLayoutPreview.app"
 mkdir -p "$APP"
 SDK="$(xcrun --sdk iphonesimulator --show-sdk-path)"
-xcrun swiftc -swift-version 5 -sdk "$SDK" -target arm64-apple-ios17.4-simulator \
+xcrun swiftc -swift-version 5 -sdk "$SDK" -target arm64-apple-ios17.4-simulator -module-cache-path "$BUILD/ModuleCache" \
   "$ROOT/StikDebug/Design/PikminUI.swift" "$ROOT/StikDebug/Design/AdaptiveLayout.swift" \
+  "$ROOT/StikDebug/Models/MovementProfile.swift" "$ROOT/StikDebug/Views/VipSetupView.swift" \
   "$ROOT/StikDebug/Views/TodayDashboardView.swift" "$ROOT/StikDebug/Views/OnDevicePairingView.swift" \
   "$ROOT/StikDebug/Services/DDIInstallationController.swift" "$ROOT/StikDebug/Views/DDIInstallationView.swift" \
   "$ROOT/StikDebug/Views/PreflightChecklistView.swift" \

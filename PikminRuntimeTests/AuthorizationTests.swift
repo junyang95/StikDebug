@@ -5,11 +5,13 @@ import Testing
 
 @MainActor
 private final class AuthorizationFixture {
-    var now = Date()
+    // Match the server's millisecond timestamp without sub-millisecond Date round-off.
+    var now = Date(timeIntervalSince1970: Date().timeIntervalSince1970.rounded(.down))
     let key = P256.Signing.PrivateKey()
     let gate = VipLocationGate()
     var binding: VipDeviceBinding? = VipDeviceBinding(targetIP: "127.0.0.1", pairingPath: "/pairing", pairingSignature: "A")
     var cache: CachedVipAuthorization?
+    var securityState: VipAuthorizationSecurityState?
     var legacy: Data?
     var canRead = true
     var deviceReads = 0
@@ -19,6 +21,7 @@ private final class AuthorizationFixture {
     var waiting: (@Sendable () -> Void)?
     var requestCount = 0
     var requestTimeout: TimeInterval = 0.05
+    var monitoringInterval: TimeInterval = 60
     var deviceResponse: (() async throws -> String)?
 
     func envelope(udid: String = "test-device", nonce: String, status: String = "VALID", vip: Bool = true,
@@ -31,6 +34,8 @@ private final class AuthorizationFixture {
     func seed(age: TimeInterval = 0, expireAt: Double = 0) throws {
         cache = CachedVipAuthorization(binding: binding!, udid: "test-device",
             envelope: try envelope(nonce: "previous", timestamp: now.addingTimeInterval(-age), expireAt: expireAt))
+        securityState = .anchored(serverTime: now.timeIntervalSince1970, wallTime: now,
+            uptime: ProcessInfo.processInfo.systemUptime, bootID: "test-boot", envelope: cache!.envelope)
     }
     func read() async throws -> String {
         deviceReads += 1
@@ -49,17 +54,110 @@ private final class AuthorizationFixture {
             request: { try await self.request(udid: $0, nonce: $1, waiting: $2) },
             load: { self.cache }, loadLegacy: { _ in self.legacy }, save: { self.cache = $0 },
             remove: { self.cache = nil; self.legacy = nil; self.removals += 1 },
-            verify: { try VipLicenseVerifier.verify($0, udid: $1, nonce: $2, now: $3, publicKey: self.key.publicKey.x963Representation) },
-            now: { self.now }, revoked: { self.revocations += 1 }, deviceTimeout: 0.05, requestTimeout: requestTimeout)
+            loadSecurityState: { self.securityState }, saveSecurityState: { self.securityState = $0 },
+            verify: { try VipLicenseVerifier.verify($0, udid: $1, nonce: $2, now: $3, publicKey: self.key.publicKey.x963Representation,
+                trustFreshServerTime: $2 != nil) },
+            now: { self.now }, revoked: { self.revocations += 1 }, deviceTimeout: 0.05,
+            requestTimeout: requestTimeout, monitoringInterval: monitoringInterval, bootID: { "test-boot" })
         return VipAuthorizationService(dependencies: dependencies, gate: gate)
     }
 }
 
 @Suite(.serialized) @MainActor struct AuthorizationTests {
+    @Test func coldLaunchAndAutomaticEventsDoNotStartSetupOrReadDevice() async throws {
+        let f = AuthorizationFixture()
+        f.monitoringInterval = 0.01
+        let service = f.makeService()
+        service.startMonitoring()
+        service.connectionDidBecomeAvailable()
+        service.pairingDidChange()
+        await service.refresh(force: true)
+        try await Task.sleep(for: .milliseconds(40))
+        #expect(!service.hasStartedSetup && !service.isChecking && !service.isAuthorized)
+        #expect(f.requestCount == 0 && f.deviceReads == 0 && f.removals == 0)
+    }
+
+    @Test func cachedLaunchRestoresLocallyWithoutActivatingBackgroundRequests() async throws {
+        let f = AuthorizationFixture()
+        f.monitoringInterval = 0.01
+        try f.seed(age: 86400)
+        let service = f.makeService()
+        #expect(service.restoreCachedAuthorization() != nil)
+        #expect(service.isAuthorized && !service.hasStartedSetup)
+        service.startMonitoring()
+        service.connectionDidBecomeAvailable()
+        service.pairingDidChange()
+        await service.refresh(force: true)
+        try await Task.sleep(for: .milliseconds(40))
+        #expect(service.isAuthorized && !service.hasStartedSetup)
+        #expect(f.requestCount == 0 && f.deviceReads == 0 && f.removals == 0)
+        #expect(f.gate.allows(udid: "test-device", now: f.now))
+    }
+
+    @Test func explicitSetupActionStartsExactlyOneRequest() async {
+        let f = AuthorizationFixture()
+        let service = f.makeService()
+        service.startSetup()
+        service.startSetup()
+        #expect(service.hasStartedSetup && service.isChecking)
+        await service.refresh(force: true)
+        #expect(service.isAuthorized && !service.isChecking)
+        #expect(f.requestCount == 1 && f.deviceReads == 1)
+    }
+
+    @Test func cancellingFirstStepStopsTimerRecoveryAndPairingRetriesUntilAnotherClick() async throws {
+        let f = AuthorizationFixture()
+        f.monitoringInterval = 0.01
+        f.requestTimeout = 2
+        var pending: CheckedContinuation<Data, Never>?
+        f.response = { _, _ in await withCheckedContinuation { pending = $0 } }
+        let service = f.makeService()
+        service.startSetup()
+        await waitUntil { pending != nil }
+        service.cancelVerification()
+        #expect(!service.hasStartedSetup && !service.isChecking)
+        f.now = f.now.addingTimeInterval(120)
+        service.startMonitoring()
+        service.connectionDidBecomeAvailable()
+        service.pairingDidChange()
+        await service.refresh(force: true)
+        pending?.resume(returning: Data())
+        try await Task.sleep(for: .milliseconds(40))
+        #expect(f.requestCount == 1 && f.deviceReads == 1)
+        #expect(!service.hasStartedSetup && !service.isAuthorized)
+
+        f.response = nil
+        service.startSetup()
+        await service.refresh(force: true)
+        #expect(service.hasStartedSetup && service.isAuthorized)
+        #expect(f.requestCount == 2 && f.deviceReads == 2)
+    }
+
+    @Test func cancellingARecheckKeepsBoundLicenseAndMonitoringDuringUse() async throws {
+        let f = AuthorizationFixture()
+        f.monitoringInterval = 0.01
+        f.requestTimeout = 2
+        try f.seed()
+        var pending: CheckedContinuation<Data, Never>?
+        f.response = { _, _ in await withCheckedContinuation { pending = $0 } }
+        let service = f.makeService()
+        service.startSetup()
+        await waitUntil { pending != nil }
+        service.cancelVerification()
+        #expect(service.hasStartedSetup && service.isAuthorized)
+        #expect(f.gate.allows(udid: "test-device", now: f.now))
+        pending?.resume(returning: Data())
+        f.response = nil
+        f.now = f.now.addingTimeInterval(31)
+        await waitUntil { f.requestCount == 2 && !service.isChecking }
+        #expect(service.isAuthorized && f.removals == 0 && f.deviceReads == 0)
+    }
+
     @Test func allowsNetworkAfterFirstDenialRetriesImmediately() async {
         let f = AuthorizationFixture()
         f.response = { _, _ in throw URLError(.dataNotAllowed) }
         let service = f.makeService()
+        service.startSetup()
         await service.refresh(force: true)
         #expect(!service.isAuthorized && service.needsNetworkSettings)
         #expect(f.removals == 0)
@@ -112,6 +210,7 @@ private final class AuthorizationFixture {
         let f = AuthorizationFixture()
         f.canRead = false
         let service = f.makeService()
+        service.startSetup()
         await service.refresh(force: true)
         #expect(!service.isAuthorized && f.deviceReads == 0)
         f.canRead = true
@@ -125,6 +224,7 @@ private final class AuthorizationFixture {
         try f.seed(age: 3600)
         f.response = { _, _ in throw URLError(.dataNotAllowed) }
         let service = f.makeService()
+        service.startSetup()
         await service.refresh(force: true)
         #expect(service.isAuthorized && service.needsNetworkSettings)
         #expect(f.cache != nil && f.removals == 0 && f.revocations == 0)
@@ -159,6 +259,7 @@ private final class AuthorizationFixture {
             service.connectionDidBecomeAvailable()
             return try f.envelope(udid: udid, nonce: nonce, status: "BANNED", banned: true)
         }
+        service.startSetup()
         await service.refresh(force: true)
         service.connectionDidBecomeAvailable()
         await Task.yield()
@@ -169,6 +270,7 @@ private final class AuthorizationFixture {
     @Test func onlineActivationSavesSignedDeviceBinding() async {
         let f = AuthorizationFixture()
         let service = f.makeService()
+        service.startSetup()
         await service.refresh(force: true)
         #expect(service.isAuthorized)
         #expect(!service.isChecking)
@@ -183,6 +285,7 @@ private final class AuthorizationFixture {
         let service = f.makeService()
         #expect(service.restoreCachedAuthorization() != nil)
         #expect(service.isAuthorized)
+        service.startSetup()
         await service.refresh(force: true)
         #expect(service.isAuthorized)
         #expect(f.gate.allows(udid: "test-device", now: f.now))
@@ -195,18 +298,24 @@ private final class AuthorizationFixture {
         try f.seed()
         f.response = { _, _ in Data("<html>Maintenance</html>".utf8) }
         let service = f.makeService()
+        service.startSetup()
         await service.refresh(force: true)
         #expect(service.isAuthorized)
         #expect(f.cache != nil && f.removals == 0)
     }
-    @Test func offlineRetriesDoNotRestartThreeDayClock() async throws {
+    @Test func offlineRetriesDoNotRestartSevenDayClock() async throws {
         let f = AuthorizationFixture()
         try f.seed()
         f.response = { _, _ in throw URLError(.timedOut) }
         let service = f.makeService()
+        service.startSetup()
         await service.refresh(force: true)
         let deadline = try #require(service.offlineValidUntil)
-        f.now = f.now.addingTimeInterval(2 * 86400)
+        #expect(deadline == f.now.addingTimeInterval(7 * 86400))
+        f.now = f.now.addingTimeInterval(6 * 86400)
+        await service.refresh(force: true)
+        #expect(service.isAuthorized && service.offlineValidUntil == deadline)
+        f.now = deadline.addingTimeInterval(-1)
         await service.refresh(force: true)
         #expect(service.isAuthorized && service.offlineValidUntil == deadline)
         f.now = deadline
@@ -219,6 +328,7 @@ private final class AuthorizationFixture {
         try f.seed(expireAt: f.now.addingTimeInterval(3600).timeIntervalSince1970 * 1000)
         f.response = { _, _ in throw URLError(.notConnectedToInternet) }
         let service = f.makeService()
+        service.startSetup()
         await service.refresh(force: true)
         #expect(service.isAuthorized)
         f.now = f.now.addingTimeInterval(3601)
@@ -230,6 +340,7 @@ private final class AuthorizationFixture {
         try f.seed()
         f.response = { udid, nonce in try f.envelope(udid: udid, nonce: nonce, status: "BANNED", banned: true) }
         let service = f.makeService()
+        service.startSetup()
         await service.refresh(force: true)
         #expect(!service.isAuthorized && f.cache == nil)
         #expect(f.removals == 1)
@@ -242,6 +353,7 @@ private final class AuthorizationFixture {
         f.canRead = false
         f.response = { _, _ in throw URLError(.notConnectedToInternet) }
         let service = f.makeService()
+        service.startSetup()
         await service.refresh(force: true)
         #expect(service.isAuthorized && f.deviceReads == 0)
         #expect(f.cache != nil && f.removals == 0)
@@ -252,6 +364,7 @@ private final class AuthorizationFixture {
         f.binding = VipDeviceBinding(targetIP: "127.0.0.1", pairingPath: "/pairing", pairingSignature: "B")
         f.canRead = false
         let service = f.makeService()
+        service.startSetup()
         await service.refresh(force: true)
         #expect(!service.isAuthorized)
         #expect(!f.gate.allows(now: f.now))
@@ -260,17 +373,22 @@ private final class AuthorizationFixture {
         let f = AuthorizationFixture()
         f.response = { _, _ in throw URLError(.cannotFindHost) }
         let service = f.makeService()
+        service.startSetup()
         await service.refresh(force: true)
         #expect(!service.isAuthorized && !service.isChecking)
     }
-    @Test func legacySignedCacheMigratesDuringOutage() async throws {
+    @Test func legacyCacheRequiresOnlineMigration() async throws {
         let f = AuthorizationFixture()
         f.legacy = try f.envelope(nonce: "old", timestamp: f.now.addingTimeInterval(-3600))
         f.response = { _, _ in throw URLError(.notConnectedToInternet) }
         let service = f.makeService()
+        service.startSetup()
+        await service.refresh(force: true)
+        #expect(!service.isAuthorized && f.cache == nil)
+        #expect(f.deviceReads == 1)
+        f.response = nil
         await service.refresh(force: true)
         #expect(service.isAuthorized && f.cache != nil)
-        #expect(f.deviceReads == 1)
     }
     @Test func hungDeviceReadTimesOutAndLateResultCannotAuthorize() async {
         let f = AuthorizationFixture()
@@ -278,6 +396,7 @@ private final class AuthorizationFixture {
         f.deviceResponse = { await withCheckedContinuation { pending = $0 } }
         let service = f.makeService()
         let start = ContinuousClock.now
+        service.startSetup()
         await service.refresh(force: true)
         #expect(ContinuousClock.now - start < .seconds(1))
         #expect(!service.isChecking && !service.isAuthorized)
@@ -307,6 +426,7 @@ private final class AuthorizationFixture {
         var pending: CheckedContinuation<Data, Never>?
         f.response = { _, _ in await withCheckedContinuation { pending = $0 } }
         let service = f.makeService()
+        service.startSetup()
         await service.refresh(force: true)
         #expect(!service.isChecking && service.isAuthorized)
         #expect(f.removals == 0)
@@ -367,18 +487,19 @@ struct AuthorizationTransportTests {
         #expect(configuration.allowsCellularAccess)
         #expect(configuration.allowsExpensiveNetworkAccess && configuration.allowsConstrainedNetworkAccess)
         #expect(configuration.timeoutIntervalForRequest == 20)
-        #expect(configuration.timeoutIntervalForResource == 60)
+        #expect(configuration.timeoutIntervalForResource == 20)
     }
 }
 
 @Suite(.serialized) @MainActor struct AuthorizationRenewalTests {
     @Test func expiredSignedIdentityCanRenewWithoutLocalVPN() async throws {
         let f = AuthorizationFixture()
-        try f.seed(age: 4 * 86400)
+        try f.seed(age: 8 * 86400)
         f.canRead = false
         let service = f.makeService()
         #expect(service.restoreCachedAuthorization() == nil)
         #expect(!service.isAuthorized)
+        service.startSetup()
         await service.refresh(force: true)
         #expect(service.isAuthorized && f.requestCount == 1 && f.deviceReads == 0)
     }
@@ -397,10 +518,11 @@ struct AuthorizationTransportTests {
 
     @Test func expiredIdentityNeverGrantsOfflineAccess() async throws {
         let f = AuthorizationFixture()
-        try f.seed(age: 4 * 86400)
+        try f.seed(age: 8 * 86400)
         f.canRead = false
         f.response = { _, _ in throw URLError(.dnsLookupFailed) }
         let service = f.makeService()
+        service.startSetup()
         await service.refresh(force: true)
         #expect(!service.isAuthorized && !f.gate.allows(now: f.now))
         #expect(f.requestCount == 1 && f.deviceReads == 0)
@@ -412,16 +534,18 @@ struct AuthorizationTransportTests {
         f.cache = CachedVipAuthorization(binding: f.binding!, udid: "tampered", envelope: Data("invalid".utf8))
         f.canRead = false
         let service = f.makeService()
+        service.startSetup()
         await service.refresh(force: true)
         #expect(!service.isAuthorized && f.requestCount == 0)
     }
 
     @Test func changedPairingCannotRenewUsingExpiredIdentity() async throws {
         let f = AuthorizationFixture()
-        try f.seed(age: 4 * 86400)
+        try f.seed(age: 8 * 86400)
         f.binding = VipDeviceBinding(targetIP: "127.0.0.1", pairingPath: "/pairing", pairingSignature: "new")
         f.canRead = false
         let service = f.makeService()
+        service.startSetup()
         await service.refresh(force: true)
         #expect(!service.isAuthorized && f.requestCount == 0)
     }

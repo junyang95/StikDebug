@@ -119,6 +119,8 @@ final class LocationSearchCompleter: NSObject, ObservableObject, MKLocalSearchCo
 }
 
 struct LocationSimulationView: View {
+    @Environment(\.deviceSetupEnabled) private var deviceSetupEnabled
+    @Environment(\.beginDeviceSetup) private var beginDeviceSetup
     @EnvironmentObject private var walkingSession: WalkingSessionController
     @EnvironmentObject private var preflight: EnvironmentPreflightService
     @EnvironmentObject private var vpn: EmbeddedVPNService
@@ -149,6 +151,7 @@ struct LocationSimulationView: View {
     @State private var showSaveRoute = false
     @State private var newRouteName = ""
     @State private var showCoordinateEntry = false
+    @State private var beginSetupAfterCoordinateEntry = false
     @State private var coordinateEntryText = ""
     @State private var showGPXExporter = false
     @State private var gpxDocument: GPXRouteDocument?
@@ -415,9 +418,9 @@ struct LocationSimulationView: View {
                         Text(startBlockReason).font(.caption).foregroundStyle(.orange)
                     }
                     RouteActionBar(
-                    startTitle: profile.startActionTitle,
+                    startTitle: deviceSetupEnabled ? profile.startActionTitle : "开始设置".localized,
                     isActive: walkingSession.isActive,
-                    canStart: pairingExists && preflight.canStartSession && !isBusy && waypointPlanner.isReady,
+                    canStart: !deviceSetupEnabled || (pairingExists && preflight.canStartSession && !isBusy && waypointPlanner.isReady),
                     canRestore: !isBusy,
                     start: startWaypointWalk,
                     stop: { Task { await walkingSession.stop() } },
@@ -510,9 +513,19 @@ struct LocationSimulationView: View {
         } message: {
             Text("保存后可以随时载入，不用重新点一遍。")
         }
-        .sheet(isPresented: $showCoordinateEntry) {
+        .sheet(isPresented: $showCoordinateEntry, onDismiss: {
+            if beginSetupAfterCoordinateEntry {
+                beginSetupAfterCoordinateEntry = false
+                beginDeviceSetup()
+            }
+        }) {
             CoordinateEntrySheet(initialText: coordinateEntryText) { coordinate, shouldTeleport in
-                applyEnteredCoordinate(coordinate, teleport: shouldTeleport)
+                if shouldTeleport && !deviceSetupEnabled {
+                    applyEnteredCoordinate(coordinate, teleport: false)
+                    beginSetupAfterCoordinateEntry = true
+                } else {
+                    applyEnteredCoordinate(coordinate, teleport: shouldTeleport)
+                }
             }
         }
         .fileImporter(
@@ -844,13 +857,13 @@ struct LocationSimulationView: View {
         VStack(spacing: 8) {
             if coordinate != nil {
                 Button(action: simulate) {
-                    Label("传送到此处", systemImage: "location.fill")
+                    Label(deviceSetupEnabled ? "传送到此处".localized : "开始设置".localized, systemImage: "location.fill")
                         .fixedSize(horizontal: false, vertical: true)
                         .frame(maxWidth: .infinity, minHeight: 44)
                 }
                 .buttonStyle(.borderedProminent)
                     .tint(PikminUI.actionGreen)
-                .disabled(!pairingExists || isBusy || vpn.isExperimentEnabled || vpn.isTransitioning)
+                .disabled(isBusy || (deviceSetupEnabled && (!pairingExists || vpn.isExperimentEnabled || vpn.isTransitioning)))
             } else {
                 coordinateEntryButton
             }
@@ -1024,6 +1037,7 @@ struct LocationSimulationView: View {
     /// 「开始行走」变灰时告诉用户卡在哪一步，而不是让按钮默默不可点。
     private var startBlockReason: String? {
         guard !walkingSession.isActive, !waypointPlanner.isEmpty else { return nil }
+        if !deviceSetupEnabled { return nil }
         if !pairingExists {
             return "尚未导入 pairing file，请先在设置页完成配对".localized
         }
@@ -1034,6 +1048,7 @@ struct LocationSimulationView: View {
     }
 
     private func startWaypointWalk() {
+        guard deviceSetupEnabled else { beginDeviceSetup(); return }
         guard pairingExists, !isBusy else { return }
         let coordinates = waypointPlanner.playbackCoordinates
         guard let firstCoordinate = coordinates.first, coordinates.count > 1 else { return }
@@ -1168,6 +1183,7 @@ struct LocationSimulationView: View {
 
     // 显式传坐标：手动输入经纬度时刚写完 @State 就要用，不依赖状态回读的时序。
     private func simulate(at coord: CLLocationCoordinate2D) {
+        guard deviceSetupEnabled else { beginDeviceSetup(); return }
         guard pairingExists, !isBusy else { return }
         guard VipLocationGate.shared.allows() else {
             alertTitle = "VIP 授权".localized

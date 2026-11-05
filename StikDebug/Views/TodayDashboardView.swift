@@ -66,6 +66,7 @@ struct TodayDashboardView: View {
     @Binding var selectedTab: MainTab
     @Environment(\.dynamicTypeSize) private var typeSize
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.deviceSetupEnabled) private var deviceSetupEnabled
     @ScaledMetric(relativeTo: .largeTitle) private var stepNumberSize = 42
     @EnvironmentObject private var session: WalkingSessionController
     @EnvironmentObject private var preflight: EnvironmentPreflightService
@@ -138,13 +139,11 @@ struct TodayDashboardView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar(.hidden, for: .navigationBar)
             .refreshable {
+                guard deviceSetupEnabled else { return }
                 await permissions.refresh()
+                guard !Task.isCancelled else { return }
                 await health.refreshToday()
-                await preflight.refresh()
-            }
-            .task {
-                await permissions.refresh()
-                await health.refreshToday()
+                guard !Task.isCancelled else { return }
                 await preflight.refresh()
             }
         }
@@ -191,18 +190,20 @@ struct TodayDashboardView: View {
         VStack(alignment: .leading, spacing: 16) {
             AdaptiveActionStack {
                 Text("今日总步数").font(.headline)
-                Text(stepStage.label)
+                Text(deviceSetupEnabled ? stepStage.label : "尚未读取".localized)
                     .font(.caption.weight(.semibold))
                     .padding(.horizontal, 10)
                     .padding(.vertical, 4)
                     .background(.white.opacity(0.18), in: Capsule())
             }
-            Text(health.todayTotalSteps.formatted())
+            Text(deviceSetupEnabled ? health.todayTotalSteps.formatted() : "—")
                 .font(.system(size: stepNumberSize, weight: .bold, design: .rounded))
                 .monospacedDigit()
                 .lineLimit(1)
                 .minimumScaleFactor(0.7)
-                .accessibilityLabel(String(format: "%@ 步".localized, health.todayTotalSteps.formatted()))
+                .accessibilityLabel(deviceSetupEnabled
+                    ? String(format: "%@ 步".localized, health.todayTotalSteps.formatted())
+                    : "尚未读取步数".localized)
 
             // 到 5 万上限的进度条，并在 3 万 / 4 万处标出阶段分界。
             VStack(alignment: .leading, spacing: 6) {

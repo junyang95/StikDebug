@@ -14,6 +14,8 @@ struct MovementStatusCapsule: View {
     @EnvironmentObject private var session: WalkingSessionController
     @EnvironmentObject private var preflight: EnvironmentPreflightService
     @EnvironmentObject private var vpn: EmbeddedVPNService
+    @Environment(\.deviceSetupEnabled) private var deviceSetupEnabled
+    @Environment(\.beginDeviceSetup) private var beginDeviceSetup
     @ObservedObject private var fixedSession = FixedLocationSessionController.shared
 
     let selectedMode: MovementMode
@@ -21,6 +23,7 @@ struct MovementStatusCapsule: View {
     let selectedSpeedKilometersPerHour: Double
 
     @State private var isExpanded = false
+    @State private var beginsSetupAfterDismissal = false
 
     private var presentation: MovementStatusPresentation {
         if vpn.isExperimentEnabled {
@@ -230,7 +233,12 @@ struct MovementStatusCapsule: View {
         .background(PikminUI.cardBackground, in: RoundedRectangle(cornerRadius: 16))
         .accessibilityLabel("位置模拟状态：\(presentation.title)")
         .accessibilityHint("查看连接状态与诊断")
-        .sheet(isPresented: $isExpanded) {
+        .sheet(isPresented: $isExpanded, onDismiss: {
+            if beginsSetupAfterDismissal {
+                beginsSetupAfterDismissal = false
+                beginDeviceSetup()
+            }
+        }) {
             NavigationStack {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 20) {
@@ -348,7 +356,7 @@ struct MovementStatusCapsule: View {
             }
 
             AdaptiveActionStack {
-                if !vpn.status.isConnected {
+                if deviceSetupEnabled, !vpn.status.isConnected {
                     Button {
                         Task { await vpn.connect() }
                     } label: {
@@ -361,14 +369,20 @@ struct MovementStatusCapsule: View {
                 }
 
                 Button {
-                    Task { await preflight.refresh() }
+                    if deviceSetupEnabled {
+                        Task { await preflight.refresh() }
+                    } else {
+                        beginsSetupAfterDismissal = true
+                        isExpanded = false
+                    }
                 } label: {
-                    Label("重新检查", systemImage: "arrow.clockwise")
+                    Label(deviceSetupEnabled ? "重新检查".localized : "开始设置".localized,
+                          systemImage: deviceSetupEnabled ? "arrow.clockwise" : "arrow.right.circle")
                         .frame(maxWidth: .infinity, minHeight: 44)
                 }
                 .buttonStyle(.borderedProminent)
                 .tint(PikminUI.actionGreen)
-                .disabled(preflight.isRefreshing)
+                .disabled(deviceSetupEnabled && preflight.isRefreshing)
             }
             .font(.subheadline.weight(.semibold))
         }

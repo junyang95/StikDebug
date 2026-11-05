@@ -107,5 +107,11 @@ import Testing
         #expect(fixed.coordinate == nil)
         #expect(!DeviceCommands.shared.snapshot().contains("clear"))
         #expect(BackgroundAudioManager.shared.leases == 0)
+        // The setup screen retains this explicit recovery action after revocation.
+        #expect(!VipLocationGate.shared.allows())
+        await session.restoreRealLocation()
+        await drain()
+        #expect(DeviceCommands.shared.snapshot().last == "clear")
+        #expect(session.currentCoordinate == nil && session.lastError == nil)
     }
 }

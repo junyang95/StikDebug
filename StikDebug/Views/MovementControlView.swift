@@ -3,6 +3,8 @@ import MapKit
 import SwiftUI
 
 struct MovementControlView: View {
+    @Environment(\.deviceSetupEnabled) private var deviceSetupEnabled
+    @Environment(\.beginDeviceSetup) private var beginDeviceSetup
     @EnvironmentObject private var session: WalkingSessionController
     @EnvironmentObject private var preflight: EnvironmentPreflightService
     @EnvironmentObject private var vpn: EmbeddedVPNService
@@ -100,13 +102,14 @@ struct MovementControlView: View {
             VStack(spacing: 12) {
                 if !session.isActive {
                     Button(action: startSession) {
-                        Label(profile.startActionTitle, systemImage: profile == .cycling ? "bicycle" : "figure.walk.motion")
+                        Label(deviceSetupEnabled ? profile.startActionTitle : "开始设置".localized,
+                              systemImage: profile == .cycling ? "bicycle" : "figure.walk.motion")
                             .fixedSize(horizontal: false, vertical: true)
                             .frame(maxWidth: .infinity, minHeight: 44)
                     }
                     .buttonStyle(.borderedProminent)
                     .tint(PikminUI.actionGreen)
-                    .disabled(session.currentCoordinate == nil || !preflight.canStartSession)
+                    .disabled(deviceSetupEnabled && (session.currentCoordinate == nil || !preflight.canStartSession))
                 } else {
                     AdaptiveControlGrid(minimumWidth: 120) {
                         Button {
@@ -192,6 +195,7 @@ struct MovementControlView: View {
     }
 
     private func startSession() {
+        guard deviceSetupEnabled else { beginDeviceSetup(); return }
         guard let coordinate = session.currentCoordinate else { return }
         let normalizedGoal: Double
         switch goalKind {

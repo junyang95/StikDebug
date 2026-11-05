@@ -32,7 +32,7 @@ struct PrivacyNetworkView: View {
                 )
                 disclosure(
                     title: "设备授权校验",
-                    detail: "App 会将已配对设备的 UDID 发送到 wow-app.store，用于检查 VIP、到期与封禁状态；不会上传配对文件或模拟坐标。",
+                    detail: "App 会将安装包中的设备标识或已配对设备的 UDID 发送到 app-shop.cn，连接失败时尝试 wow-app.store，用于检查 VIP、到期与封禁状态；不会上传配对文件或模拟坐标。",
                     symbol: "checkmark.shield", tint: .green
                 )
                 disclosure(

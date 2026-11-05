@@ -5,6 +5,8 @@ struct PermissionChecklistView: View {
     @ObservedObject var service: PermissionChecklistService
     var compact = false
     @Environment(\.openURL) private var openURL
+    @Environment(\.deviceSetupEnabled) private var deviceSetupEnabled
+    @Environment(\.beginDeviceSetup) private var beginDeviceSetup
     @State private var permissionAlert: PermissionAlert?
 
     var body: some View {
@@ -13,9 +15,9 @@ struct PermissionChecklistView: View {
                 Label("系统权限", systemImage: "person.badge.key.fill")
                     .font(.headline)
                 Spacer()
-                if service.isRefreshing {
+                if deviceSetupEnabled, service.isRefreshing {
                     ProgressView()
-                } else {
+                } else if deviceSetupEnabled {
                     Button("检查") {
                         Task { await service.refresh() }
                     }
@@ -24,19 +26,23 @@ struct PermissionChecklistView: View {
                 }
             }
 
-            ForEach(service.items) { item in
-                VStack(alignment: .leading, spacing: 8) {
-                    Button {
-                        handleTap(item)
-                    } label: {
-                        permissionRow(item)
-                    }
-                    .buttonStyle(.plain)
+            if deviceSetupEnabled {
+                ForEach(service.items) { item in
+                    VStack(alignment: .leading, spacing: 8) {
+                        Button {
+                            handleTap(item)
+                        } label: {
+                            permissionRow(item)
+                        }
+                        .buttonStyle(.plain)
 
-                    if !compact, !item.status.isReady {
-                        permissionAction(for: item)
+                        if !compact, !item.status.isReady {
+                            permissionAction(for: item)
+                        }
                     }
                 }
+            } else {
+                primaryActionButton("开始设置", systemImage: "arrow.right.circle", action: beginDeviceSetup)
             }
         }
         .padding(compact ? 12 : 16)
@@ -145,6 +151,7 @@ struct PermissionChecklistView: View {
     }
 
     private func handleTap(_ item: PermissionItem) {
+        guard deviceSetupEnabled else { beginDeviceSetup(); return }
         switch item.kind {
         case .vpn:
             Task { await service.requestVPNPermission() }

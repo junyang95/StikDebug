@@ -1,6 +1,310 @@
 {
   "sourceLanguage" : "zh-Hans",
   "strings" : {
+    "准备使用时，点开始设置验证 VIP 并连接设备。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "When you’re ready, tap Get started to verify your VIP membership and connect your device."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "準備使用時，點「開始設定」驗證 VIP 並連接裝置。"
+          }
+        }
+      }
+    },
+    "尚未读取" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Not read yet"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "尚未讀取"
+          }
+        }
+      }
+    },
+    "尚未读取步数" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Steps not read yet"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "尚未讀取步數"
+          }
+        }
+      }
+    },
+    "开始设置后自动连接" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Auto-connect after starting setup"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "開始設定後自動連接"
+          }
+        }
+      }
+    },
+    "继续设置" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Continue setup"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "繼續設定"
+          }
+        }
+      }
+    },
+    "已恢复真实定位": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Real location restored."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已恢復真實定位"
+          }
+        }
+      }
+    },
+    "开始设置": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Get started"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "開始設定"
+          }
+        }
+      }
+    },
+    "先验证 VIP": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Verify VIP access first"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "先驗證 VIP"
+          }
+        }
+      }
+    },
+    "验证通过后，再设置设备连接与系统权限。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Once verification succeeds, set up the device connection and system permissions."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "驗證通過後，再設定裝置連線與系統權限。"
+          }
+        }
+      }
+    },
+    "VIP 验证": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "VIP verification"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "VIP 驗證"
+          }
+        }
+      }
+    },
+    "验证 VIP": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Verify VIP access"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "驗證 VIP"
+          }
+        }
+      }
+    },
+    "完成设备连接后，会自动核对当前设备与 VIP 授权是否匹配。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "After the device connects, the app will automatically check that it matches the VIP license."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "完成裝置連線後，會自動核對目前裝置與 VIP 授權是否相符。"
+          }
+        }
+      }
+    },
+    "下一步：连接设备": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Next: connect your device"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "下一步：連接裝置"
+          }
+        }
+      }
+    },
+    "首先验证 VIP 授权，验证通过后继续设置": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Verify VIP access first, then continue setup."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "首先驗證 VIP 授權，驗證通過後繼續設定"
+          }
+        }
+      }
+    },
+    "正在核对已连接设备…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Checking the connected device…"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在核對已連接裝置…"
+          }
+        }
+      }
+    },
+    "安装包授权与已连接设备不一致，请获取为本设备签名的安装包": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The app package’s license does not match the connected device. Get a package signed for this device."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "安裝包授權與已連接裝置不一致，請取得為本裝置簽署的安裝包"
+          }
+        }
+      }
+    },
+    "VIP 已验证，请继续配置设备连接": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "VIP verification passed. Continue setting up the device connection."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "VIP 已驗證，請繼續設定裝置連線"
+          }
+        }
+      }
+    },
+    "当前安装包缺少设备标识，请获取为本设备签名的安装包后重试": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This app package has no device identifier. Get a package signed for this device, then try again."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "目前安裝包缺少裝置識別碼，請取得為本裝置簽署的安裝包後重試"
+          }
+        }
+      }
+    },
+    "验证超时，请检查网络后重试": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Verification timed out. Check your network connection and try again."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "驗證逾時，請檢查網路後重試"
+          }
+        }
+      }
+    },
     "打开 DDI 安装": {
       "localizations": {
         "en": {
@@ -1633,18 +1937,18 @@
         }
       }
     },
-    "服务器暂不可用时可继续使用本地授权，最多保留 3 天" : {
+    "服务器暂不可用时可继续使用本地授权，最多保留 7 天" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Your saved license allows up to 3 days of access while the server is unavailable."
+            "value" : "Your saved license allows up to 7 days of access while the server is unavailable."
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "伺服器暫不可用時可繼續使用本機授權，最多保留 3 天"
+            "value" : "伺服器暫不可用時可繼續使用本機授權，最多保留 7 天"
           }
         }
       }
@@ -2001,18 +2305,18 @@
         }
       }
     },
-    "App 会将已配对设备的 UDID 发送到 wow-app.store，用于检查 VIP、到期与封禁状态；不会上传配对文件或模拟坐标。" : {
+    "App 会将安装包中的设备标识或已配对设备的 UDID 发送到 app-shop.cn，连接失败时尝试 wow-app.store，用于检查 VIP、到期与封禁状态；不会上传配对文件或模拟坐标。" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "The app sends the paired device’s UDID to wow-app.store to check VIP access, expiry and bans. Pairing files and simulated coordinates are not uploaded."
+            "value" : "The app sends the device identifier included in the app package or the paired device’s UDID to app-shop.cn, falling back to wow-app.store if the connection fails, to check VIP access, expiry and bans. Pairing files and simulated coordinates are not uploaded."
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "App 會將已配對裝置的 UDID 傳送至 wow-app.store，用於檢查 VIP、到期與封禁狀態；不會上傳配對檔案或模擬座標。"
+            "value" : "App 會將安裝包中的裝置識別碼或已配對裝置的 UDID 傳送至 app-shop.cn，連線失敗時嘗試 wow-app.store，用於檢查 VIP、到期與封禁狀態；不會上傳配對檔案或模擬座標。"
           }
         }
       }
@@ -3828,7 +4132,20 @@
       }
     },
     "关闭" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Close"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "關閉"
+          }
+        }
+      }
     },
     "其他网络" : {
       "extractionState" : "manual",

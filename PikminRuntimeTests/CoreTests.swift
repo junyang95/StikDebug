@@ -85,9 +85,24 @@ struct LicenseTests {
     }
     @Test func offlineGraceIsBoundedBySignedTimeAndExpiry() throws {
         #expect(try verify(envelope(age: 86400), nonce: nil).permitsUse(at: now))
-        #expect(try !verify(envelope(age: 3*86400), nonce: nil).permitsUse(at: now))
+        #expect(try verify(envelope(age: 3 * 86400), nonce: nil).permitsUse(at: now))
+        #expect(try verify(envelope(age: 7 * 86400 - 1), nonce: nil).permitsUse(at: now))
+        #expect(try !verify(envelope(age: 7 * 86400), nonce: nil).permitsUse(at: now))
+        #expect(try !verify(envelope(age: 7 * 86400 + 1), nonce: nil).permitsUse(at: now))
         #expect(try !verify(envelope(age: -600), nonce: nil).permitsUse(at: now))
         #expect(throws: (any Error).self) { try verify(envelope(age: 600)) }
+    }
+    @Test func membershipExpiryCanShortenButNeverExtendTheWeek() throws {
+        let weekEnd = now.addingTimeInterval(7 * 86400)
+        let noExpiry = try verify(envelope())
+        let laterExpiry = try verify(envelope(expire: now.addingTimeInterval(30 * 86400).timeIntervalSince1970 * 1000))
+        #expect(noExpiry.validUntil == weekEnd && laterExpiry.validUntil == weekEnd)
+
+        let membershipEnd = now.addingTimeInterval(2 * 86400)
+        let earlierExpiry = try verify(envelope(expire: membershipEnd.timeIntervalSince1970 * 1000))
+        #expect(earlierExpiry.validUntil == membershipEnd)
+        #expect(earlierExpiry.permitsUse(at: membershipEnd.addingTimeInterval(-1)))
+        #expect(!earlierExpiry.permitsUse(at: membershipEnd))
     }
     @Test func commandGateBindsDeviceAndRevokes() throws {
         let gate = VipLocationGate()

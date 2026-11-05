@@ -6,6 +6,8 @@ struct PreflightChecklistView: View {
     @EnvironmentObject private var onDevicePairing: OnDevicePairingService
     var compact = false
     @Environment(\.openURL) private var openURL
+    @Environment(\.deviceSetupEnabled) private var deviceSetupEnabled
+    @Environment(\.beginDeviceSetup) private var beginDeviceSetup
     @State private var showOnDevicePairing = false
     @State private var showDDIInstallation = false
 
@@ -32,9 +34,9 @@ struct PreflightChecklistView: View {
                 Label("运行环境", systemImage: "checklist")
                     .font(.headline)
                 Spacer()
-                if service.isRefreshing {
+                if deviceSetupEnabled, service.isRefreshing {
                     ProgressView()
-                } else {
+                } else if deviceSetupEnabled {
                     Button("检查") {
                         Task { await service.refresh() }
                     }
@@ -43,30 +45,32 @@ struct PreflightChecklistView: View {
                 }
             }
 
-            ForEach(service.items) { item in
-                VStack(alignment: .leading, spacing: 8) {
-                    if item.kind == .ddi {
-                        Button { showDDIInstallation = true } label: {
-                            HStack(spacing: 8) {
-                                environmentRow(item)
-                                Image(systemName: "chevron.right").font(.caption).foregroundStyle(.secondary)
+            if deviceSetupEnabled {
+                ForEach(service.items) { item in
+                    VStack(alignment: .leading, spacing: 8) {
+                        if item.kind == .ddi {
+                            Button { showDDIInstallation = true } label: {
+                                HStack(spacing: 8) {
+                                    environmentRow(item)
+                                    Image(systemName: "chevron.right").font(.caption).foregroundStyle(.secondary)
+                                }
+                                .frame(minHeight: 44)
+                                .contentShape(Rectangle())
                             }
-                            .frame(minHeight: 44)
-                            .contentShape(Rectangle())
+                            .buttonStyle(.plain)
+                            .accessibilityHint(Text("打开 DDI 安装"))
+                        } else {
+                            environmentRow(item)
                         }
-                        .buttonStyle(.plain)
-                        .accessibilityHint(Text("打开 DDI 安装"))
-                    } else {
-                        environmentRow(item)
-                    }
 
-                    if (!compact || item.kind == .ddi), !item.status.isReady {
-                        environmentAction(for: item)
+                        if (!compact || item.kind == .ddi), !item.status.isReady {
+                            environmentAction(for: item)
+                        }
                     }
                 }
+            } else {
+                primaryActionButton("开始设置", systemImage: "arrow.right.circle", action: beginDeviceSetup)
             }
-
-
         }
         .padding(compact ? 12 : 16)
         .background(PikminUI.cardBackground, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
@@ -79,6 +83,12 @@ struct PreflightChecklistView: View {
         }
         .sheet(isPresented: $showDDIInstallation) {
             DDIInstallationView()
+        }
+        .onChange(of: deviceSetupEnabled) { _, enabled in
+            if !enabled {
+                showOnDevicePairing = false
+                showDDIInstallation = false
+            }
         }
     }
 

@@ -2,6 +2,8 @@ import SwiftUI
 import UIKit
 
 struct HelperSettingsView: View {
+    @Environment(\.deviceSetupEnabled) private var deviceSetupEnabled
+    @Environment(\.beginDeviceSetup) private var beginDeviceSetup
     @EnvironmentObject private var localization: LocalizationManager
     @EnvironmentObject private var preflight: EnvironmentPreflightService
     @EnvironmentObject private var permissions: PermissionChecklistService
@@ -86,16 +88,16 @@ struct HelperSettingsView: View {
                         }
                         .font(.caption)
                     }
-                    Button(action: authorization.verifyManually) {
+                    Button(action: beginDeviceSetup) {
                         HStack {
                             if authorization.isChecking { ProgressView() }
-                            Text(authorization.isChecking ? "取消验证" : "重新验证授权")
+                            Text((authorization.isChecking ? "取消验证" : deviceSetupEnabled ? "重新验证授权" : "开始设置").localized)
                         }
                     }
                     if authorization.needsNetworkSettings {
                         Link("打开网络设置", destination: URL(string: UIApplication.openSettingsURLString)!)
                     }
-                    Link("购买或续费", destination: URL(string: "https://wow-app.store/vip")!)
+                    Link("购买或续费", destination: URL(string: "https://app-shop.cn/vip")!)
                 }
                 Section {
                     HStack(spacing: 12) {
@@ -116,6 +118,7 @@ struct HelperSettingsView: View {
 
                     if onDevicePairing.isSupported {
                         Button {
+                            guard deviceSetupEnabled else { beginDeviceSetup(); return }
                             showOnDevicePairing = true
                         } label: {
                             Label("iOS 27 本机配对（1–7 步）", systemImage: "iphone.and.arrow.forward")
@@ -128,6 +131,7 @@ struct HelperSettingsView: View {
                     }
 
                     Button {
+                        guard deviceSetupEnabled else { beginDeviceSetup(); return }
                         showPairingImporter = true
                     } label: {
                         Label(onDevicePairing.isSupported ? "导入电脑生成的文件（备用）" : "导入 pairing file", systemImage: "square.and.arrow.down")
@@ -136,6 +140,7 @@ struct HelperSettingsView: View {
                         Text(importMessage).font(.caption).foregroundStyle(.secondary)
                     }
                     Button {
+                        guard deviceSetupEnabled else { beginDeviceSetup(); return }
                         preflight.connectDevice()
                     } label: {
                         Label("连接设备并检查定位通道", systemImage: "point.3.connected.trianglepath.dotted")
@@ -151,7 +156,7 @@ struct HelperSettingsView: View {
                 Section("内置本地隧道") {
                     LabeledContent("连接用途", value: vpn.modeTitle)
                     LabeledContent("VPN 状态", value: vpn.status.title)
-                    Toggle("启动 App 时自动连接", isOn: $autoConnectVPN)
+                    Toggle("开始设置后自动连接", isOn: $autoConnectVPN)
                     if vpn.status.isConnected {
                         Button("断开内置 VPN", role: .destructive) {
                             vpn.disconnect()
@@ -159,6 +164,7 @@ struct HelperSettingsView: View {
                         }
                     } else {
                         Button("连接内置 VPN") {
+                            guard deviceSetupEnabled else { beginDeviceSetup(); return }
                             Task {
                                 await vpn.connect()
                                 try? await Task.sleep(for: .seconds(1))
@@ -274,6 +280,7 @@ struct HelperSettingsView: View {
                         Label("本机 WLOC 连接测试", systemImage: "testtube.2")
                     }
                     .accessibilityIdentifier("settings.wlocProbe")
+                    .disabled(!deviceSetupEnabled)
                     Text("仅验证本机 HTTPS 透传，不修改定位。")
                         .font(.caption).foregroundStyle(.secondary)
                 }
@@ -282,11 +289,11 @@ struct HelperSettingsView: View {
                 Section("后台运行") {
                     Toggle("使用低精度定位保活", isOn: $keepAliveLocation)
                         .onChange(of: keepAliveLocation) { _, _ in
-                            BackgroundLocationManager.shared.refreshPreferences()
+                            if deviceSetupEnabled { BackgroundLocationManager.shared.refreshPreferences() }
                         }
                     Toggle("使用静音音频兜底", isOn: $keepAliveAudio)
                         .onChange(of: keepAliveAudio) { _, _ in
-                            BackgroundAudioManager.shared.refreshPreferences()
+                            if deviceSetupEnabled { BackgroundAudioManager.shared.refreshPreferences() }
                         }
                     Text("定位保活能耗较低，建议开启。静音音频仅在系统容易暂停后台任务时作为兜底；关闭后锁屏期间可能更容易中断。")
                         .font(.caption)
@@ -295,6 +302,7 @@ struct HelperSettingsView: View {
 
                 Section("健康") {
                     Button("请求 HealthKit 权限") {
+                        guard deviceSetupEnabled else { beginDeviceSetup(); return }
                         Task { _ = await health.requestAuthorization() }
                     }
                     LabeledContent("本 App 今日写入", value: String(format: "%d 步".localized, health.todayAppSteps))
@@ -373,6 +381,7 @@ struct HelperSettingsView: View {
             allowsMultipleSelection: false
         ) { result in
             do {
+                guard deviceSetupEnabled else { return }
                 guard let url = try result.get().first else { return }
                 try PairingFileStore.importFromPicker(url)
                 importMessage = "导入成功".localized
@@ -389,6 +398,12 @@ struct HelperSettingsView: View {
         }
         .sheet(isPresented: $showPrivacyDetails) {
             PrivacyNetworkView()
+        }
+        .onChange(of: deviceSetupEnabled) { _, enabled in
+            if !enabled {
+                showOnDevicePairing = false
+                showPairingImporter = false
+            }
         }
     }
 
@@ -424,7 +439,7 @@ struct HelperSettingsView: View {
     private func generateDiagnostics() {
         isGeneratingDiagnostics = true
         Task {
-            let report = await DiagnosticsReport.generate()
+            let report = await DiagnosticsReport.generate(includeDeviceProbe: deviceSetupEnabled)
             diagnosticsText = report
             isGeneratingDiagnostics = false
             showDiagnostics = true

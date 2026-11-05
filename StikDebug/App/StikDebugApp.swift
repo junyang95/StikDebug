@@ -11,9 +11,15 @@ struct StikDebugApp: App {
     @StateObject private var vpn = EmbeddedVPNService.shared
     @StateObject private var onDevicePairing = OnDevicePairingService.shared
     @StateObject private var localization = LocalizationManager.shared
+    @StateObject private var authorization = VipAuthorizationService.shared
+    @State private var startupStarted = false
     @State private var startupDecisionMade = false
+    @State private var showVIPSetup = false
+    @State private var isVIPSheetPresented = false
     @State private var showStartupPairingGuide = false
     @State private var presentedPairingGuideThisLaunch = false
+    @State private var isPreparingEnvironment = false
+    @State private var environmentGeneration = 0
     private let isTesting: Bool
     private let modelContainer: ModelContainer
 
@@ -38,10 +44,27 @@ struct StikDebugApp: App {
                 .environmentObject(onDevicePairing)
                 .environmentObject(localization)
                 .environment(\.locale, localization.locale)
+                .environment(\.deviceSetupEnabled, canPrepareEnvironment && !automaticWorkDisabled
+                             && !isVIPSheetPresented && !showStartupPairingGuide)
+                .environment(\.beginDeviceSetup, beginDeviceSetup)
                 // 重建整棵树，让已经渲染出来的文案按新语言重新查表。
                 .id(localization.language)
+                .sheet(isPresented: vipSheetPresentation, onDismiss: {
+                    isVIPSheetPresented = false
+                    if canPrepareEnvironment {
+                        Task { await advanceSetup() }
+                    } else {
+                        authorization.cancelVerification()
+                    }
+                }) {
+                    VipSetupView(authorization: authorization,
+                                 restoreLocation: restoreLocationAction,
+                                 verify: beginDeviceSetup,
+                                 close: dismissVIPSetup)
+                        .environment(\.locale, localization.locale)
+                }
                 .sheet(isPresented: $showStartupPairingGuide, onDismiss: {
-                    Task { await prepareEnvironment() }
+                    Task { await advanceSetup() }
                 }) {
                     OnDevicePairingView()
                         .environmentObject(onDevicePairing)
@@ -51,73 +74,171 @@ struct StikDebugApp: App {
                         .environment(\.locale, localization.locale)
                 }
                 .task {
-                    guard !isTesting,
-                          !ProcessInfo.processInfo.arguments.contains("--ui-testing") else { return }
-                    // Restore entitlement locally before VPN, HealthKit or other network work.
-                    VipAuthorizationService.shared.restoreCachedAuthorization()
-                    let pairingURL = PairingFileStore.prepareURL()
-                    let hasPairing = PairingFileStore.isValidPairingFile(at: pairingURL)
-                    if PairingGuidePolicy.shouldPresent(
-                        isSupported: onDevicePairing.isSupported,
-                        hasValidPairing: hasPairing,
-                        presentedThisLaunch: presentedPairingGuideThisLaunch
-                    ) {
-                        presentedPairingGuideThisLaunch = true
-                        showStartupPairingGuide = true
-                        startupDecisionMade = true
-                        return
+                    guard !automaticWorkDisabled, !startupStarted else { return }
+                    startupStarted = true
+                    // Browsing is passive. Only the explicit setup button starts verification.
+                    authorization.restoreCachedAuthorization()
+                }
+                .onChange(of: canPrepareEnvironment) { _, enabled in
+                    if enabled {
+                        if isVIPSheetPresented {
+                            showVIPSetup = false
+                        } else {
+                            Task { await advanceSetup() }
+                        }
+                    } else {
+                        environmentGeneration += 1
+                        startupDecisionMade = false
+                        showStartupPairingGuide = false
+                        #if DEBUG
+                        if !automaticWorkDisabled { WLOCUSBDebugBridge.shared.setActive(false) }
+                        #endif
                     }
-                    startupDecisionMade = true
-                    await prepareEnvironment()
                 }
                 .onChange(of: onDevicePairing.phase) { _, phase in
-                    if phase == .succeeded, !showStartupPairingGuide {
-                        Task { await prepareEnvironment() }
+                    if phase == .succeeded, canPrepareEnvironment, !showStartupPairingGuide {
+                        Task { await advanceSetup() }
                     }
                 }
                 .onChange(of: vpn.status) { _, status in
-                    guard status.isConnected, !isTesting, startupDecisionMade,
+                    guard status.isConnected, !automaticWorkDisabled, canPrepareEnvironment, startupDecisionMade,
                           !showStartupPairingGuide, !onDevicePairing.isBusy else { return }
-                    VipAuthorizationService.shared.connectionDidBecomeAvailable()
+                    authorization.connectionDidBecomeAvailable()
                 }
                 .onChange(of: scenePhase) { _, phase in
                     #if DEBUG
-                    if !isTesting, !ProcessInfo.processInfo.arguments.contains("--ui-testing") {
-                        WLOCUSBDebugBridge.shared.setActive(phase == .active)
+                    if !automaticWorkDisabled {
+                        WLOCUSBDebugBridge.shared.setActive(phase == .active && canPrepareEnvironment)
                     }
                     #endif
                     FixedLocationSessionController.shared.updateForegroundState(phase == .active)
-                    guard phase == .active, !isTesting, startupDecisionMade,
+                    guard phase == .active, !automaticWorkDisabled, startupStarted, authorization.hasStartedSetup,
                           !showStartupPairingGuide, !onDevicePairing.isBusy else { return }
                     Task {
                         // Returning from a permission prompt/settings must not lose a retry.
-                        VipAuthorizationService.shared.connectionDidBecomeAvailable()
-                        await VipAuthorizationService.shared.refresh()
-                    }
-                    Task {
+                        authorization.connectionDidBecomeAvailable()
+                        await authorization.refresh()
+                        guard canPrepareEnvironment else { return }
                         session.refreshAfterForeground()
-                        await prepareEnvironment()
+                        await advanceSetup()
                     }
                 }
         }
         .modelContainer(modelContainer)
     }
 
+    private var hasPassedVIPStep: Bool {
+        authorization.isSetupVerified || authorization.isAuthorized
+    }
+
+    private var canPrepareEnvironment: Bool {
+        authorization.hasStartedSetup && hasPassedVIPStep
+    }
+
+    /// A swipe dismissal withdraws the request just like the explicit close button.
+    /// Programmatic dismissal after verification preserves the completed first step.
+    private var vipSheetPresentation: Binding<Bool> {
+        Binding(get: { showVIPSetup }, set: { presented in
+            if !presented { authorization.cancelVerification() }
+            showVIPSetup = presented
+        })
+    }
+
+    private func dismissVIPSetup() {
+        authorization.cancelVerification()
+        showVIPSetup = false
+    }
+
+    @MainActor
+    private func beginDeviceSetup() {
+        guard !automaticWorkDisabled else {
+            // UI tests exercise presentation without contacting production services.
+            isVIPSheetPresented = true
+            showVIPSetup = true
+            return
+        }
+        if authorization.isChecking {
+            authorization.cancelVerification()
+            return
+        }
+        startupStarted = true
+        authorization.startSetup()
+        if canPrepareEnvironment {
+            Task { await advanceSetup() }
+        } else {
+            isVIPSheetPresented = true
+            showVIPSetup = true
+        }
+    }
+
+    /// Revocation must not hide the command that clears an existing simulated location.
+    /// This explicit recovery action does not start setup or request new permissions.
+    private var restoreLocationAction: (() async -> String?)? {
+        guard FileManager.default.fileExists(atPath: PairingFileStore.url.path) else { return nil }
+        return {
+            await session.restoreRealLocation()
+            return session.lastError
+        }
+    }
+
+    private var automaticWorkDisabled: Bool {
+        isTesting || ProcessInfo.processInfo.arguments.contains("--ui-testing")
+    }
+
+    @MainActor
+    private func advanceSetup() async {
+        guard !automaticWorkDisabled, startupStarted, canPrepareEnvironment,
+              !isVIPSheetPresented, !showStartupPairingGuide, !onDevicePairing.isBusy else { return }
+        if !startupDecisionMade {
+            startupDecisionMade = true
+            let pairingURL = PairingFileStore.prepareURL()
+            let hasPairing = PairingFileStore.isValidPairingFile(at: pairingURL)
+            if PairingGuidePolicy.shouldPresent(
+                isSupported: onDevicePairing.isSupported,
+                hasValidPairing: hasPairing,
+                presentedThisLaunch: presentedPairingGuideThisLaunch
+            ) {
+                presentedPairingGuideThisLaunch = true
+                showStartupPairingGuide = true
+                return
+            }
+        }
+        await prepareEnvironment()
+    }
+
     @MainActor
     private func prepareEnvironment() async {
-        guard !isTesting, !showStartupPairingGuide, !onDevicePairing.isBusy else { return }
-        VipAuthorizationService.shared.startMonitoring()
+        guard !automaticWorkDisabled, canPrepareEnvironment, !isVIPSheetPresented, !showStartupPairingGuide,
+              !onDevicePairing.isBusy, !isPreparingEnvironment else { return }
+        isPreparingEnvironment = true
+        let generation = environmentGeneration
+        defer {
+            isPreparingEnvironment = false
+            // A renewed grant may have arrived while a previous preparation was suspended.
+            if generation != environmentGeneration, canPrepareEnvironment {
+                Task { await advanceSetup() }
+            }
+        }
         await vpn.load()
+        guard mayContinuePreparation(generation) else { return }
         #if DEBUG
         WLOCUSBDebugBridge.shared.setActive(scenePhase == .active)
         #endif
         if UserDefaults.standard.bool(forKey: "autoConnectEmbeddedVPN"), !vpn.status.isConnected {
             await vpn.connect()
         }
-        Task { await VipAuthorizationService.shared.refresh(force: true) }
+        guard mayContinuePreparation(generation) else { return }
+        if vpn.status.isConnected { authorization.connectionDidBecomeAvailable() }
         await permissions.refresh()
+        guard mayContinuePreparation(generation) else { return }
         await preflight.refresh()
+        guard mayContinuePreparation(generation) else { return }
         await health.refreshToday()
     }
 
+    @MainActor
+    private func mayContinuePreparation(_ generation: Int) -> Bool {
+        !Task.isCancelled && generation == environmentGeneration && canPrepareEnvironment
+            && !isVIPSheetPresented && !showStartupPairingGuide && !onDevicePairing.isBusy
+    }
 }

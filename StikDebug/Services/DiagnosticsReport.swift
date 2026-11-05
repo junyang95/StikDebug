@@ -27,7 +27,7 @@ private final class DiagnosticsCompletionGate: @unchecked Sendable {
 enum DiagnosticsReport {
 
     @MainActor
-    static func generate() async -> String {
+    static func generate(includeDeviceProbe: Bool = true) async -> String {
         var lines: [String] = []
         func section(_ title: String) { lines.append(""); lines.append("== \(title) ==") }
         func row(_ key: String, _ value: String) { lines.append("\(key): \(value)") }
@@ -77,7 +77,12 @@ enum DiagnosticsReport {
         // MARK: 关键路由探测
         section("关键路由探测")
         let target = DeviceConnectionContext.targetIPAddress
-        let probe = await probeTCP(host: target, port: 49152, timeout: 3)
+        let authorization = VipAuthorizationService.shared
+        let canProbe = includeDeviceProbe && authorization.hasStartedSetup
+            && (authorization.isSetupVerified || authorization.isAuthorized)
+        let probe = canProbe
+            ? await probeTCP(host: target, port: 49152, timeout: 3)
+            : "尚未开始设备设置，未执行连接探测"
         row("\(target):49152（内置 VPN 路由判定依据）", probe)
         lines.append("说明：App 判定「内置 VPN 路由」是否就绪，靠的就是能否连上这个地址，")
         lines.append("而不是系统 VPN 开关。这个地址由内置隧道映射到设备本地开发服务，")

@@ -6,32 +6,31 @@ import CoreTelephony
 
 /// Make the real request to trigger any system prompt; reachability is never an access gate.
 enum AuthorizationHTTPClient {
+    static let endpoints = [
+        URL(string: "https://app-shop.cn/api/vip-license.action")!,
+        URL(string: "https://wow-app.store/api/vip-license.action")!
+    ]
+    static let endpointTimeout: TimeInterval = 20
+
     static func configuration() -> URLSessionConfiguration {
         let configuration = URLSessionConfiguration.ephemeral
         configuration.waitsForConnectivity = true
         configuration.allowsCellularAccess = true
         configuration.allowsExpensiveNetworkAccess = true
         configuration.allowsConstrainedNetworkAccess = true
-        configuration.timeoutIntervalForRequest = 20
-        configuration.timeoutIntervalForResource = 60
+        configuration.timeoutIntervalForRequest = endpointTimeout
+        configuration.timeoutIntervalForResource = endpointTimeout
         configuration.requestCachePolicy = .reloadIgnoringLocalCacheData
         return configuration
     }
 
     static func request(udid: String, nonce: String, waiting: @escaping @Sendable () -> Void) async throws -> Data {
-        var request = URLRequest(url: URL(string: "https://wow-app.store/api/vip-license.action")!)
-        request.setValue(udid, forHTTPHeaderField: "DEVICE_UDID")
-        request.setValue(nonce, forHTTPHeaderField: "X-VIP-NONCE")
-        request.setValue("PikminHelper/0.1.6", forHTTPHeaderField: "User-Agent")
-        return try await AuthorizationRequestRetry.run {
-            // A new session drops stale connections after a Wi-Fi/cellular handover.
-            // The service bounds this entire operation, including retries, to 60 seconds.
+        try await AuthorizationEndpointFallback.request(udid: udid, nonce: nonce) { request in
+            // Each endpoint gets a fresh connection and a separate deadline. The first
+            // endpoint cannot consume the service's entire 60-second request budget.
             let session = URLSession(configuration: configuration())
             defer { session.invalidateAndCancel() }
-            let response = try await session.data(for: request, delegate: ConnectivityDelegate(waiting: waiting))
-            guard let http = response.1 as? HTTPURLResponse else { throw URLError(.badServerResponse) }
-            guard http.statusCode == 200 else { throw AuthorizationHTTPError(status: http.statusCode) }
-            return response.0
+            return try await session.data(for: request, delegate: ConnectivityDelegate(waiting: waiting))
         }
     }
 
@@ -41,6 +40,57 @@ enum AuthorizationHTTPClient {
         func urlSession(_ session: URLSession, taskIsWaitingForConnectivity task: URLSessionTask) {
             waiting()
         }
+        func urlSession(_ session: URLSession, task: URLSessionTask,
+                        willPerformHTTPRedirection response: HTTPURLResponse, newRequest request: URLRequest,
+                        completionHandler: @escaping (URLRequest?) -> Void) {
+            // Do not forward a device identifier to a redirect destination. A redirect
+            // is an unavailable endpoint; the fixed, trusted fallback is tried next.
+            completionHandler(nil)
+        }
+    }
+}
+
+/// Only a verified response ends fallback, including an authenticated denial.
+/// Both endpoints receive the same identity and nonce; neither can renew cached access
+/// with a maintenance page, another device's grant or a replayed response.
+enum AuthorizationEndpointFallback {
+    static func request(
+        udid: String,
+        nonce: String,
+        endpoints: [URL] = AuthorizationHTTPClient.endpoints,
+        endpointTimeout: TimeInterval = AuthorizationHTTPClient.endpointTimeout,
+        publicKey: Data = Data(base64Encoded: VipLicenseVerifier.publicKeyBase64)!,
+        now: @escaping @Sendable () -> Date = { Date() },
+        transport: @escaping @Sendable (URLRequest) async throws -> (Data, URLResponse)
+    ) async throws -> Data {
+        var lastError: Error = URLError(.cannotConnectToHost)
+        for endpoint in endpoints {
+            try Task.checkCancellation()
+            var request = URLRequest(url: endpoint)
+            request.setValue(udid, forHTTPHeaderField: "DEVICE_UDID")
+            request.setValue(nonce, forHTTPHeaderField: "X-VIP-NONCE")
+            request.setValue("PikminHelper/0.1.8", forHTTPHeaderField: "User-Agent")
+            let candidate = request
+            do {
+                let (data, response) = try await withAuthorizationDeadline(seconds: endpointTimeout) {
+                    try await transport(candidate)
+                }
+                try Task.checkCancellation()
+                guard let http = response as? HTTPURLResponse else { throw URLError(.badServerResponse) }
+                guard http.statusCode == 200 else { throw AuthorizationHTTPError(status: http.statusCode) }
+                _ = try VipLicenseVerifier.verify(data, udid: udid, nonce: nonce, now: now(), publicKey: publicKey,
+                                                 trustFreshServerTime: true)
+                try Task.checkCancellation()
+                return data
+            } catch {
+                try Task.checkCancellation()
+                if error is CancellationError || (error as? URLError)?.code == .cancelled {
+                    throw CancellationError()
+                }
+                lastError = error
+            }
+        }
+        throw lastError
     }
 }
 
