@@ -10,7 +10,7 @@ struct PairingSetupView: View {
     @ScaledMetric(relativeTo: .largeTitle) private var pinSize = 42
     let openLaunch: () -> Void
     @State private var importingPairing = false
-    @State private var importerError: String?
+    @State private var importFeedback: ImportFeedback?
     @State private var copiedPIN = false
     @State private var prepareWhenConnected = false
 
@@ -27,6 +27,10 @@ struct PairingSetupView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
+                WowDeviceAccessView(model: model)
+                    .padding(20)
+                    .background(Color(uiColor: .secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 20))
+                if model.isSetupAccessReady {
                 statusHeader
                 if !model.isWiFiAvailable {
                     Label(LocalizedStringKey(model.wifiStatusKey), systemImage: "wifi.slash")
@@ -36,15 +40,17 @@ struct PairingSetupView: View {
                 }
                 if let code = pairing.pinCode { pinCard(code) }
                 pairingMessages
-                pairingGuide
+                if pairing.isSupported {
+                    pairingGuide
+                } else {
+                    computerPairingGuide
+                }
                 readiness
-                WowDeviceAccessView(model: model)
-                    .padding(20)
-                    .background(Color(uiColor: .secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 20))
-                manualPairing
+                if pairing.isSupported { manualPairing }
                 Text("setup.reuse_hint")
                     .font(.footnote)
                     .foregroundStyle(.secondary)
+                }
             }
             .frame(maxWidth: 680)
             .padding(20)
@@ -53,30 +59,23 @@ struct PairingSetupView: View {
         .background(Color(uiColor: .systemGroupedBackground))
         .navigationTitle("app.name")
         .navigationBarTitleDisplayMode(.inline)
-        .safeAreaInset(edge: .bottom, spacing: 0) { actionBar }
-        .fileImporter(isPresented: $importingPairing, allowedContentTypes: [.item]) { result in
-            switch result {
-            case .success(let url): model.importPairingFile(from: url)
-            case .failure(let error): importerError = error.localizedDescription
-            }
-        }
-        .alert("pairing.import_failed", isPresented: Binding(
-            get: { importerError != nil },
-            set: { if !$0 { importerError = nil } }
-        )) {
-            Button("common.ok") { importerError = nil }
-        } message: {
-            Text(importerError ?? "")
+        .safeAreaInset(edge: .bottom, spacing: 0) { if model.isSetupAccessReady { actionBar } }
+        .sheet(isPresented: $importingPairing) {
+            PairingFileImporter(onCompletion: handlePairingImport)
         }
         .onChange(of: pairing.pinCode) { _, _ in copiedPIN = false }
         .onChange(of: vpn.status) { _, status in
-            guard prepareWhenConnected else { return }
+            guard model.connectionMode == .builtIn, prepareWhenConnected else { return }
             if status == .connected {
                 prepareWhenConnected = false
                 prepareIfReady()
             } else if (status == .disconnected || status == .invalid) && !vpn.isBusy {
                 prepareWhenConnected = false
             }
+        }
+        .onChange(of: model.connectionMode) { _, _ in prepareWhenConnected = false }
+        .onChange(of: model.isSetupAccessReady) { _, ready in
+            if !ready { prepareWhenConnected = false; importingPairing = false }
         }
         .onChange(of: model.wifiState) { _, state in
             if !state.isAvailable { prepareWhenConnected = false }
@@ -87,15 +86,15 @@ struct PairingSetupView: View {
     private var statusHeader: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(alignment: .top, spacing: 14) {
-                Image(systemName: pairing.errorMessage != nil ? "exclamationmark.circle" : hasRecord ? "checkmark.shield.fill" : "iphone.and.arrow.forward")
+                Image(systemName: pairing.errorMessage != nil ? "exclamationmark.circle" : hasRecord ? "checkmark.shield.fill" : pairing.isSupported ? "iphone.and.arrow.forward" : "desktopcomputer")
                     .font(.title)
                     .foregroundStyle(pairing.errorMessage != nil ? Color.orange : Color.accentColor)
                     .accessibilityHidden(true)
                 VStack(alignment: .leading, spacing: 6) {
-                    guideText(hasRecord && !pairing.isRunning ? "guide.title.paired" : "guide.title.pairing")
+                    guideText(hasRecord && !pairing.isRunning ? "guide.title.paired" : pairing.isSupported ? "guide.title.pairing" : "guide.computer.title")
                         .font(.largeTitle.bold())
                         .accessibilityAddTraits(.isHeader)
-                    guideText(hasRecord && !pairing.isRunning ? "guide.subtitle.paired" : "guide.subtitle.pairing")
+                    guideText(hasRecord && !pairing.isRunning ? "guide.subtitle.paired" : pairing.isSupported ? "guide.subtitle.pairing" : "guide.computer.subtitle")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                 }
@@ -220,6 +219,9 @@ struct PairingSetupView: View {
                 .font(.title2.bold())
                 .accessibilityAddTraits(.isHeader)
             VStack(alignment: .leading, spacing: 16) {
+                DeviceConnectionModePicker(model: model)
+                    .disabled(prepareWhenConnected)
+                Divider()
                 PairingReadinessRow(
                     title: Text("wifi.title"),
                     detail: Text(LocalizedStringKey(model.wifiStatusKey)),
@@ -241,15 +243,24 @@ struct PairingSetupView: View {
                 }
                 Divider()
                 PairingReadinessRow(
-                    title: guideText("guide.readiness.vpn"),
-                    detail: Text(LocalizedStringKey(vpn.status.localizationKey)),
-                    systemImage: "network.badge.shield.half.filled", isReady: vpn.isConnected
+                    title: Text(LocalizedStringKey(model.connectionMode == .external ? "connection.mode.external" : "connection.mode.builtIn")),
+                    detail: Text(LocalizedStringKey(model.connectionStatusKey)),
+                    systemImage: "network.badge.shield.half.filled", isReady: model.isDeviceConnectionReady
                 )
-                guideText("guide.readiness.vpn.note")
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-                if let message = vpn.errorMessage {
-                    LauncherMessage(message: message, isError: true)
+                if model.connectionMode == .external {
+                    Text("connection.external.instructions")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                    Text("connection.external.verification_note")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                } else {
+                    guideText("guide.readiness.vpn.note")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                    if let message = vpn.errorMessage {
+                        LauncherMessage(message: message, isError: true)
+                    }
                 }
                 Divider()
                 PairingReadinessRow(
@@ -280,42 +291,133 @@ struct PairingSetupView: View {
         }
     }
 
-    private var manualPairing: some View {
-        DisclosureGroup("pairing.manual.title") {
-            VStack(alignment: .leading, spacing: 12) {
-                Text("pairing.manual.instructions")
-                    .foregroundStyle(.secondary)
-                Button {
-                    importingPairing = true
-                } label: {
-                    Label(hasRecord ? "pairing.replace" : "pairing.import", systemImage: "square.and.arrow.down")
-                        .frame(minHeight: 44)
+    private var computerPairingGuide: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            guideText("guide.computer.steps.title")
+                .font(.title2.bold())
+                .accessibilityAddTraits(.isHeader)
+            Link(destination: URL(string: "https://app-shop.cn/app/106")!) {
+                Label {
+                    guideText("guide.computer.download")
+                } icon: {
+                    Image(systemName: "arrow.up.right.square")
                 }
-                .buttonStyle(.bordered)
-                .disabled(operationInProgress || pairing.isRunning)
-                DisclosureGroup("pairing.create_title") {
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("pairing.create.instructions")
-                        Link("pairing.create.open_tool", destination: URL(string: "https://github.com/jkcoxson/idevice_pair")!)
-                            .frame(minHeight: 44)
-                        Text("pairing.create.remote_only")
-                        Text("pairing.privacy")
+                .frame(minHeight: 44)
+            }
+            guideText("guide.computer.download.note")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+            importPairingButton
+            VStack(spacing: 0) {
+                ForEach(1...4, id: \.self) { number in
+                    if number > 1 { Divider().padding(.leading, 60) }
+                    PairingGuideRow(number: number) {
+                        guideText("guide.computer.step" + String(number))
+                            .font(.body)
+                            .fixedSize(horizontal: false, vertical: true)
                     }
-                    .foregroundStyle(.secondary)
-                    .font(.footnote)
-                    .padding(.top, 6)
                 }
             }
-            .font(.subheadline)
-            .padding(.top, 12)
+            .background(Color(uiColor: .secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 20))
+            Text("pairing.create.remote_only")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+            guideText("guide.import.copy_note")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+            Text("pairing.privacy")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+        }
+    }
+
+    private var importPairingButton: some View {
+        Button(action: presentPairingImporter) {
+            Label(hasRecord ? "pairing.replace" : "pairing.import", systemImage: "square.and.arrow.down")
+                .frame(minHeight: 44)
+        }
+        .buttonStyle(.bordered)
+        .disabled(operationInProgress || pairing.isRunning)
+    }
+
+    private var manualPairing: some View {
+        DisclosureGroup("pairing.manual.title") {
+            computerPairingGuide.padding(.top, 12)
         }
         .font(.subheadline)
         .padding(20)
         .background(Color(uiColor: .secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 16))
     }
 
+    private struct ImportFeedback {
+        let succeeded: Bool
+        let message: String
+    }
+
+    private func presentPairingImporter() {
+        guard model.isSetupAccessReady else { model.startSetup(); return }
+        importFeedback = nil
+        importingPairing = true
+    }
+
+    private func handlePairingImport(_ outcome: PairingFileImporter.Outcome) {
+        switch outcome {
+        case .selected(let url):
+            // The system-provided copy is temporary. Read and persist it now,
+            // while the delegate callback is active, before dismissing the picker.
+            let succeeded = model.importPairingFile(from: url)
+            importFeedback = ImportFeedback(
+                succeeded: succeeded,
+                message: succeeded
+                    ? (model.successMessage ?? NSLocalizedString("success.pairing_imported", comment: ""))
+                    : (model.errorMessage ?? NSLocalizedString("pairing.import_failed", comment: ""))
+            )
+            // The fixed action bar owns this feedback. Consume the model error
+            // so the root's general alert cannot compete with picker dismissal.
+            if !succeeded { model.clearMessages() }
+        case .failure(let error):
+            importFeedback = ImportFeedback(
+                succeeded: false,
+                message: model.reportPairingPickerFailure(error)
+            )
+            model.clearMessages()
+        case .cancelled:
+            break
+        }
+        importingPairing = false
+    }
+
+    private func importResult(_ feedback: ImportFeedback) -> some View {
+        HStack(alignment: .top, spacing: 12) {
+            VStack(alignment: .leading, spacing: 6) {
+                Label {
+                    if feedback.succeeded {
+                        guideText("guide.import.success.title")
+                    } else {
+                        Text("pairing.import_failed")
+                    }
+                } icon: {
+                    Image(systemName: feedback.succeeded ? "checkmark.circle.fill" : "exclamationmark.circle.fill")
+                        .foregroundStyle(feedback.succeeded ? Color.green : Color.red)
+                }
+                .font(.subheadline.weight(.semibold))
+                Text(feedback.message)
+                    .font(.footnote)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            Button("common.ok") { importFeedback = nil }
+                .frame(minWidth: 44, minHeight: 44)
+        }
+        .padding(12)
+        .background((feedback.succeeded ? Color.green : Color.red).opacity(0.08), in: RoundedRectangle(cornerRadius: 12))
+    }
+
     private var actionBar: some View {
         VStack(spacing: 8) {
+            // Keep import feedback visible at every scroll position. A second
+            // modal alert can be lost while the document picker dismisses.
+            if let feedback = importFeedback { importResult(feedback) }
             Button(action: primaryAction) {
                 HStack(spacing: 8) {
                     if operationInProgress && !pairing.isRunning {
@@ -356,16 +458,16 @@ struct PairingSetupView: View {
         if pairing.isRunning { return Text("pairing.on_device.cancel") }
         if model.isBusy { return Text(LocalizedStringKey(model.progressKey)) }
         if vpn.isBusy || prepareWhenConnected { return guideText("guide.action.connecting") }
-        if model.isPrepared && vpn.isConnected { return guideText("guide.action.open_apps") }
+        if model.isPrepared && model.isDeviceConnectionReady { return guideText("guide.action.open_apps") }
         if hasRecord {
-            return guideText(vpn.isConnected ? "guide.action.prepare" : "guide.action.connect_prepare")
+            return guideText(model.canAttemptDeviceConnection ? "guide.action.prepare" : "guide.action.connect_prepare")
         }
         return pairing.isSupported ? Text("pairing.on_device.start") : Text("pairing.import")
     }
 
     private var primarySymbol: String {
         if pairing.isRunning { return "stop.circle" }
-        if model.isPrepared && vpn.isConnected { return "square.grid.2x2" }
+        if model.isPrepared && model.isDeviceConnectionReady { return "square.grid.2x2" }
         if hasRecord { return "bolt.shield" }
         return pairing.isSupported ? "iphone.and.arrow.forward" : "square.and.arrow.down"
     }
@@ -377,17 +479,22 @@ struct PairingSetupView: View {
     }
 
     private func primaryAction() {
+        guard model.isSetupAccessReady else { model.startSetup(); return }
         if pairing.isRunning { pairing.cancel(); return }
         guard !operationInProgress else { return }
         if hasRecord || pairing.isSupported { guard model.requireWiFi() else { return } }
-        if model.isPrepared && vpn.isConnected { openLaunch(); return }
+        if model.isPrepared && model.isDeviceConnectionReady { openLaunch(); return }
         if hasRecord {
-            if vpn.isConnected {
+            if model.canAttemptDeviceConnection {
                 prepareIfReady()
-            } else {
+            } else if model.connectionMode == .builtIn {
                 prepareWhenConnected = true
                 Task {
                     await model.connectVPN()
+                    guard model.connectionMode == .builtIn else {
+                        prepareWhenConnected = false
+                        return
+                    }
                     if vpn.isConnected && prepareWhenConnected {
                         prepareWhenConnected = false
                         prepareIfReady()
@@ -399,12 +506,12 @@ struct PairingSetupView: View {
         } else if pairing.isSupported {
             Task { await pairing.start() }
         } else {
-            importingPairing = true
+            presentPairingImporter()
         }
     }
 
     private func prepareIfReady() {
-        guard hasRecord, model.isWiFiAvailable, model.developerModeConfirmed, vpn.isConnected,
+        guard model.isSetupAccessReady, hasRecord, model.isWiFiAvailable, model.developerModeConfirmed, model.canAttemptDeviceConnection,
               !model.isBusy, !pairing.isRunning else { return }
         model.prepareDevice()
     }

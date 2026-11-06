@@ -17,6 +17,7 @@ PLIST
 cp "$repo_root/App/ScriptResources/"*.js "$fixture_bundle/Contents/Resources/ScriptResources/"
 xcrun swiftc -parse-as-library -module-cache-path "$test_directory/ModuleCache" \
   "$repo_root/App/Models/LauncherApplication.swift" \
+  "$repo_root/App/Models/LauncherJITConfiguration.swift" \
   "$repo_root/App/Models/ScriptLibrary.swift" \
   "$repo_root/Tests/ScriptLibraryTests.swift" \
   -o "$test_directory/ScriptLibraryTests"

@@ -9,8 +9,19 @@ extension StikJIT {
     /// The pairing record is
     /// only a connection credential; its own contents are never identity proof.
     /// This operation blocks and must be called off the main thread.
-    public static func deviceUDID(pairingFile: URL, configuration: Configuration = .default) throws -> String {
-        try DeviceTools.withTunnel(pairingFile, configuration) { tunnel in
+    public static func deviceUDID(pairingFile: URL, configuration: Configuration = .default,
+                                  cancellationCheck: () throws -> Void = {}) throws -> String {
+        try cancellationCheck()
+        // An absent external loopback route should fail before entering the
+        // blocking FFI. TCP reachability alone never validates device identity.
+        if let reason = EndpointProbe.failureReason(address: configuration.deviceAddress,
+                                                    port: configuration.rsdPort,
+                                                    timeout: configuration.connectionTimeout) {
+            try cancellationCheck()
+            throw StikJITError.deviceNotReady(reason)
+        }
+        try cancellationCheck()
+        return try DeviceTools.withTunnel(pairingFile, configuration) { tunnel in
             try DeviceTools.withClient("device identity service", connect: {
                 lockdownd_connect_rsd(tunnel.adapter, tunnel.handshake, $0)
             }, free: lockdownd_client_free) { client in

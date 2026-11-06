@@ -2,7 +2,7 @@
 
 ## JIT启动器 — integrated iOS app
 
-This branch adds **JIT启动器** (2.0.4, build 15), a standalone SwiftUI app integrating
+This branch adds **JIT启动器** (2.0.7, build 18), a standalone SwiftUI app integrating
 StikDebug's installed-app launch/JIT workflow and device tools, on-device pairing,
 the StikJIT engine, and [LocalDevVPN](https://github.com/jkcoxson/LocalDevVPN).
 Four tabs cover applications, the seven-step pairing guide, debugging tools, and
@@ -14,6 +14,27 @@ Traditional Chinese are included. The app identifier remains **com.stik.StikPair
 The application list shows only targets with `get-task-allow`, excludes the
 launcher itself, and loads their real icons from the device. An unavailable icon
 uses a fallback without preventing the rest of the list from loading.
+
+Version 2.0.7 starts device authorization only after **Start setup**, reuses the
+shared signed authorization core, and supports domain fallback and seven-day
+device-bound offline access. Registered, unbanned devices remain eligible without
+VIP membership. The compatible backend must be deployed before this package.
+
+Version 2.0.6 adds an **External VPN** connection mode in Setup and Settings.
+Start LocalDevVPN with its default configuration, select External VPN, and check
+and prepare JIT. Compatible loopback VPNs exposing the same device endpoint are
+also usable. External mode never starts the built-in VPN; it checks the actual
+paired device connection before protected operations and retains signed device
+registration verification. An ordinary internet VPN is not sufficient.
+
+Version 2.0.5 imports pairing files as local copies supplied by the system document
+picker. Read, validation, save, and busy-state failures now have distinct feedback;
+a failed replacement preserves the previous pairing record. iOS/iPadOS 26 and other
+supported systems below 27 show the computer pairing guide directly, including the
+[idevice_pair download page](https://app-shop.cn/app/106). Use USB **Remote Pairing /
+RPPairing**, save the record to Files, import it, then connect the VPN and prepare JIT.
+On-device pairing still requires iOS/iPadOS 27. Copy import improves file-provider
+compatibility; it does not bypass signing or sandbox checks.
 
 Version 2.0.4 requires an available Wi-Fi path before pairing, VPN connection,
 device verification, DDI preparation or new JIT operations. It shows Wi-Fi
@@ -39,17 +60,22 @@ introduced that mounting path to address iPhone 18 Pro compatibility. This relea
 repairs download handling, rather than introducing cryptex support. A successful
 download still needs physical-device mounting and target JIT verification.
 
-Protected new operations require an online check of the actual device UDID with
-**wow-app.store** over HTTPS. Sign in to the website in Safari and complete device
-identification first: the check requires an existing device registration and a
-fresh, signed non-ban result. VIP is not required, and expired VIP is allowed.
-The app uses two existing website endpoints; no backend change or deployment is
-part of this release. It checks the registration record, not a current browser
-session or a separate last-login timestamp. Failed checks block new protected
-operations, and no offline permission is cached. Restoring real location remains
-available for recovery when the local device connection works. A later ban cannot
-revoke JIT already acquired by another process. See [LAUNCHER.md](LAUNCHER.md) for
-the verification contract and limits.
+Device access keeps the launcher's original rule: **registered and not banned**.
+VIP membership is not required, and expired VIP is allowed. Opening the app shows
+the application library without starting authorization. Choose **Start setup** to
+begin: a per-device signed package can check its bundled identity first, then
+pair and connect the VPN. Public unsigned/self-signed packages without a unique
+identity continue to pairing and verify the actual connected device instead.
+
+Before a protected operation, the launcher still reads the real device UDID.
+It checks a fresh signed registration result using **app-shop.cn**, with
+**wow-app.store** as fallback; a valid setup precheck can be bound locally after
+that real-identity match. Bound permits cover network failures for at most seven
+days from server issuance, independent of VIP expiry. A signed ban or missing
+registration denies access immediately. Restoring real location remains a
+recovery exception; JIT already obtained by another process cannot be revoked.
+The backend must first deploy the signed `isRegistered` field. See
+[LAUNCHER.md](LAUNCHER.md#device-registration-and-offline-access) for the contract.
 
 A separate StikDebug, StikPair or LocalDevVPN app is not needed for these integrated
 workflows. On-device pairing requires iOS/iPadOS 27 or later; on earlier supported
@@ -61,7 +87,8 @@ The pairing guide follows this sequence: start on-device pairing, keep Wi-Fi on,
 open Settings, enter Privacy & Security, open Developer Mode, select Pair with
 Host → **StikDebug**, and enter the six-digit code from the launcher's notification.
 **StikDebug** is the advertised host name; the app remains **JIT启动器**. After
-pairing, connect the built-in VPN and prepare JIT in the launcher.
+pairing, use the built-in VPN or select External VPN after connecting LocalDevVPN,
+then prepare JIT in the launcher.
 
 Run `xcodegen generate`, open `StikJIT.xcodeproj`, and select the **JITLauncher**
 scheme to build for a physical device. See [LAUNCHER.md](LAUNCHER.md) for signing,

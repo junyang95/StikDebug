@@ -101,6 +101,9 @@ final class LocalVPNManager: ObservableObject {
             break
         }
 
+        // Setup can be cancelled while preferences are loading. Recheck before
+        // saving a profile, which can itself display a system consent prompt.
+        guard canConnect() else { return }
         let tunnelProtocol = NETunnelProviderProtocol()
         tunnelProtocol.providerBundleIdentifier = providerBundleIdentifier
         tunnelProtocol.serverAddress = CIDREndpoint(TunnelConstants.defaultPeerIP).ip

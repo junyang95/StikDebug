@@ -87,7 +87,12 @@ final class JITSession {
                    script: StikJIT.Script,
                    forceScript: Bool,
                    txmPresence: TXMPresence,
-                   progress: @escaping (String) -> Void) throws {
+                   progress: @escaping (String) -> Void,
+                   cancellationCheck: @escaping () throws -> Void = {}) throws {
+        try cancellationCheck()
+        let txmStatus = txmPresence.isPresent.map { $0 ? "present" : "absent" } ?? "unknown"
+        progress("Detected TXM: \(txmStatus).")
+        let mode = try JITExecutionMode.select(forceScript: forceScript, isTXMPresent: txmPresence.isPresent)
         let tunnel = try makeTunnel()
         defer { tunnel.free() }
 
@@ -100,8 +105,10 @@ final class JITSession {
         _ = try? sendCommand("QStartNoAckMode", over: debugProxy)
         debug_proxy_set_ack_mode(debugProxy, 0)
 
-        switch (forceScript, txmPresence) {
-        case (true, _), (false, .present):
+        switch mode {
+        case .script:
+            progress(forceScript ? "JIT mode: script required by the caller; TXM detection does not skip it." :
+                "JIT mode: script required because TXM is present.")
             // Current StikDebug keeps the paired device awake while a TXM script
             // waits for the target app's breakpoints. Give that service its own
             // tunnel and thread; it must never share the debugger's FFI handles.
@@ -109,12 +116,12 @@ final class JITSession {
             do { try heartbeat.start() }
             catch { progress("Heartbeat unavailable: \(error.localizedDescription)") }
             defer { heartbeat.stop() }
-            let runner = ScriptRunner(targetPID: targetPID, debugProxy: debugProxy, script: script, txmPresence: txmPresence, progress: progress)
+            let runner = ScriptRunner(targetPID: targetPID, debugProxy: debugProxy, script: script, txmPresence: txmPresence, progress: progress,
+                                      cancellationCheck: cancellationCheck)
             try withExtendedLifetime(runner) { try runner.run() }
-        case (false, .absent):
+        case .attachDetach:
+            try cancellationCheck()
             try attachWithoutScript(targetPID: targetPID, debugProxy: debugProxy, progress: progress)
-        case (false, .unknown):
-            throw StikJITError.txmDetectionUnavailable
         }
     }
 

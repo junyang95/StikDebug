@@ -73,6 +73,37 @@ enum ScriptLibraryTests {
                     }
                 }
             }),
+            ("Air and Amethyst require their script on iOS 26 and 27 without forcing unrelated apps", {
+                try withLibrary { library, _, _, _, _ in
+                    library.setDefault("bundled:legacy.js")
+                    let air = application("Air", id: "com.air-devs.air")
+                    for version in [26, 27] {
+                        let configuration = try library.scriptData(for: air, osMajorVersion: version)
+                        try expect(configuration.name == "universal.js" && configuration.requiresScript,
+                                   "Air missed the Universal JIT requirement on iOS \(version)")
+                        try expect(try library.scriptData(for: application("Amethyst"), osMajorVersion: version).requiresScript,
+                                   "Amethyst missed the script requirement")
+                    }
+                    try expect(!library.scriptData(for: air, osMajorVersion: 18).requiresScript,
+                               "Older non-TXM systems were forced into breakpoint service")
+                    for identifier in ["com.air-devs.air.SIGNED", "com.air-devs.air-TEAM"] {
+                        let renamed = application("Renamed app", id: identifier)
+                        let result = try library.scriptData(for: renamed, osMajorVersion: 27)
+                        try expect(result.name == "universal.js" && result.requiresScript, "Signing suffix lost Air compatibility")
+                    }
+                    for app in [application("Air", id: "example.air"), application("Other", id: "com.air-devs.airplane"),
+                                application("Amethyst Calculator"), application("MeloNX"), application("Unknown app")] {
+                        try expect(!library.scriptData(for: app, osMajorVersion: 27).requiresScript,
+                                   "Unverified app was forced to wait for allocator breakpoints: \(app.name)")
+                    }
+                    let imported = try library.create(name: "Air-custom")
+                    try library.save(imported, content: "// developer-defined Amethyst protocol\n")
+                    library.assign(imported.id, to: air.id)
+                    let assigned = try library.scriptData(for: air, osMajorVersion: 27)
+                    try expect(assigned.name == imported.name && assigned.requiresScript,
+                               "App requirement overrode the explicitly assigned script")
+                }
+            }),
             ("Explicit assignment overrides named mappings and default only supplies fallback", {
                 try withLibrary { library, _, _, _, _ in
                     library.setDefault("bundled:maciOS.js")

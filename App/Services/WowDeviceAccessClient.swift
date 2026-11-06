@@ -1,8 +1,9 @@
 import Foundation
 
-/// Uses only fixed HTTPS endpoints and fresh responses. A successful call is not
-/// cached: callers must request admission again before the protected operation.
+/// Fixed HTTPS destinations, bounded response streams and independent endpoint deadlines.
+/// Only authenticated registration/non-ban evidence can issue a seven-day grant.
 struct WowDeviceAccessClient: @unchecked Sendable {
+    static let endpoints = ["https://app-shop.cn/api/vip-license.action", "https://wow-app.store/api/vip-license.action"]
     private let configuration: URLSessionConfiguration
     private let publicKey: Data
     private let now: @Sendable () -> Date
@@ -13,15 +14,15 @@ struct WowDeviceAccessClient: @unchecked Sendable {
          publicKey: Data = WowDeviceAccess.publicKey,
          now: @escaping @Sendable () -> Date = { Date() },
          nonce: @escaping @Sendable () -> String = { UUID().uuidString },
-         timeout: TimeInterval = 25) {
+         timeout: TimeInterval = 10) {
         let copy = configuration.copy() as! URLSessionConfiguration
         copy.urlCache = nil
         copy.requestCachePolicy = .reloadIgnoringLocalCacheData
         copy.httpCookieStorage = nil
         copy.httpShouldSetCookies = false
         copy.urlCredentialStorage = nil
-        copy.timeoutIntervalForRequest = 15
-        copy.timeoutIntervalForResource = 25
+        copy.timeoutIntervalForRequest = 10
+        copy.timeoutIntervalForResource = 10
         copy.waitsForConnectivity = true
         copy.allowsCellularAccess = true
         copy.allowsExpensiveNetworkAccess = true
@@ -30,47 +31,54 @@ struct WowDeviceAccessClient: @unchecked Sendable {
         self.publicKey = publicKey
         self.now = now
         self.nonce = nonce
-        self.timeout = timeout.isFinite ? min(25, max(0.01, timeout)) : 25
+        self.timeout = timeout.isFinite ? min(10, max(0.01, timeout)) : 10
     }
 
     func verify(udid: String) async throws {
+        _ = try await requestLicense(udid: udid, nonce: nonce())
+    }
+
+    func requestLicense(udid: String, nonce challenge: String) async throws -> Data {
         try WowDeviceAccess.validateDeviceIdentifier(udid)
-        do {
-            try Task.checkCancellation()
-            try await withThrowingTaskGroup(of: Void.self) { group in
-                group.addTask { try await verifyFresh(udid: udid) }
-                group.addTask {
-                    try await Task.sleep(nanoseconds: UInt64(timeout * 1_000_000_000))
-                    throw WowDeviceAccessError.networkUnavailable
-                }
-                defer { group.cancelAll() }
-                _ = try await group.next()
-            }
-        } catch is CancellationError { throw WowDeviceAccessError.cancelled }
-        catch let error as WowDeviceAccessError { throw error }
-        catch { throw WowDeviceAccessError.networkUnavailable }
-    }
-
-    private func verifyFresh(udid: String) async throws {
-        let challenge = nonce()
         guard !challenge.isEmpty, challenge.utf8.count <= 128,
-              challenge.utf8.allSatisfy({ (33...126).contains($0) }) else {
-            throw WowDeviceAccessError.invalidResponse
+              challenge.utf8.allSatisfy({ (33...126).contains($0) }) else { throw WowDeviceAccessError.invalidResponse }
+        var lastError: WowDeviceAccessError = .networkUnavailable
+        var sawUnsupportedServer = false
+        for endpoint in Self.endpoints {
+            do {
+                try Task.checkCancellation()
+                let data = try await withThrowingTaskGroup(of: Data.self) { group in
+                    group.addTask { try await request(endpoint: endpoint, udid: udid, challenge: challenge) }
+                    group.addTask {
+                        try await Task.sleep(nanoseconds: UInt64(timeout * 1_000_000_000))
+                        throw WowDeviceAccessError.networkUnavailable
+                    }
+                    defer { group.cancelAll() }
+                    return try await group.next()!
+                }
+                try Task.checkCancellation()
+                _ = try WowDeviceAccess.verifiedLicense(data, udid: udid, nonce: challenge, now: now(), publicKey: publicKey)
+                return data
+            } catch {
+                if Task.isCancelled || error is CancellationError || (error as? WowDeviceAccessError) == .cancelled {
+                    throw WowDeviceAccessError.cancelled
+                }
+                let failure = (error as? WowDeviceAccessError) ?? .networkUnavailable
+                if failure == .banned || failure == .notRegistered { throw failure }
+                if failure == .serverUnsupported { sawUnsupportedServer = true }
+                lastError = failure
+            }
         }
-        try Task.checkCancellation()
-        let registration = try await request(path: "checkVipInfo.action", udid: udid, challenge: challenge)
-        try WowDeviceAccess.verifyRegistration(registration, udid: udid)
-        try Task.checkCancellation()
-        let license = try await request(path: "vip-license.action", udid: udid, challenge: challenge)
-        try Task.checkCancellation()
-        try WowDeviceAccess.verifyLicense(license, udid: udid, nonce: challenge, now: now(), publicKey: publicKey)
+        // A reachable old server cannot grant a new offline window, including when
+        // the other endpoint is unavailable. Roll out the backend before this client.
+        throw sawUnsupportedServer ? WowDeviceAccessError.serverUnsupported : lastError
     }
 
-    private func request(path: String, udid: String, challenge: String) async throws -> Data {
-        var request = URLRequest(url: URL(string: "https://wow-app.store/api/" + path)!)
+    private func request(endpoint: String, udid: String, challenge: String) async throws -> Data {
+        var request = URLRequest(url: URL(string: endpoint)!)
         request.httpMethod = "GET"
         request.cachePolicy = .reloadIgnoringLocalCacheData
-        request.timeoutInterval = 15
+        request.timeoutInterval = timeout
         request.httpShouldHandleCookies = false
         request.setValue("application/json", forHTTPHeaderField: "Accept")
         request.setValue("no-store, no-cache", forHTTPHeaderField: "Cache-Control")

@@ -74,17 +74,20 @@ final class ScriptLibrary: ObservableObject {
         if let id = assignments[app.bundleIdentifier], let script = items.first(where: { $0.id == id }) {
             return script
         }
-        if let name = Self.automaticName(for: app.name), let script = items.first(where: { $0.id == "bundled:\(name)" }) {
+        let automaticName = LauncherJITCompatibility.usesAmethystProtocol(app) ? "universal.js" : Self.automaticName(for: app.name)
+        if let name = automaticName, let script = items.first(where: { $0.id == "bundled:\(name)" }) {
             return script
         }
         return items.first(where: { $0.id == defaultScriptID }) ??
             LauncherScript(id: "bundled:universal.js", name: "universal.js", isBundled: true)
     }
 
-    func scriptData(for app: LauncherApplication) throws -> (data: Data, name: String) {
+    func scriptData(for app: LauncherApplication,
+                    osMajorVersion: Int = ProcessInfo.processInfo.operatingSystemVersion.majorVersion) throws -> LauncherJITConfiguration {
         let script = selectedScript(for: app)
         let data = try readData(script)
-        return (data, script.name)
+        return LauncherJITConfiguration(data: data, name: script.name,
+            requiresScript: LauncherJITCompatibility.requiresScript(app, osMajorVersion: osMajorVersion))
     }
 
     func assign(_ scriptID: String?, to bundleID: String) {

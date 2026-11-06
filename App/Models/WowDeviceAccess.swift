@@ -5,6 +5,7 @@ import Foundation
 enum WowDeviceAccessError: Error, LocalizedError, Equatable, Sendable {
     case banned, notRegistered, serverUnsupported, invalidResponse
     case networkUnavailable, deviceUnavailable, cancelled
+    case identityMismatch, persistenceUnavailable, clockRollback
 
     var localizationKey: String {
         switch self {
@@ -15,6 +16,9 @@ enum WowDeviceAccessError: Error, LocalizedError, Equatable, Sendable {
         case .networkUnavailable: return "access.error.network_unavailable"
         case .deviceUnavailable: return "access.error.device_unavailable"
         case .cancelled: return "access.error.cancelled"
+        case .identityMismatch: return "access.error.identity_mismatch"
+        case .persistenceUnavailable: return "access.error.persistence_unavailable"
+        case .clockRollback: return "access.error.clock_rollback"
         }
     }
 
@@ -28,7 +32,7 @@ enum WowDeviceAccessError: Error, LocalizedError, Equatable, Sendable {
 enum WowDeviceAccess {
     static let maximumResponseBytes = 1_048_576
     static let maximumClockSkew: TimeInterval = 300
-    static let publicKeyBase64 = "BFBKnwXkljQY3olaB7UmLcaKQWqsQ2EjxBJEXYvEnzbWaHTZrI8OiaaLG+WYbC7FT8SUBLMQs6EAVHfT48+JsdE="
+    static let publicKeyBase64 = DeviceAuthorizationVerifier.publicKeyBase64
     static var publicKey: Data { Data(base64Encoded: publicKeyBase64)! }
 
     // An actual UDID must come from the paired device, not a text field or URL.
@@ -55,38 +59,26 @@ enum WowDeviceAccess {
         }
     }
 
-    static func verifyLicense(_ data: Data, udid: String, nonce: String,
-                              now: Date = Date(), publicKey: Data = publicKey) throws {
+    static func verifiedLicense(_ data: Data, udid: String, nonce: String?,
+                                now: Date = Date(), publicKey: Data = publicKey) throws -> SignedDeviceLicense {
         try validateDeviceIdentifier(udid)
-        guard !nonce.isEmpty, nonce.utf8.count <= 128 else { throw WowDeviceAccessError.invalidResponse }
-        let envelope: Envelope = try decode(data)
-        guard let payload = Data(base64Encoded: envelope.payload),
-              let signatureBytes = Data(base64Encoded: envelope.sig),
-              !payload.isEmpty, payload.count <= maximumResponseBytes,
-              !signatureBytes.isEmpty, signatureBytes.count <= 80 else {
-            throw WowDeviceAccessError.invalidResponse
-        }
+        if let nonce, nonce.isEmpty || nonce.utf8.count > 128 { throw WowDeviceAccessError.invalidResponse }
+        let license: SignedDeviceLicense
         do {
-            let key = try P256.Signing.PublicKey(x963Representation: publicKey)
-            let signature = try P256.Signing.ECDSASignature(derRepresentation: signatureBytes)
-            guard key.isValidSignature(signature, for: payload) else { throw WowDeviceAccessError.invalidResponse }
+            license = try DeviceAuthorizationVerifier.verify(data, udid: udid, nonce: nonce, now: now,
+                publicKey: publicKey, trustFreshServerTime: nonce != nil)
         } catch { throw WowDeviceAccessError.invalidResponse }
-
-        let license: License = try decode(payload)
-        guard !license.udid.isEmpty, license.udid.caseInsensitiveCompare(udid) == .orderedSame,
-              license.nonce == nonce, license.ts.isFinite, license.ts > 0,
-              license.expireAt.isFinite, license.expireAt >= 0,
-              now.timeIntervalSince1970.isFinite,
-              abs(now.timeIntervalSince1970 - license.ts / 1000) <= maximumClockSkew else {
-            throw WowDeviceAccessError.invalidResponse
-        }
-        guard ["VALID", "EXPIRED", "UNKNOWN", "BANNED"].contains(license.status) else {
+        guard !license.isBanned, license.status != "BANNED" else { throw WowDeviceAccessError.banned }
+        guard ["VALID", "EXPIRED", "UNKNOWN"].contains(license.status), let registered = license.isRegistered else {
             throw WowDeviceAccessError.serverUnsupported
         }
-        guard !license.isBanned, license.status != "BANNED" else { throw WowDeviceAccessError.banned }
-        // `UNKNOWN` also covers registered, ordinary devices. Registration must
-        // have succeeded separately; never infer it from this signed response.
-        // `isVip` and `expireAt` are decoded strictly, but do not grant/deny use.
+        guard registered else { throw WowDeviceAccessError.notRegistered }
+        return license
+    }
+
+    static func verifyLicense(_ data: Data, udid: String, nonce: String,
+                              now: Date = Date(), publicKey: Data = publicKey) throws {
+        _ = try verifiedLicense(data, udid: udid, nonce: nonce, now: now, publicKey: publicKey)
     }
 
     private static func decode<T: Decodable>(_ data: Data) throws -> T {
@@ -101,18 +93,4 @@ enum WowDeviceAccess {
         let data: RegisteredDevice?
     }
     private struct RegisteredDevice: Decodable { let device: String }
-    private struct Envelope: Decodable {
-        let payload: String
-        let sig: String
-        // The response's `pub` is not a trust anchor and is never decoded.
-    }
-    private struct License: Decodable {
-        let udid: String
-        let status: String
-        let isVip: Bool
-        let isBanned: Bool
-        let expireAt: Double
-        let nonce: String
-        let ts: Double
-    }
 }

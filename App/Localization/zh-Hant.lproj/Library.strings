@@ -19,7 +19,7 @@
 "apps.empty_title" = "沒有找到可偵錯的 App";
 "apps.empty_body" = "列表僅顯示具備偵錯權限的 App。安裝支援 JIT 的開發簽署 App 後，請重新整理列表。";
 "apps.not_loaded_title" = "可偵錯的 App 會顯示在這裡";
-"apps.not_loaded_body" = "先完成本裝置的配對，並連接內建本機 VPN。";
+"apps.not_loaded_body" = "請先完成本裝置的配對，選擇連線方式並準備 JIT。";
 "apps.no_results" = "沒有符合的 App";
 "apps.no_results_body" = "請更改搜尋內容，或選擇「全部」查看可偵錯的 App。";
 "apps.favorites_empty" = "還沒有收藏的 App";

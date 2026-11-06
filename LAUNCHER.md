@@ -12,10 +12,33 @@ The display name is **JIT启动器**, or **JIT啟動器** in Traditional Chinese
 Simplified Chinese, and Traditional Chinese interfaces follow the system or the
 app's language preference in iOS Settings.
 
-## Current release: 2.0.3 (14)
+## Current release: 2.0.7 (18)
 
-This release addresses the reported iOS 27 stall at **Downloading developer disk
-image**. Downloads now show bytes and percentage, use a versioned Qiniu mirror
+Authorization starts after **Start setup** on the ordinary home screen. Device
+registration remains independent of VIP membership. Native per-device packages
+precheck their candidate UDID before pairing/VPN setup, then bind a signed permit
+after matching the actual device. Requests use app-shop.cn with wow-app.store as
+fallback and allow a previously bound permit for up to seven days during network
+failures. Public/self-signed packages without a unique candidate identify the
+actual device after setup. See the authorization contract below.
+
+## Connection and import changes retained from 2.0.6 (17)
+
+Setup and Settings now offer **Built-in VPN** and **External VPN** connection
+modes. External mode accepts a working LocalDevVPN default connection or another
+compatible loopback VPN at the same device endpoint. It does not require this
+app’s tunnel extension to report connected and never starts the built-in VPN.
+Device communication and signed registration checks still run before protected
+operations. External status describes the last successful paired-device check,
+not another app’s VPN profile status.
+
+Pairing files now use system copy import, bounded snapshot reads, and explicit
+failure feedback without replacing the last valid record on error. On iOS/iPadOS
+26 and other supported versions below 27, setup leads with computer USB pairing
+and the idevice_pair download link. On-device pairing remains an iOS/iPadOS 27+
+feature. See the import section below for the workflow and signing limitations.
+
+The DDI fixes introduced in 2.0.3 remain in place. Downloads now show bytes and percentage, use a versioned Qiniu mirror
 with a fixed upstream fallback, and reject incomplete or mismatched files before
 publishing a complete cache. Settings provides **Download developer image again**
 without removing pairing. The DDI download and cache contract is described below.
@@ -33,8 +56,9 @@ it does not establish successful mounting or JIT on the reported physical device
 
 The Applications tab now shows only device-reported debuggable targets, loads
 their real icons through SpringBoard services, and excludes the launcher itself.
-New protected operations also require online wow-app.store device registration
-and non-ban verification. VIP membership is not required. The application-list
+New protected operations require signed device registration and non-ban
+verification. The current fallback and offline policy is described below.
+VIP membership is not required. The application-list
 compatibility fix below remains included.
 
 ## Application-list compatibility fix (2.0.1)
@@ -61,14 +85,15 @@ node-type semantics were separately checked against version 0.1.6.
 | Tab | Current behavior |
 | --- | --- |
 | Applications / 应用 | Show debuggable apps with device icons, search names and Bundle IDs, keep favorites/recent launches, choose an app-specific script, launch an app, or launch and enable JIT. |
-| Setup / 配对引导 | Follow the seven pairing steps, view/copy the actual pairing PIN, import a remote pairing record when needed, connect the embedded VPN, verify device registration, and check/prepare the developer disk image (DDI). |
+| Setup / 配对引导 | Follow the seven pairing steps, view/copy the actual pairing PIN, import a remote pairing record when needed, choose the embedded or an external VPN, verify device registration, and check/prepare the developer disk image (DDI). |
 | Tools / 工具 | Manage scripts; inspect/terminate processes or enable JIT by PID; view JIT and system logs; read device metadata; inspect/import/export/remove provisioning profiles; simulate or restore device location. |
-| Settings / 设置 | Control the local VPN, download the developer image again, inspect/remove the pairing record, check device verification, return to setup, open this app's system settings for language/permissions, and read upstream attribution/licenses. |
+| Settings / 设置 | Choose a connection mode, control the built-in VPN or check the external connection, download the developer image again, inspect/remove the pairing record, check device verification, return to setup, open this app's system settings for language/permissions, and read upstream attribution/licenses. |
 
-A launch without a stored pairing record opens Setup first. An existing
-record opens Applications, but it does not imply that VPN or JIT preparation is
-already ready. Complete connection/preparation before launching a target or
-accepting an external JIT request. No separate StikDebug, StikPair, or LocalDevVPN
+Every launch opens Applications without automatically starting authorization,
+pairing, or VPN preparation. Choose **Start setup** to begin. An existing pairing
+record does not imply that the connection or JIT preparation is ready. Complete
+connection/preparation before launching a target or accepting an external JIT
+request. No separate StikDebug, StikPair, or LocalDevVPN
 installation is required by this integrated workflow.
 
 ## Seven-step on-device pairing
@@ -112,12 +137,28 @@ attempt.
 
 ### Import a record instead
 
-Use the secondary **Import pairing file** section for older supported systems or
-when on-device pairing is unavailable. Connect the unlocked device to a computer,
-trust it, and use [idevice_pair](https://github.com/jkcoxson/idevice_pair#over-usb).
+On iOS/iPadOS 26 and other supported systems below 27, the setup page shows the
+computer pairing guide and import button directly. On iOS/iPadOS 27, use the
+secondary **Import pairing file** section when preferred. The app links to the
+[idevice_pair download page](https://app-shop.cn/app/106); open that page on your
+computer to download the tool. Connect the unlocked device by USB, trust the
+computer, and follow the [upstream USB guide](https://github.com/jkcoxson/idevice_pair#over-usb).
 Choose **Remote pairing / RPPairing**, create/save the record, then transfer it
 through Files or AirDrop. Legacy Lockdown pairing records are not accepted by this
-framework. A record must belong to the device being used.
+framework. A record must belong to the device being used. After importing, enable
+Developer Mode, connect the local VPN, and prepare JIT.
+
+The system picker uses `asCopy: true`. Its temporary local copy is consumed while
+the delegate callback is active, read into a bounded snapshot (with coordination for external URLs), and
+validated before an atomic replacement in private Application Support. Cancelling
+the picker leaves the existing record unchanged. Busy operations and read,
+validation, or save errors are shown explicitly; diagnostic text contains error
+codes rather than private paths or record contents.
+
+Copy import is not a sandbox or signing bypass. When comparing re-signing options,
+check each final app/extension identity and profile, and test the same file on the
+same device while idle. Build and host tests do not establish physical-device
+acceptance of mismatched signatures.
 
 ### Connect and prepare
 
@@ -135,18 +176,34 @@ Existing verified DDI caches are retained. Download requests also disallow
 cellular access. Disconnecting the VPN, importing a record, and restoring real
 location through an existing local connection remain available for recovery.
 
-After pairing, confirm Developer Mode and tap **Connect VPN and prepare JIT**.
-Approve the system VPN configuration prompt. Preparation begins only after iOS
-reports the tunnel connected. If it is already connected, the action becomes
-**Check and prepare JIT**. The readiness section separately reports the saved
-record, actual VPN status, and verified device/DDI readiness.
+After pairing, confirm Developer Mode and choose a connection mode in Setup or
+Settings:
 
-Preparation first checks device access online, then checks the device connection,
+- **Built-in VPN** (default): tap **Connect VPN and prepare JIT** and approve the
+  system VPN configuration prompt. Preparation waits for the owned tunnel to
+  connect. If it is already connected, use **Check and prepare JIT**.
+- **External VPN**: first connect LocalDevVPN with its default configuration (or
+  another compatible loopback VPN), return to the launcher, select External VPN,
+  then tap **Check and prepare JIT**. Settings also provides an external connection
+  check. This mode does not create, start, or disconnect VPN profiles.
+
+The external route must expose the paired device at `10.7.0.1:49152`; arbitrary
+internet VPNs and custom LocalDevVPN peer addresses are not supported by this
+release. The app cannot read another app’s VPN status. A successful paired
+lockdown identity read validates the connection; a TCP connection alone is not
+proof. Every protected operation then verifies device access under the online/offline
+policy described below. Failed device communication clears external readiness and asks the user
+to check the external VPN and pairing record. Switching connection mode or
+returning from the background invalidates external readiness for a fresh check.
+The readiness section separately reports the saved record, connection status,
+and verified device/DDI readiness.
+
+Preparation first checks bound device access, then checks the device connection,
 downloads and mounts DDI when needed,
 and verifies the result. The first download needs internet access and can take
 several minutes; keep the app in the foreground. A connected VPN alone does not
-prove that device services or JIT are ready. If another VPN prevents this local
-tunnel from working, switch that VPN off and retry.
+prove that device services or JIT are ready. If an unrelated VPN prevents the
+selected loopback connection from working, switch that VPN off and retry.
 
 After preparation, the app refreshes the installed-app catalog. Select a target
 in Applications, then use **Launch and enable JIT** or **Launch app**. The launcher
@@ -195,7 +252,7 @@ revision with different bytes: the app will correctly reject its hash mismatch.
 Normal preparation first checks whether the system already has a mounted DDI.
 It downloads a verified group when mounting is needed and the cache is unusable;
 it does not replace a DDI that is already mounted. To force a fresh cache download,
-connect the built-in VPN, then use **Settings → Developer image → Download
+connect the selected loopback VPN, then use **Settings → Developer image → Download
 developer image again**. Pairing and Developer Mode must already be ready, and
 the action performs fresh device-access verification. It downloads even when the
 system DDI is already mounted, then checks/prepares the device. It preserves
@@ -211,46 +268,71 @@ update requires reviewing and releasing the corresponding
 bundled catalog with the app; the client does not fetch an unverified replacement
 catalog in the background.
 
-## Device registration and online access
+## Device registration and offline access
 
-Sign in to **wow-app.store** in Safari and complete identification for the device
-being used. The website's device-identification callback creates a device
-registration record. The launcher checks that record; it does not verify a
-currently logged-in browser session or a separate last-login timestamp. Pairing
-and connecting the local VPN are still needed so the launcher can read the actual
-device UDID. A value supplied by a URL, an input field, or an old permission result
-is not accepted as that identity.
+The access rule is unchanged: the actual device must be registered on the website
+and not banned. VIP membership is not required; ordinary registered devices and
+expired VIP remain eligible. Registration is not a current Safari session.
 
-Every new protected operation reads that UDID from the connected device and sends
-it over HTTPS to **wow-app.store**, using two existing endpoints in order:
+Opening the app shows the normal application library and does not begin an online
+check, pairing or VPN setup. Choose **Start setup** to begin:
 
-1. `GET /api/checkVipInfo.action` must return `code: 0` with `data.device` matching
-   this device. Unrelated account/payment fields are not retained by the client.
-2. `GET /api/vip-license.action` must return a payload with a valid P-256 signature
-   under the app's fixed public key, the matching UDID and fresh request nonce,
-   and a timestamp within five minutes of the device clock. `isBanned` must be
-   explicitly `false`, and `status` must be one of `VALID`, `EXPIRED`, or `UNKNOWN`.
-   Missing or malformed required fields are rejected. Registered non-VIP
-   (`UNKNOWN`) and expired VIP (`EXPIRED`) devices are allowed; VIP status and
-   expiry do not grant access.
+1. A per-device package may carry `wowvip.plist` with a UDID. A provisioning profile
+   with exactly one valid device is another candidate source. The launcher checks
+   that candidate before exposing pairing/VPN actions. No manual UDID entry is used.
+2. Public unsigned/self-signed packages without a unique candidate continue to
+   pairing and VPN with an explicit explanation. This grants setup access only;
+   JIT and other protected operations remain blocked until real-device verification.
+3. The existing device channel reads the actual UDID before every protected
+   operation. It must match a pending setup candidate. Only then can the signed
+   result become a permit bound to the UDID, pairing contents and connection mode.
+4. A matching, still-valid setup result needs no second website request. Subsequent
+   protected operations renew online; transport failures may use a valid bound
+   offline permit. A different physical device never inherits that permit.
 
-This integration changes no backend code and deploys no backend service. The
-client uses ephemeral sessions without response caching, cookies, or stored
-credentials, refuses redirects, bounds responses to 1 MiB, and applies a 25-second
-total network deadline. It does not log the UDID or server response. A failed
-network, identity, schema, nonce, time, or signature check blocks the operation;
-there is no cached offline permission. The displayed last-check result is status
-information, not a reusable authorization grant.
+Requests go to `https://app-shop.cn/api/vip-license.action` first and
+`https://wow-app.store/api/vip-license.action` second, under a bounded total deadline.
+Each response must have a valid P-256 signature under the app's fixed key, matching
+UDID and fresh nonce, valid signed time fields, `isRegistered: true`, and no ban.
+`UNKNOWN` alone cannot establish registration. A signed denial is final and does
+not trigger a search for a permissive response. Redirects are refused. A backend
+that lacks the signed `isRegistered` field is incompatible and cannot issue an
+implicit offline grant. The old `checkVipInfo.action` response is not cached as a
+signed registration proof.
 
-Protected operations include preparation, catalog/process refresh, app launch
-and JIT, process termination, device/profile tools, starting system logs, and
-starting or changing simulated location. Shortcut and URL actions use the same
-checks after confirmation. Pairing, VPN setup, and visiting the website remain
-available to complete setup. **Restore real location** skips the website check
-so recovery remains possible after a ban or network outage, provided the local
-device connection is usable. Stopping logs also remains available. These checks
-control new operations; they cannot revoke JIT that another process has already
-obtained, and they are not continuous monitoring of a running process.
+JIT permits expire seven days after their signed `ts`; VIP `expireAt` does not
+shorten or extend them. The core has separate VIP and registered-device policies:
+PikminHelper continues to require valid VIP and uses the earlier of VIP expiry and
+seven days. The two apps share the same core source with a parity check, while
+keeping separate Keychain namespaces and access rules.
+
+Keychain storage uses device-only records and checked writes/readback. Persistent
+clock high-water marks and monotonic deadlines prevent common rollback or app
+restart extensions. Fresh nonce-bound server time can repair a wrong wall clock.
+A request barrier prevents old grants returning after a signed denial even when
+cache deletion fails. Normal device restarts keep unexpired permits; without a
+hardware trusted clock, a malicious clock change across device reboots cannot be
+completely measured offline. The seven-day allowance also bounds how late an
+offline client can learn about a new ban.
+
+The native signing marker is `WowNativeDeviceAccess: true`; the backend also keeps
+support for PikminHelper's existing marker. It writes only the per-device UDID,
+skips the old injection library and isolates each device's signed-package cache.
+This route does not create enterprise shared packages. Public unsigned download
+remains usable with the connected-device fallback.
+
+Protected operations include preparation, catalog/process refresh, app launch and
+JIT, process termination, device/profile tools, system logs, and starting/changing
+simulated location. Shortcut/URL actions retain user confirmation and the same
+checks. **Restore real location** remains available through an existing device
+connection after a denial or network outage. A permission change cannot revoke
+JIT already acquired by another app. Offline permission does not supply a missing
+DDI, pairing record, Wi-Fi connection or working local device tunnel.
+
+Deploy the additive backend field/marker support before distributing the updated
+client. Existing PikminHelper clients remain compatible. Verify both a per-device
+package and a publicly downloaded/self-signed package on physical devices before
+claiming end-to-end installation/JIT compatibility.
 
 ## Application and script compatibility
 
@@ -291,8 +373,35 @@ On the script path, merely returning from JavaScript is not counted as JIT
 success: the runtime requires acknowledged attachment, successful nonempty memory
 preparation, and explicit detachment. Script/protocol errors trigger best-effort
 debugger cleanup; a failed suspended launch also attempts to resume the target.
-Non-TXM devices use the framework's acknowledged attach/detach path. These checks
-confirm the observed protocol sequence, not successful execution of every target
+JIT mode considers both TXM and the target application's protocol. TXM devices
+run the selected script. Ordinary non-TXM targets use acknowledged attach/detach.
+On iOS 26 and newer, Amethyst and the remastered Air build instead require the
+selected Universal JIT script even without TXM: their mirrored allocator calls
+the debugger to prepare executable regions. The launcher recognizes Amethyst
+names and Air's `com.air-devs.air` identity (including signing suffixes), maps
+them to `universal.js`, and forwards that requirement with `forceScript`.
+Explicit per-app script assignments still take precedence; choosing the global
+default `universal.js` alone does not force every non-TXM app into a breakpoint
+wait. Unknown TXM detection fails unless a target-specific script requirement
+explicitly chooses the script path.
+
+The PID entry uses a cached process name and an unambiguous application-name
+match when available. A PID with no identifiable application retains the device
+default policy; use the Applications tab for reliable Air/Amethyst identification.
+The script connection remains open until the target's protocol explicitly
+detaches. Cancellation is checked between debugger commands and fully drained
+memory-write batches, with best-effort detach on failure. This does not grant
+unlimited iOS background execution or interrupt an in-flight blocking FFI call.
+
+Universal script stop parsing accepts thread fields in any position and queries
+registers omitted by a stop reply. A stop returned by `vCont` is handled before
+another continue. Injected extension lengths use hexadecimal RSP encoding, and
+an invalid extension fails the operation instead of continuing with an incomplete
+allocator protocol. Both app and framework copies receive these fixes.
+
+The Amethyst requirement was checked against the remastered build's
+[`70b8bea` source](https://github.com/herbrine8403/Amethyst-iOS-MyRemastered/blob/70b8bea76a0ac97483b3e86b54330dfef948cb07/Natives/JavaLauncher.m#L1019).
+These checks confirm the observed protocol sequence, not successful execution of every target
 app's JIT workload; that still needs a device test.
 
 ## Tools and external requests
@@ -360,12 +469,20 @@ xcodebuild -project StikJIT.xcodeproj -scheme JITLauncherPreview \
 `JITLauncherPreview` uses the same SwiftUI interface without linking the
 device-only idevice archive. It reports that VPN, pairing, device tools, and JIT
 need real hardware; it does not fake successful connections or installed apps.
+Run `scripts/test-device-connection.sh` for connection-mode admission, external
+validation and invalidation checks. Run `scripts/test-device-connection-probe.sh`
+for bounded endpoint prechecks, cancellation, and ensuring TCP success alone
+cannot substitute for paired-device validation (host tunnel boundary is stubbed).
 Run `scripts/test-wifi-requirement.sh` for Wi-Fi/cellular/VPN admission and
 monitor refresh, stale-callback, disconnection and cancellation lifecycle checks.
 Run `scripts/test-ddi-downloads.sh` for host-side catalog, checksum/cache,
 fallback, timeout, and cancellation checks with intercepted responses.
-Run `scripts/test-launcher.sh` for host-side storage/input/protocol checks and
-`scripts/test-wow-device-access.sh` for registration/signature policy and bounded
+Run `scripts/test-launcher.sh` for host-side storage/input/protocol checks.
+`bash scripts/test-jit-mode.sh`, `bash scripts/test-script-library.sh`, and
+`bash scripts/test-universal-protocol.sh` for automatic mode selection, Air/
+Amethyst compatibility, and simulated bootstrap/extension/allocator handshakes.
+The protocol test requires Node.js and does not replace physical-device JIT QA.
+Run `scripts/test-wow-device-access.sh` for registration/signature policy and bounded
 network-client tests. The latter uses self-signed test fixtures and a local
 URLProtocol interceptor; it does not send real UDIDs to the website. These checks
 and successful builds do not establish physical-device acceptance.
@@ -390,7 +507,7 @@ The embedded VPN keeps upstream endpoints `10.7.1.1/32` (interface) and
 profiles for this app's extension. User-editable routes and control of unrelated
 VPN profiles are not part of the integration.
 
-Blocking FFI work runs off the main thread. VPN loss, record changes, or revoking
+Blocking FFI work runs off the main thread. Built-in VPN loss (in built-in mode), external connection failures, record changes, or revoking
 the Developer Mode confirmation invalidates readiness. Generation/operation
 checks prevent stale results from marking a changed connection ready. Pairing
 sessions and DDI network transfers support cancellation; blocking native FFI
@@ -412,5 +529,5 @@ provide unlimited background execution.
 - The user's local `codex/pikmin-helper` pairing guide informed the seven-step
   presentation and readiness UX. Its signed-license implementation informed the
   fixed-key verification contract; this launcher uses its own registration/non-ban
-  policy without the VIP requirement or offline permission cache. Its HealthKit
+  policy without the VIP requirement, with a seven-day bound offline permit. Its HealthKit
   and walking/step-writing workflows were not merged.

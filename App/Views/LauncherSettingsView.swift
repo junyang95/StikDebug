@@ -20,36 +20,87 @@ struct LauncherSettingsView: View {
     var body: some View {
         Form {
             Section { WowDeviceAccessView(model: model) }
+            if !model.isSetupAccessReady && model.locationIsSimulated && model.pairingFileName != nil {
+                Section {
+                    DeviceConnectionModePicker(model: model)
+                        .disabled(model.isBusy || vpn.isBusy || pairing.isRunning)
+                    if model.connectionMode == .builtIn && !vpn.isConnected {
+                        Button { Task { await model.connectForLocationRecovery() } } label: {
+                            Text("access.recovery.connect", tableName: "WowAccess")
+                        }
+                        .disabled(model.isBusy || vpn.isBusy || pairing.isRunning)
+                    }
+                    Button { model.restoreLocation() } label: {
+                        Text("access.recovery.restore", tableName: "WowAccess")
+                    }
+                    .disabled(model.isBusy || vpn.isBusy || pairing.isRunning || !model.canAttemptDeviceConnection)
+                } footer: {
+                    Text("access.recovery.help", tableName: "WowAccess")
+                }
+            }
+            if !model.isSetupAccessReady && vpn.isConnected {
+                Section {
+                    Button { Task { await vpn.disconnect() } } label: {
+                        Label("vpn.disconnect", systemImage: "pause.circle")
+                    }
+                    .disabled(vpn.isBusy || model.isBusy)
+                }
+            }
+            if model.isSetupAccessReady {
             Section {
+                DeviceConnectionModePicker(model: model)
                 LabeledContent("wifi.title") {
                     Text(LocalizedStringKey(model.wifiState == .unavailable ? "wifi.unavailable" : model.wifiStatusKey))
                         .foregroundStyle(.secondary)
                 }
                 LabeledContent("settings.local_connection") {
-                    ConnectionStatusLabel(status: vpn.status)
+                    DeviceConnectionStatusLabel(model: model)
                 }
-                Button {
-                    Task {
-                        if vpn.isConnected { await vpn.disconnect() }
-                        else { await model.connectVPN() }
+                if model.connectionMode == .external {
+                    Button {
+                        model.verifyDeviceAccess()
+                    } label: {
+                        Label("connection.external.check", systemImage: "checkmark.shield")
                     }
-                } label: {
-                    Label(vpn.isConnected ? "vpn.disconnect" : "vpn.connect", systemImage: vpn.isConnected ? "pause.circle" : "play.circle")
-                }
-                .disabled(model.isBusy || vpn.isBusy || pairing.isRunning || (!vpn.isConnected && !model.isWiFiAvailable))
-                if let message = vpn.errorMessage {
-                    LauncherMessage(message: message, isError: true)
+                    .disabled(model.isBusy || vpn.isBusy || pairing.isRunning || console.isRunning || console.isStopping
+                        || !model.isWiFiAvailable || !model.canAttemptDeviceConnection
+                        || model.pairingFileName == nil || !model.developerModeConfirmed)
+                    if model.pairingFileName == nil || !model.developerModeConfirmed {
+                        Text("connection.external.pairing_required")
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                    }
+                } else {
+                    Button {
+                        Task {
+                            if vpn.isConnected { await vpn.disconnect() }
+                            else { await model.connectVPN() }
+                        }
+                    } label: {
+                        Label(vpn.isConnected ? "vpn.disconnect" : "vpn.connect", systemImage: vpn.isConnected ? "pause.circle" : "play.circle")
+                    }
+                    .disabled(model.isBusy || vpn.isBusy || pairing.isRunning || (!vpn.isConnected && !model.isWiFiAvailable))
+                    if let message = vpn.errorMessage {
+                        LauncherMessage(message: message, isError: true)
+                    }
                 }
             } header: {
                 Text("settings.connection")
             } footer: {
                 VStack(alignment: .leading, spacing: 6) {
                     if !model.isWiFiAvailable { Text(LocalizedStringKey(model.wifiStatusKey)) }
-                    Text("vpn.local_only")
+                    if model.connectionMode == .external {
+                        Text("connection.external.instructions")
+                        Text("connection.external.configuration")
+                        Text("connection.external.verification_note")
+                    } else {
+                        Text("vpn.local_only")
+                    }
                 }
             }
 
             DDIRecoveryView(model: model)
+            }
 
             Section {
                 if let name = model.pairingFileName {

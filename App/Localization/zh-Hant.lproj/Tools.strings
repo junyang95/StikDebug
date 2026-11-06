@@ -1,5 +1,5 @@
 "tools.title" = "工具";
-"tools.prepare_hint" = "先完成配對、連接內建 VPN 並準備 JIT，再使用裝置工具。";
+"tools.prepare_hint" = "請先完成配對、選擇連線方式並準備 JIT，再使用裝置工具。";
 "tools.open_setup" = "前往連線設定";
 "tools.scripts" = "腳本管理";
 "tools.scripts.detail" = "為不同 App 選擇 JIT 腳本，支援匯入和編輯。";

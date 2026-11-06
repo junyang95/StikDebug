@@ -13,7 +13,7 @@ struct DDIRecoveryView: View {
     }
 
     private var canRedownload: Bool {
-        model.isWiFiAvailable && !model.isBusy && !pairing.isRunning && !vpn.isBusy && vpn.isConnected
+        model.isWiFiAvailable && !model.isBusy && !pairing.isRunning && !vpn.isBusy && model.canAttemptDeviceConnection
             && model.pairingFileName != nil && model.developerModeConfirmed
     }
 

@@ -13,19 +13,23 @@ final class ScriptRunner {
     private let script: StikJIT.Script
     private let txmPresence: TXMPresence
     private let progress: (String) -> Void
+    private let cancellationCheck: () throws -> Void
     private var context: JSContext?
-    private var executionError: StikJITError?
+    private var executionError: Error?
     private var completion = ScriptCompletionState()
 
-    init(targetPID: Int32, debugProxy: OpaquePointer, script: StikJIT.Script, txmPresence: TXMPresence, progress: @escaping (String) -> Void) {
+    init(targetPID: Int32, debugProxy: OpaquePointer, script: StikJIT.Script, txmPresence: TXMPresence, progress: @escaping (String) -> Void,
+         cancellationCheck: @escaping () throws -> Void = {}) {
         self.targetPID = targetPID
         self.debugProxy = debugProxy
         self.script = script
         self.txmPresence = txmPresence
         self.progress = progress
+        self.cancellationCheck = cancellationCheck
     }
 
     func run() throws {
+        try cancellationCheck()
         let source = try BundledScript.source(for: script)
 
         guard let context = JSContext() else { throw StikJITError.scriptUnavailable }
@@ -39,14 +43,14 @@ final class ScriptRunner {
 
         context.exceptionHandler = { [weak self] _, value in
             let detail = value?.toString() ?? "unknown JavaScript exception"
-            self?.recordExecutionError(.scriptExecution(detail))
+            self?.recordExecutionError(StikJITError.scriptExecution(detail))
         }
 
         let getPID: @convention(block) () -> Int = { [targetPID] in Int(targetPID) }
         let send: @convention(block) (String?) -> String = { [weak self] command in
             guard let self else { return "" }
             if let error = self.executionError {
-                self.fail(error)
+                self.failExecution(error)
                 return ""
             }
             guard let command else {
@@ -58,7 +62,7 @@ final class ScriptRunner {
         let prepare: @convention(block) (Double, Double) -> String = { [weak self] address, length in
             guard let self else { return "" }
             if let error = self.executionError {
-                self.fail(error)
+                self.failExecution(error)
                 return ""
             }
             guard let address = UInt64(exactly: address), let length = UInt64(exactly: length) else {
@@ -106,6 +110,8 @@ final class ScriptRunner {
     }
 
     private func sendCommand(_ command: String, raiseOnFailure: Bool = true) -> String? {
+        // Cleanup still needs to detach after the admission token is cancelled.
+        if raiseOnFailure && !checkCancellation() { return nil }
         if command.hasPrefix("vAttach;"),
            Int32(command.dropFirst("vAttach;".count), radix: 16) != targetPID {
             fail(.scriptExecution("The script tried to attach to a process other than the selected target."), raiseException: raiseOnFailure)
@@ -133,12 +139,16 @@ final class ScriptRunner {
     }
 
     private func prepareMemoryRegion(_ address: UInt64, length: UInt64) -> String? {
+        guard checkCancellation() else { return nil }
         guard length > 0 else { return "OK" }
         let pageCount = Int((length - 1) / Self.jitPageSize + 1)
 
         let commandBuffer = Self.makeBlessCommands(startAddress: address, pageCount: pageCount)
 
         for batchStart in stride(from: 0, to: pageCount, by: Self.commandsPerBatch) {
+            // Drain an entire sent batch before checking again, so detach cannot
+            // consume an outstanding memory-write acknowledgement as its reply.
+            guard checkCancellation() else { return nil }
             let commandsInBatch = min(Self.commandsPerBatch, pageCount - batchStart)
             let byteOffset = batchStart * Self.jitPageCommandLength
             let byteCount = commandsInBatch * Self.jitPageCommandLength
@@ -177,7 +187,12 @@ final class ScriptRunner {
         return "OK"
     }
 
-    private func recordExecutionError(_ error: StikJITError) {
+    private func checkCancellation() -> Bool {
+        do { try cancellationCheck(); return true }
+        catch { failExecution(error); return false }
+    }
+
+    private func recordExecutionError(_ error: Error) {
         if executionError == nil {
             executionError = error
             progress(error.localizedDescription)
@@ -185,6 +200,10 @@ final class ScriptRunner {
     }
 
     private func fail(_ error: StikJITError, raiseException: Bool = true) {
+        failExecution(error, raiseException: raiseException)
+    }
+
+    private func failExecution(_ error: Error, raiseException: Bool = true) {
         recordExecutionError(error)
         // Returning an empty string alone lets the bundled register-wait loop
         // continue indefinitely. A native JS exception stops evaluation instead.

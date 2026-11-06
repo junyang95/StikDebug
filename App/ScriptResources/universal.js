@@ -52,6 +52,7 @@ let detached = false;
 let continuesWithSignal = true;
 let pid = get_pid();
 let attachResponse = send_command(`vAttach;${pid.toString(16)}`);
+let pendingStopResponse = null;
 
 log(`pid = ${pid}`);
 log(`attach_response = ${attachResponse}`);
@@ -61,20 +62,20 @@ while (!detached) {
     totalBreakpoints++;
     log(`Handling signal ${totalBreakpoints}`);
     
-    let brkResponse = send_command(`c`);
+    // vCont returns the next stop packet too. Process it before continuing,
+    // otherwise an allocator breakpoint can be resumed without being serviced.
+    let brkResponse = pendingStopResponse !== null ? pendingStopResponse : send_command(`c`);
+    pendingStopResponse = null;
     log_verbose(`brkResponse = ${brkResponse}`);
     
     // extract tid, pc, x16
-    let tmpMatch = /T[0-9a-f]+thread:(?<tid>[0-9a-f]+);/.exec(brkResponse);
+    let tmpMatch = /(?:^T[0-9a-f]{2}|;)thread:(?<tid>[0-9a-f]+);/i.exec(brkResponse);
     tid = tmpMatch ? tmpMatch.groups['tid'] : null;
-    tmpMatch = /20:(?<reg>[0-9a-f]{16});/.exec(brkResponse);
-    pc = tmpMatch ? tmpMatch.groups['reg'] : null;
-    tmpMatch = /10:(?<reg>[0-9a-f]{16});/.exec(brkResponse);
-    x16 = tmpMatch ? tmpMatch.groups['reg'] : null;
-    if (!tid || !pc || !x16) {
-        log(`Failed to extract registers: tid=${tid}, pc=${pc}, x16=${x16}`);
-        continue;
+    if (!tid) {
+        throw new Error(`Debugger stop response did not identify a thread: ${brkResponse}`);
     }
+    pc = readStopRegister(brkResponse, "20");
+    x16 = readStopRegister(brkResponse, "10");
     pc = littleEndianHexStringToNumber(pc);
     x16 = littleEndianHexStringToNumber(x16);
     
@@ -93,7 +94,7 @@ while (!detached) {
                 continue;
             }
             log(`Continuing with signal 0x${signum}`);
-            send_command(`vCont;S${signum}:${tid}`);
+            pendingStopResponse = send_command(`vCont;S${signum}:${tid}`);
         }
         continue;
     }
@@ -102,14 +103,8 @@ while (!detached) {
     log(`BRK immediate: 0x${brkImmediate.toString(16)} (${brkImmediate})`);
     if (legacyCommands[brkImmediate] != undefined) {
         // when we find a valid brk immediate command, parse x0 and x1
-        tmpMatch = /00:(?<reg>[0-9a-f]{16});/.exec(brkResponse);
-        x0 = tmpMatch ? tmpMatch.groups['reg'] : null;
-        tmpMatch = /01:(?<reg>[0-9a-f]{16});/.exec(brkResponse);
-        x1 = tmpMatch ? tmpMatch.groups['reg'] : null;
-        if (!x0 || !x1) {
-            log(`Failed to extract registers: x0=${x0}, x1=${x1}`);
-            continue;
-        }
+        x0 = readStopRegister(brkResponse, "00");
+        x1 = readStopRegister(brkResponse, "01");
         x0 = littleEndianHexStringToNumber(x0);
         x1 = littleEndianHexStringToNumber(x1);
         
@@ -140,7 +135,7 @@ function JIT26NewBreakpoints(brkResponse) {
     let instrU32 = littleEndianHexToU32(instructionResponse);
     let brkImmediate = extractBrkImmediate(instrU32);
     
-    let memResponse = send_command(`m${x0.toString(16)},${x1}`);
+    let memResponse = send_command(`m${x0.toString(16)},${x1.toString(16)}`);
 
     let scriptText = hexToAscii(memResponse);
     log_verbose(`Script text: ${scriptText}`);
@@ -151,6 +146,7 @@ function JIT26NewBreakpoints(brkResponse) {
     } else {
         log('Script failed:', res.name, res.message);
         log(res.stack);
+        throw new Error(`JIT script extension failed: ${res.message}`);
     }
 }
 
@@ -207,6 +203,18 @@ function JIT26PrepareRegion(brkResponse) {
 }
 
 // utilities
+function readStopRegister(response, register) {
+    const match = new RegExp(`(?:^T[0-9a-f]{2}|;)${register}:([0-9a-f]{16});`, "i").exec(response);
+    if (match) return match[1];
+    // Stop replies may omit registers. Read them for the stopped thread rather
+    // than continuing past a breakpoint with incomplete allocator arguments.
+    const value = send_command(`p${parseInt(register, 16).toString(16)};thread:${tid};`);
+    if (!/^[0-9a-f]{16}$/i.test(value)) {
+        throw new Error(`Debugger did not return register ${register} for thread ${tid}`);
+    }
+    return value;
+}
+
 function littleEndianHexStringToNumber(hexStr) {
     const bytes = [];
     for (let i = 0; i < hexStr.length; i += 2) {

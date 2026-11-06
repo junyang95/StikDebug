@@ -90,7 +90,12 @@ enum LauncherFoundationTests {
                     let previous = try writePlist(["Fixture": "last good record"], at: source)
                     try store.importRecord(from: source) { _ in }
                     _ = try writePlist(["Fixture": "rejected replacement"], at: source)
-                    try expectError("Rejected validation", matches: { $0 is RejectedRecord }) {
+                    try expectError("Rejected validation", matches: {
+                        if case PairingRecordStore.StoreError.validationFailed(let underlying) = $0 {
+                            return underlying is RejectedRecord
+                        }
+                        return false
+                    }) {
                         try store.importRecord(from: source) { _ in throw RejectedRecord.incompatible }
                     }
                     try expect(try Data(contentsOf: store.fileURL) == previous, "Rejected import overwrote the previous record")
@@ -102,7 +107,12 @@ enum LauncherFoundationTests {
                 try withStore { store, root in
                     let source = root.appendingPathComponent("source.plist")
                     _ = try writePlist(["Fixture": true], at: source)
-                    try expectError("First validation rejection", matches: { $0 is RejectedRecord }) {
+                    try expectError("First validation rejection", matches: {
+                        if case PairingRecordStore.StoreError.validationFailed(let underlying) = $0 {
+                            return underlying is RejectedRecord
+                        }
+                        return false
+                    }) {
                         try store.importRecord(from: source) { _ in throw RejectedRecord.incompatible }
                     }
                     try expect(!store.hasRecord, "Rejected record was committed")
@@ -117,6 +127,61 @@ enum LauncherFoundationTests {
                     try store.importRecord(from: source) { _ in called = true }
                     try expect(called, "Binary plist did not reach the validator")
                     try expect(try Data(contentsOf: store.fileURL) == expected, "Binary plist bytes changed")
+                }
+            }),
+            ("Imported copy survives removal of the picker temporary source", {
+                try withStore { store, root in
+                    let source = root.appendingPathComponent("picker-copy.plist")
+                    let expected = try writePlist(["Fixture": "temporary picker copy"], at: source)
+                    try store.importRecord(from: source) { temporary in
+                        try FileManager.default.removeItem(at: source)
+                        try expect(try Data(contentsOf: temporary) == expected,
+                                   "Staged record depends on the provider source")
+                    }
+                    try expect(!FileManager.default.fileExists(atPath: source.path), "Temporary source was not removed")
+                    try expect(try Data(contentsOf: store.fileURL) == expected, "Committed copy depended on removed source")
+                    try expect(try remainingFiles(store) == ["pairing.plist"], "Copy import leaked staged files")
+                }
+            }),
+            ("Missing and non-file sources are read failures and preserve the previous record", {
+                try withStore { store, root in
+                    let source = root.appendingPathComponent("source.plist")
+                    let previous = try writePlist(["Fixture": "last good record"], at: source)
+                    try store.importRecord(from: source) { _ in }
+                    let directory = root.appendingPathComponent("directory.plist")
+                    try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: false)
+                    for invalidSource in [root.appendingPathComponent("missing.plist"), directory] {
+                        var validated = false
+                        try expectError("Unreadable source", matches: {
+                            if case PairingRecordStore.StoreError.readFailed(let underlying) = $0 {
+                                return (underlying as NSError).domain == NSCocoaErrorDomain
+                            }
+                            return false
+                        }) {
+                            try store.importRecord(from: invalidSource) { _ in validated = true }
+                        }
+                        try expect(!validated, "Unreadable source reached pairing validation")
+                        try expect(try Data(contentsOf: store.fileURL) == previous, "Read failure replaced the valid record")
+                        try expect(try remainingFiles(store) == ["pairing.plist"], "Read failure leaked staged files")
+                    }
+                }
+            }),
+            ("Validation failure preserves the underlying diagnostic error", {
+                try withStore { store, root in
+                    let source = root.appendingPathComponent("source.plist")
+                    _ = try writePlist(["Fixture": "candidate"], at: source)
+                    let expected = NSError(domain: "PairingValidator", code: 42,
+                                           userInfo: [NSUnderlyingErrorKey: NSError(domain: NSPOSIXErrorDomain, code: 5)])
+                    try expectError("Validator diagnostic", matches: {
+                        if case PairingRecordStore.StoreError.validationFailed(let underlying) = $0 {
+                            return (underlying as NSError) === expected
+                        }
+                        return false
+                    }) {
+                        try store.importRecord(from: source) { _ in throw expected }
+                    }
+                    try expect(!store.hasRecord, "Failed validation committed a record")
+                    try expect(try remainingFiles(store).isEmpty, "Failed validation leaked staged files")
                 }
             }),
             ("Malformed property lists preserve an existing record", {
@@ -168,6 +233,18 @@ enum LauncherFoundationTests {
                     try expect(try remainingFiles(store) == ["pairing.plist"], "Oversized import left temporary files")
                 }
             }),
+            ("A valid file at the maximum size is read completely", {
+                try withStore { store, root in
+                    let source = root.appendingPathComponent("maximum.plist")
+                    var expected = try writePlist(["Fixture": "maximum sized record"], at: source)
+                    expected.append(Data(repeating: 0x20, count: PairingRecordStore.maximumBytes - expected.count))
+                    try expected.write(to: source)
+                    try store.importRecord(from: source) { temporary in
+                        try expect(try Data(contentsOf: temporary) == expected, "Bounded read truncated valid input")
+                    }
+                    try expect(try Data(contentsOf: store.fileURL) == expected, "Maximum-sized record changed on commit")
+                }
+            }),
             ("Successful replacement stores the newly validated bytes", {
                 try withStore { store, root in
                     let source = root.appendingPathComponent("source.plist")
@@ -201,7 +278,12 @@ enum LauncherFoundationTests {
                     // An existing directory cannot be replaced by a regular file.
                     try FileManager.default.createDirectory(at: store.fileURL, withIntermediateDirectories: true)
                     var validated = false
-                    try expectError("Commit failure", matches: { ($0 as NSError).domain == NSPOSIXErrorDomain }) {
+                    try expectError("Commit failure", matches: {
+                        if case PairingRecordStore.StoreError.writeFailed(let underlying) = $0 {
+                            return (underlying as NSError).domain == NSPOSIXErrorDomain
+                        }
+                        return false
+                    }) {
                         try store.importRecord(from: source) { _ in validated = true }
                     }
                     try expect(validated, "Test did not reach the commit step")
@@ -209,6 +291,48 @@ enum LauncherFoundationTests {
                     var isDirectory: ObjCBool = false
                     try expect(FileManager.default.fileExists(atPath: store.fileURL.path, isDirectory: &isDirectory) && isDirectory.boolValue,
                                "Failed commit changed the destination")
+                }
+            }),
+            ("A failed atomic commit preserves the previous valid record", {
+                try withStore { store, root in
+                    let source = root.appendingPathComponent("source.plist")
+                    let previous = try writePlist(["Fixture": "last good record"], at: source)
+                    try store.importRecord(from: source) { _ in }
+                    _ = try writePlist(["Fixture": "new record"], at: source)
+                    try expectError("Staged file removed before commit", matches: {
+                        if case PairingRecordStore.StoreError.writeFailed(let underlying) = $0 {
+                            return (underlying as NSError).domain == NSPOSIXErrorDomain
+                        }
+                        return false
+                    }) {
+                        try store.importRecord(from: source) { temporary in
+                            // Model a staged file disappearing between validation and rename.
+                            try FileManager.default.removeItem(at: temporary)
+                        }
+                    }
+                    try expect(try Data(contentsOf: store.fileURL) == previous, "Failed commit lost the prior record")
+                    try expect(try remainingFiles(store) == ["pairing.plist"], "Failed commit leaked staged files")
+                }
+            }),
+            ("An unavailable storage directory reports a write failure before validation", {
+                try withStore { _, root in
+                    let source = root.appendingPathComponent("source.plist")
+                    _ = try writePlist(["Fixture": "record"], at: source)
+                    let blocker = root.appendingPathComponent("Pairing")
+                    let blockerBytes = Data("existing file".utf8)
+                    try blockerBytes.write(to: blocker)
+                    let store = PairingRecordStore(directory: blocker)
+                    var validated = false
+                    try expectError("Storage directory is occupied", matches: {
+                        if case PairingRecordStore.StoreError.writeFailed(let underlying) = $0 {
+                            return (underlying as NSError).domain == NSCocoaErrorDomain
+                        }
+                        return false
+                    }) {
+                        try store.importRecord(from: source) { _ in validated = true }
+                    }
+                    try expect(!validated, "Unstaged record reached validation")
+                    try expect(try Data(contentsOf: blocker) == blockerBytes, "Failed staging changed existing content")
                 }
             }),
             ("On-device identity and pairing record commit as one validated file", {
@@ -272,7 +396,12 @@ enum LauncherFoundationTests {
                     try store.importRecord(from: source, hostAltIRK: oldIdentity) { _ in }
                     let previous = try Data(contentsOf: store.fileURL)
                     _ = try writePlist(["Fixture": "rejected record"], at: source)
-                    try expectError("Rejected enriched record", matches: { $0 is RejectedRecord }) {
+                    try expectError("Rejected enriched record", matches: {
+                        if case PairingRecordStore.StoreError.validationFailed(let underlying) = $0 {
+                            return underlying is RejectedRecord
+                        }
+                        return false
+                    }) {
                         try store.importRecord(from: source, hostAltIRK: rejectedIdentity) { temporary in
                             try expect(try readPlist(temporary)["JITLauncherHostAltIRK"] as? Data == rejectedIdentity,
                                        "Test did not validate the enriched replacement")

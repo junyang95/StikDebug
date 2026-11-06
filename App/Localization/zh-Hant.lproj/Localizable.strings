@@ -197,3 +197,23 @@
 "wifi.required" = "請前往「設定」→「Wi-Fi」連接無線網路後返回。僅使用行動數據無法準備裝置或啟動 JIT。";
 "wifi.interrupted" = "Wi-Fi 已中斷，本次操作已停止。請重新連接 Wi-Fi 後再試，已驗證的開發者磁碟映像會保留。";
 "wifi.unavailable" = "未連接 Wi-Fi";
+
+// Pairing copy-import failures.
+"error.pairing_read_failed" = "無法讀取所選檔案。請先在「檔案」中下載並確認可以開啟，再重新選擇。";
+"error.pairing_picker_failed" = "「檔案」未能提供所選檔案的副本。請確認檔案可用後重新匯入。";
+"error.pairing_diagnostic %@" = "錯誤代碼：%@";
+
+// Built-in and external device connection modes.
+"connection.mode.title" = "連線方式";
+"connection.mode.builtIn" = "內建 VPN";
+"connection.mode.external" = "外部 VPN";
+"connection.mode.hint" = "切換連線方式後，需要重新準備 JIT。";
+"connection.external.instructions" = "先在 LocalDevVPN 或相容的本機回環 VPN 中使用預設設定連線，再返回這裡檢查裝置連線並準備 JIT。";
+"connection.external.configuration" = "預設本機位址為 10.7.0.1，暫不支援自訂位址。";
+"connection.external.verification_note" = "「已驗證」表示上次裝置服務檢查成功。本 App 不會即時監測或控制外部 VPN。";
+"connection.external.unverified" = "裝置連線尚未驗證";
+"connection.external.checking" = "正在檢查裝置連線…";
+"connection.external.verified" = "裝置連線已驗證";
+"connection.external.check" = "檢查裝置連線";
+"connection.external.pairing_required" = "請先在配對引導中完成配對，並確認已開啟開發者模式。";
+"error.external_connection_failed" = "無法驗證外部裝置連線。請先在 LocalDevVPN 或相容的本機回環 VPN 中使用預設設定連線，再返回這裡重試。";

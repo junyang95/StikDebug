@@ -11,7 +11,7 @@ struct LauncherRootView: View {
     var body: some View {
         TabView(selection: $selectedTab) {
             NavigationStack {
-                ApplicationLibraryView(model: model) { selectedTab = 1 }
+                ApplicationLibraryView(model: model) { model.startSetup() }
             }
             .tabItem { Label(NSLocalizedString("apps.title", tableName: "Library", comment: ""), systemImage: "square.grid.2x2") }
             .tag(0)
@@ -21,12 +21,12 @@ struct LauncherRootView: View {
             .tabItem { Label("tabs.setup", systemImage: "link") }
             .tag(1)
             NavigationStack {
-                LauncherToolsView(model: model) { selectedTab = 1 }
+                LauncherToolsView(model: model) { model.startSetup() }
             }
             .tabItem { Label(toolsString("tools.title"), systemImage: "wrench.and.screwdriver") }
             .tag(2)
             NavigationStack {
-                LauncherSettingsView(model: model) { selectedTab = 1 }
+                LauncherSettingsView(model: model) { model.startSetup() }
             }
             .tabItem { Label("tabs.settings", systemImage: "gearshape") }
             .tag(3)
@@ -36,9 +36,10 @@ struct LauncherRootView: View {
             await model.refreshState()
             if !selectedInitialTab {
                 selectedInitialTab = true
-                selectedTab = model.pairingFileName == nil ? 1 : 0
+                selectedTab = 0
             }
         }
+        .onChange(of: model.setupNavigationRevision) { _, _ in selectedTab = 1 }
         .onChange(of: scenePhase) { _, phase in
             if phase == .active {
                 model.enteredForeground()

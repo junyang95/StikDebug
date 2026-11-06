@@ -1,14 +1,53 @@
 import NetworkExtension
 import SwiftUI
 
-struct ConnectionStatusLabel: View {
-    let status: NEVPNStatus
+/// Reports the app's observed connection state. External mode is verified by
+/// a successful device-service check, not by reading another app's VPN profile.
+struct DeviceConnectionStatusLabel: View {
+    @ObservedObject var model: LauncherModel
+    @ObservedObject private var vpn: LocalVPNManager
+
+    init(model: LauncherModel) {
+        self.model = model
+        self.vpn = model.vpn
+    }
 
     var body: some View {
-        Label(LocalizedStringKey(status.localizationKey), systemImage: status == .connected ? "checkmark.shield.fill" : "shield")
-            .foregroundStyle(status == .connected ? Color.green : Color.secondary)
+        Label(LocalizedStringKey(model.connectionStatusKey), systemImage: model.isDeviceConnectionReady ? "checkmark.shield.fill" : "shield")
+            .foregroundStyle(model.isDeviceConnectionReady ? Color.green : Color.secondary)
             .font(.subheadline)
             .accessibilityElement(children: .combine)
+    }
+}
+
+struct DeviceConnectionModePicker: View {
+    @ObservedObject var model: LauncherModel
+    @ObservedObject private var vpn: LocalVPNManager
+    @ObservedObject private var pairing: OnDevicePairingManager
+    @ObservedObject private var console: LauncherConsole
+
+    init(model: LauncherModel) {
+        self.model = model
+        self.vpn = model.vpn
+        self.pairing = model.pairing
+        self.console = model.console
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("connection.mode.title")
+                .font(.subheadline.weight(.semibold))
+            Picker("connection.mode.title", selection: Binding(
+                get: { model.connectionMode },
+                set: { model.setConnectionMode($0) }
+            )) {
+                Text("connection.mode.builtIn").tag(DeviceConnectionMode.builtIn)
+                Text("connection.mode.external").tag(DeviceConnectionMode.external)
+            }
+            .pickerStyle(.segmented)
+            .disabled(model.isBusy || vpn.isBusy || pairing.isRunning || console.isRunning || console.isStopping)
+            .accessibilityHint("connection.mode.hint")
+        }
     }
 }
 

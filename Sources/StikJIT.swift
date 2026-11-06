@@ -135,7 +135,8 @@ public enum StikJIT {
                               script: script,
                               forceScript: forceScript,
                               txmPresence: TXMPresence(isPresent: securityState.isTXMPresent),
-                              progress: progress)
+                              progress: progress,
+                              cancellationCheck: cancellationCheck)
     }
 
     public static var isTXMPresent: Bool? {

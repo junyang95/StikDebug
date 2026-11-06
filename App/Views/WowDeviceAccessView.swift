@@ -10,8 +10,8 @@ struct WowDeviceAccessView: View {
         self.pairing = model.pairing
     }
 
-    private var isChecking: Bool { model.accessStatusKey == "access.checking" }
-    private var hasAccessError: Bool { model.accessStatusKey.hasPrefix("access.error.") }
+    private var isChecking: Bool { model.isSetupAccessChecking || model.accessStatusKey == "access.checking" }
+    private var hasAccessError: Bool { model.accessStatusKey.hasPrefix("access.error.") && model.accessStatusKey != "access.error.cancelled" }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -41,7 +41,7 @@ struct WowDeviceAccessView: View {
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
 
-            Link(destination: URL(string: "https://wow-app.store")!) {
+            Link(destination: URL(string: "https://app-shop.cn")!) {
                 Label {
                     Text("access.login", tableName: "WowAccess")
                 } icon: { Image(systemName: "safari") }
@@ -51,10 +51,28 @@ struct WowDeviceAccessView: View {
             Button {
                 model.verifyDeviceAccess()
             } label: {
-                Text("access.verify", tableName: "WowAccess")
+                Text(model.isSetupAccessReady ? "access.verify" : "access.setup.start", tableName: "WowAccess")
             }
             .buttonStyle(.bordered)
-            .disabled(model.isBusy || pairing.isRunning || !model.isWiFiAvailable)
+            .disabled(model.isBusy || model.isSetupAccessChecking || pairing.isRunning
+                || (model.isSetupAccessReady && (model.pairingFileName == nil || !model.developerModeConfirmed || !model.canAttemptDeviceConnection)))
+            .accessibilityIdentifier("begin-device-setup")
+
+            if model.hasStartedSetup && !model.isDeviceAccessVerified {
+                Button { model.cancelSetup() } label: {
+                    Text("access.setup.cancel", tableName: "WowAccess")
+                }
+                .disabled(model.isBusy)
+                .accessibilityIdentifier("cancel-device-setup")
+            }
+            if let until = model.offlineAccessValidUntil {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("access.offline.until", tableName: "WowAccess")
+                    Text(until, format: .dateTime.year().month().day().hour().minute())
+                }
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+            }
 
             if let error = model.accessError,
                error != NSLocalizedString(model.accessStatusKey, tableName: "WowAccess", comment: "") {

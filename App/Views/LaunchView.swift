@@ -24,18 +24,18 @@ struct LaunchView: View {
     }
 
     private var canLaunch: Bool {
-        model.isPrepared && vpn.isConnected && !model.isBusy && !vpn.isBusy && !pairing.isRunning && Int32(model.targetPID).map { $0 > 0 } == true
+        model.isPrepared && model.isDeviceConnectionReady && !model.isBusy && !vpn.isBusy && !pairing.isRunning && Int32(model.targetPID).map { $0 > 0 } == true
     }
 
     var body: some View {
         List {
             Section {
                 VStack(alignment: .leading, spacing: 12) {
-                    ConnectionStatusLabel(status: vpn.status)
+                    DeviceConnectionStatusLabel(model: model)
                     Text("launch.instructions")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
-                    if !model.isPrepared || !vpn.isConnected {
+                    if !model.isPrepared || !model.isDeviceConnectionReady {
                         Button("launch.finish_setup", action: openSetup)
                             .buttonStyle(.bordered)
                     }
@@ -120,7 +120,7 @@ struct LaunchView: View {
                         Label("launch.refresh", systemImage: "arrow.clockwise")
                             .labelStyle(.titleAndIcon)
                     }
-                    .disabled(!model.isPrepared || !vpn.isConnected || model.isBusy || vpn.isBusy || pairing.isRunning)
+                    .disabled(!model.isPrepared || !model.isDeviceConnectionReady || model.isBusy || vpn.isBusy || pairing.isRunning)
                 }
             } footer: {
                 Text("launch.compatibility")
@@ -161,7 +161,7 @@ struct LaunchView: View {
             .background(.regularMaterial)
         }
         .onAppear {
-            if model.isPrepared && vpn.isConnected && model.processes.isEmpty && !model.isBusy {
+            if model.isPrepared && model.isDeviceConnectionReady && model.processes.isEmpty && !model.isBusy {
                 model.refreshProcesses()
             }
         }

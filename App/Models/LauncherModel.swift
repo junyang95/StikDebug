@@ -1,5 +1,7 @@
 import Combine
+import CryptoKit
 import Foundation
+import Network
 import NetworkExtension
 import UIKit
 #if !targetEnvironment(simulator)
@@ -41,7 +43,42 @@ final class LauncherModel: ObservableObject {
     @Published private(set) var accessStatusKey = "access.pending"
     @Published private(set) var accessCheckedAt: Date?
     @Published private(set) var accessError: String?
-    var isDeviceAccessVerified: Bool { accessStatusKey == "access.verified" }
+    @Published private(set) var hasStartedSetup = false
+    @Published private(set) var isSetupAccessReady = false
+    @Published private(set) var isSetupAccessChecking = false
+    @Published private(set) var setupNeedsDeviceIdentity = false
+    @Published private(set) var offlineAccessValidUntil: Date?
+    @Published private(set) var setupNavigationRevision = 0
+    private let authorization = LauncherDeviceAuthorization.shared
+    private var setupTask: Task<Void, Never>?
+    private var setupRequestID = UUID()
+    private var recoveryConnectionRequested = false
+    var isDeviceAccessVerified: Bool {
+        guard let binding = authorizationBinding else { return false }
+        return ["access.verified", "access.offline"].contains(accessStatusKey)
+            && authorization.isAuthorized(binding: binding)
+    }
+    private var authorizationBinding: String? {
+        guard let data = try? Data(contentsOf: store.fileURL), !data.isEmpty else { return nil }
+        let digest = SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined()
+        return connectionMode.rawValue + ":" + digest
+    }
+    @Published private(set) var connectionMode: DeviceConnectionMode
+    @Published private var externalConnection = ExternalConnectionValidation()
+    var canAttemptDeviceConnection: Bool {
+        DeviceConnectionPolicy.canAttempt(mode: connectionMode, builtInConnected: vpn.isConnected)
+    }
+    var isDeviceConnectionReady: Bool {
+        DeviceConnectionPolicy.isReady(mode: connectionMode, builtInConnected: vpn.isConnected, external: externalConnection)
+    }
+    var connectionStatusKey: String {
+        guard connectionMode == .external else { return vpn.status.localizationKey }
+        switch externalConnection.phase {
+        case .unverified: return "connection.external.unverified"
+        case .checking: return "connection.external.checking"
+        case .verified: return "connection.external.verified"
+        }
+    }
     let scripts = ScriptLibrary()
     let console = LauncherConsole()
 
@@ -79,9 +116,12 @@ final class LauncherModel: ObservableObject {
     private var iconRequests: [String: UUID] = [:]
     private var iconAttempts = Set<String>()
     private var iconCacheOrder: [String] = []
+    private let connectionPathMonitor = NWPathMonitor()
+    private var hasObservedConnectionPath = false
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
+        connectionMode = DeviceConnectionMode(persistedValue: defaults.string(forKey: "deviceConnectionMode"))
         let library = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
             .appendingPathComponent("JITLauncher", isDirectory: true)
         store = PairingRecordStore(directory: library.appendingPathComponent("Pairing", isDirectory: true))
@@ -90,10 +130,14 @@ final class LauncherModel: ObservableObject {
         locationIsSimulated = defaults.bool(forKey: "locationIsSimulated")
         pairingFileName = store.hasRecord ? (defaults.string(forKey: "pairingFileName") ?? "pairing.plist") : nil
         observation = vpn.$status.removeDuplicates().sink { [weak self] status in
-            guard status != .connected else { return }
-            self?.invalidatePreparation()
+            guard let self, self.connectionMode == .builtIn, status != .connected else { return }
+            self.invalidatePreparation()
         }
-        vpn.canConnect = { [weak self] in self?.isWiFiAvailable == true }
+        vpn.canConnect = { [weak self] in
+            guard let self else { return false }
+            return self.connectionMode == .builtIn && self.isWiFiAvailable
+                && (self.isSetupAccessReady || self.recoveryConnectionRequested)
+        }
         wifiObservation = wifi.$state.removeDuplicates().sink { [weak self] state in
             guard let self else { return }
             self.wifiState = state
@@ -110,10 +154,11 @@ final class LauncherModel: ObservableObject {
         pairing.connectionIsAvailable = { [weak self] in self?.isWiFiAvailable == true }
         pairing.canStart = { [weak self] in
             guard let self else { return false }
-            return self.isWiFiAvailable && !self.isBusy && !self.vpn.isBusy && !self.console.isRunning && !self.locationIsSimulated
+            return self.isSetupAccessReady && self.isWiFiAvailable && !self.isBusy && !self.isSetupAccessChecking && !self.vpn.isBusy && !self.console.isRunning && !self.locationIsSimulated
         }
         pairing.didComplete = { [weak self] url, hostAltIRK in
             guard let self else { return }
+            guard self.hasStartedSetup, self.isSetupAccessReady else { throw CancellationError() }
             try self.store.importRecord(from: url, hostAltIRK: hostAltIRK) { record in
                 #if !targetEnvironment(simulator)
                 try StikJIT.validatePairingFile(at: record)
@@ -125,6 +170,35 @@ final class LauncherModel: ObservableObject {
             self.invalidatePreparation()
             self.successMessage = self.localized("pairing.on_device.complete")
         }
+        connectionPathMonitor.pathUpdateHandler = { [weak self] _ in
+            Task { @MainActor [weak self] in
+                guard let self else { return }
+                defer { self.hasObservedConnectionPath = true }
+                guard self.hasObservedConnectionPath, self.connectionMode == .external else { return }
+                let cancelOperation = !self.isBusy || self.operationRequiresWiFi
+                let hadConnection = self.isDeviceConnectionReady || self.isPrepared || self.console.isRunning || (self.isBusy && cancelOperation)
+                self.invalidatePreparation(cancelOperation: cancelOperation)
+                if hadConnection && cancelOperation {
+                    self.errorMessage = self.localized("error.external_connection_failed")
+                }
+            }
+        }
+        connectionPathMonitor.start(queue: DispatchQueue(label: "com.stik.JITLauncher.connection-path"))
+    }
+
+    deinit { connectionPathMonitor.cancel() }
+
+    func setConnectionMode(_ mode: DeviceConnectionMode) {
+        guard mode != connectionMode else { return }
+        guard !isBusy, !pairing.isRunning, !console.isRunning, !console.isStopping, !vpn.isBusy else {
+            errorMessage = localized("error.operation_busy")
+            return
+        }
+        clearMessages()
+        invalidatePreparation()
+        connectionMode = mode
+        defaults.set(mode.rawValue, forKey: "deviceConnectionMode")
+        // Selecting a mode never starts or stops any VPN, including our own.
     }
 
     func enteredForeground() {
@@ -132,6 +206,7 @@ final class LauncherModel: ObservableObject {
         // needs to invalidate the path, otherwise VPN consent can race .checking.
         guard !isForeground else { return }
         isForeground = true
+        if connectionMode == .external { invalidatePreparation(cancelOperation: false) }
         wifi.refresh()
     }
 
@@ -145,7 +220,21 @@ final class LauncherModel: ObservableObject {
     }
 
     func connectVPN() async {
+        guard isSetupAccessReady else { startSetup(); return }
+        guard connectionMode == .builtIn else { return }
         guard requireWiFi() else { return }
+        await vpn.connect()
+    }
+
+    /// Connecting this local tunnel is solely a recovery step. It never admits a
+    /// new JIT, device-tool or simulated-location operation without authorization.
+    func connectForLocationRecovery() async {
+        guard isForeground, connectionMode == .builtIn, locationIsSimulated, store.hasRecord,
+              !isBusy, !vpn.isBusy, !pairing.isRunning else { return }
+        if isSetupAccessChecking { cancelSetup() }
+        guard requireWiFi() else { return }
+        recoveryConnectionRequested = true
+        defer { recoveryConnectionRequested = false }
         await vpn.connect()
     }
 
@@ -154,10 +243,77 @@ final class LauncherModel: ObservableObject {
             pairingFileName = nil
             invalidatePreparation()
         }
-        await vpn.refresh()
-        if isForeground && isWiFiAvailable && store.hasRecord && vpn.isConnected && developerModeConfirmed && !isBusy && !pairing.isRunning {
+        if connectionMode == .builtIn { await vpn.refresh() }
+        if hasStartedSetup && isSetupAccessReady && !isSetupAccessChecking && isForeground && isWiFiAvailable && store.hasRecord && canAttemptDeviceConnection && developerModeConfirmed && !isBusy && !pairing.isRunning {
             verifyDeviceAccess()
         }
+    }
+
+    /// Explicit user intent is required; opening the app and browsing tabs stay passive.
+    func startSetup() {
+        setupNavigationRevision += 1
+        guard !isBusy, !isSetupAccessChecking, !vpn.isBusy, !pairing.isRunning else { return }
+        hasStartedSetup = true
+        if isSetupAccessReady { return }
+        clearMessages()
+        accessError = nil
+        offlineAccessValidUntil = nil
+        let candidate = LauncherDeviceAuthorization.candidateIdentity()
+        setupNeedsDeviceIdentity = candidate == nil
+        if authorization.canContinueSetup(candidate: candidate, binding: authorizationBinding) {
+            isSetupAccessReady = true
+            accessStatusKey = candidate == nil ? "access.setup.connect_first" : "access.setup.verified"
+            return
+        }
+        let request = UUID()
+        setupRequestID = request
+        isSetupAccessChecking = true
+        accessStatusKey = "access.checking"
+        setupTask = Task { [weak self] in
+            guard let self else { return }
+            defer {
+                if self.setupRequestID == request {
+                    self.isSetupAccessChecking = false
+                    self.setupTask = nil
+                }
+            }
+            do {
+                let result = try await self.authorization.precheck(candidate: candidate)
+                try Task.checkCancellation()
+                guard self.setupRequestID == request, self.hasStartedSetup else { return }
+                self.isSetupAccessReady = true
+                switch result {
+                case .requiresDeviceIdentity:
+                    self.setupNeedsDeviceIdentity = true
+                    self.accessStatusKey = "access.setup.connect_first"
+                case .setupVerified, .authorized:
+                    self.accessStatusKey = "access.setup.verified"
+                }
+            } catch {
+                guard self.setupRequestID == request else { return }
+                self.isSetupAccessReady = false
+                let failure = (error as? WowDeviceAccessError) ?? .networkUnavailable
+                self.accessStatusKey = failure.localizationKey
+                self.accessError = failure.localizedDescription
+            }
+        }
+    }
+
+    func cancelSetup() {
+        guard !isBusy else { return }
+        pairing.cancel()
+        recoveryConnectionRequested = false
+        invalidatePreparation()
+        setupRequestID = UUID()
+        setupTask?.cancel()
+        setupTask = nil
+        authorization.cancel()
+        isSetupAccessChecking = false
+        isSetupAccessReady = false
+        hasStartedSetup = false
+        offlineAccessValidUntil = nil
+        accessStatusKey = "access.error.cancelled"
+        accessError = nil
     }
 
     func clearMessages() {
@@ -166,10 +322,19 @@ final class LauncherModel: ObservableObject {
         applicationError = nil
     }
 
-    func importPairingFile(from url: URL) {
-        guard !locationIsSimulated else { errorMessage = localized("error.restore_location_first"); return }
-        guard !isBusy, !pairing.isRunning, !console.isRunning else { return }
+    /// The picker supplies a temporary local copy; consume it before returning.
+    @discardableResult
+    func importPairingFile(from url: URL) -> Bool {
+        guard isSetupAccessReady else { startSetup(); return false }
         clearMessages()
+        guard !locationIsSimulated else {
+            errorMessage = localized("error.restore_location_first")
+            return false
+        }
+        guard !isBusy, !vpn.isBusy, !pairing.isRunning, !console.isRunning else {
+            errorMessage = localized("error.operation_busy")
+            return false
+        }
         do {
             try store.importRecord(from: url) { record in
                 #if targetEnvironment(simulator)
@@ -183,15 +348,49 @@ final class LauncherModel: ObservableObject {
             defaults.set(url.lastPathComponent, forKey: "pairingFileName")
             invalidatePreparation()
             successMessage = localized("success.pairing_imported")
+            return true
         } catch PairingRecordStore.StoreError.tooLarge {
             errorMessage = localized("error.pairing_too_large")
         } catch PairingRecordStore.StoreError.invalidPropertyList {
             errorMessage = localized("error.invalid_pairing")
-        } catch LauncherOperationError.deviceRequired {
-            errorMessage = localized("error.device_required")
+        } catch PairingRecordStore.StoreError.invalidHostIdentity {
+            errorMessage = localized("error.invalid_pairing")
+        } catch PairingRecordStore.StoreError.readFailed(let error) {
+            errorMessage = pairingImportFailure("error.pairing_read_failed", error)
+        } catch PairingRecordStore.StoreError.validationFailed(let error) {
+            if case LauncherOperationError.deviceRequired = error {
+                errorMessage = localized("error.device_required")
+            } else {
+                errorMessage = pairingImportFailure("error.invalid_pairing", error)
+            }
+        } catch PairingRecordStore.StoreError.writeFailed(let error) {
+            errorMessage = pairingImportFailure("error.storage", error)
         } catch {
-            errorMessage = message("error.invalid_pairing", error)
+            errorMessage = pairingImportFailure("pairing.import_failed", error)
         }
+        return false
+    }
+
+    func reportPairingPickerFailure(_ error: Error) -> String {
+        clearMessages()
+        let message = pairingImportFailure("error.pairing_picker_failed", error)
+        errorMessage = message
+        return message
+    }
+
+    private func pairingImportFailure(_ key: String, _ error: Error) -> String {
+        // Error descriptions/userInfo may contain a private URL or pairing data.
+        // Only expose standard error domains and numeric codes for support.
+        let allowedDomains = [NSCocoaErrorDomain, NSPOSIXErrorDomain, NSOSStatusErrorDomain, NSURLErrorDomain]
+        var codes: [String] = []
+        var current: NSError? = error as NSError
+        for _ in 0..<3 {
+            guard let failure = current else { break }
+            let domain = allowedDomains.contains(failure.domain) ? failure.domain : "ImportError"
+            codes.append("\(domain) \(failure.code)")
+            current = failure.userInfo[NSUnderlyingErrorKey] as? NSError
+        }
+        return localized(key) + "\n" + String(format: localized("error.pairing_diagnostic %@"), codes.joined(separator: " → "))
     }
 
     func removePairingFile() {
@@ -251,15 +450,18 @@ final class LauncherModel: ObservableObject {
             errorMessage = localized("error.invalid_pid")
             return
         }
-        let data: Data
+        let configuration: LauncherJITConfiguration
         do {
-            let app = LauncherApplication(bundleIdentifier: "manual.pid", name: "", isDebuggable: true, iconPNG: nil)
-            data = try scripts.scriptData(for: app).data
+            let processName = processes.first(where: { $0.id == pid })?.name ?? ""
+            let matchingApps = applications.filter { !processName.isEmpty && $0.name == processName }
+            let app = matchingApps.count == 1 ? matchingApps[0] :
+                LauncherApplication(bundleIdentifier: "manual.pid", name: processName, isDebuggable: true, iconPNG: nil)
+            configuration = try scripts.scriptData(for: app)
         } catch { errorMessage = error.localizedDescription; return }
         let record = store.fileURL
         let cache = cacheDirectory
         perform(progress: "progress.enabling_jit", failure: "error.jit_failed") { report, checkCancelled in
-            try LauncherEngine.enable(pid: pid, record: record, cache: cache, script: data, report: report, cancellationCheck: checkCancelled)
+            try LauncherEngine.enable(pid: pid, record: record, cache: cache, script: configuration, report: report, cancellationCheck: checkCancelled)
             return .enabled
         }
     }
@@ -291,7 +493,7 @@ final class LauncherModel: ObservableObject {
     }
 
     func requestApplicationIcon(for app: LauncherApplication) {
-        guard isForeground, isWiFiAvailable, app.isDebuggable, isPrepared, isDeviceAccessVerified, vpn.isConnected, !isBusy,
+        guard isForeground, isWiFiAvailable, app.isDebuggable, isPrepared, isDeviceAccessVerified, isDeviceConnectionReady, !isBusy,
               applicationIcons[app.id] == nil, iconRequests[app.id] == nil,
               !iconAttempts.contains(app.id), iconRequests.count < 64,
               applications.contains(where: { $0.id == app.id }) else { return }
@@ -324,17 +526,21 @@ final class LauncherModel: ObservableObject {
     }
 
     func verifyDeviceAccess() {
+        guard isSetupAccessReady else { startSetup(); return }
         guard preflight() else { return }
         perform(progress: "progress.verifying_access", failure: "error.access_failed") { _, _ in .accessVerified }
     }
 
     func enteredBackground() {
+        if isSetupAccessChecking { cancelSetup() }
+        recoveryConnectionRequested = false
         isForeground = false
         requestedApplication = nil
         console.stop()
         accessStatusKey = "access.pending"
         accessCheckedAt = nil
         if operationToken?.leaveForeground() == true { operationTask?.cancel() }
+        if connectionMode == .external { invalidatePreparation(cancelOperation: false) }
         iconToken.cancel()
         iconToken = LauncherOperationToken()
         iconRequests.removeAll()
@@ -350,8 +556,8 @@ final class LauncherModel: ObservableObject {
         if enableJIT && !app.isDebuggable {
             errorMessage = localized("error.app_not_debuggable"); return
         }
-        let script: Data?
-        do { script = enableJIT ? try scripts.scriptData(for: app).data : nil }
+        let script: LauncherJITConfiguration?
+        do { script = enableJIT ? try scripts.scriptData(for: app) : nil }
         catch { errorMessage = error.localizedDescription; return }
         let record = store.fileURL
         let cache = cacheDirectory
@@ -446,6 +652,7 @@ final class LauncherModel: ObservableObject {
     }
 
     func restoreLocation() {
+        if isSetupAccessChecking { cancelSetup() }
         guard preflight(requireWiFi: false) else { return }
         let record = store.fileURL
         // Restoring the real location is recovery, and must remain possible
@@ -469,7 +676,8 @@ final class LauncherModel: ObservableObject {
     }
 
     private func preflight(requirePreparation: Bool = false, requireWiFi: Bool = true) -> Bool {
-        guard isForeground, !isBusy, !pairing.isRunning else { return false }
+        guard isForeground, !isBusy, !isSetupAccessChecking, !pairing.isRunning else { return false }
+        if requireWiFi && !isSetupAccessReady { startSetup(); return false }
         clearMessages()
         guard !requireWiFi || self.requireWiFi() else { return false }
         #if targetEnvironment(simulator)
@@ -484,7 +692,7 @@ final class LauncherModel: ObservableObject {
             errorMessage = localized("error.pairing_required")
             return false
         }
-        guard vpn.isConnected else {
+        guard canAttemptDeviceConnection else {
             errorMessage = localized("error.vpn_required")
             return false
         }
@@ -497,6 +705,7 @@ final class LauncherModel: ObservableObject {
     }
 
     private func invalidatePreparation(cancelOperation: Bool = true) {
+        externalConnection.invalidate()
         if cancelOperation {
             preparationGeneration += 1
             operationToken?.cancel()
@@ -512,6 +721,8 @@ final class LauncherModel: ObservableObject {
         iconCacheOrder.removeAll()
         applicationIcons.removeAll()
         isPrepared = false
+        applications = []
+        applicationError = nil
         processes = []
         deviceDetails = [:]
         profiles = []
@@ -537,6 +748,9 @@ final class LauncherModel: ObservableObject {
         let operation = UUID()
         let token = LauncherOperationToken()
         let record = store.fileURL
+        let mode = connectionMode
+        let accessBinding = authorizationBinding
+        let externalCheck = mode == .external && verifyAccess ? externalConnection.beginChecking() : nil
         operationID = operation
         operationToken = token
         if verifyAccess {
@@ -563,18 +777,42 @@ final class LauncherModel: ObservableObject {
                     do {
                         udid = try await self.onDeviceWorker {
                             try token.check()
-                            return try LauncherEngine.deviceUDID(record: record)
+                            return try LauncherEngine.deviceUDID(record: record, cancellationCheck: token.check)
                         }
                     } catch is CancellationError { throw CancellationError() }
                     catch { throw WowDeviceAccessError.deviceUnavailable }
                     try token.check()
                     try Task.checkCancellation()
-                    try await WowDeviceAccessClient().verify(udid: udid)
+                    guard self.operationID == operation, generation == self.preparationGeneration,
+                          self.connectionMode == mode, self.canAttemptDeviceConnection,
+                          self.isWiFiAvailable else { throw CancellationError() }
+                    try WowDeviceAccess.validateDeviceIdentifier(udid)
+                    if let candidate = LauncherDeviceAuthorization.candidateIdentity(),
+                       candidate.caseInsensitiveCompare(udid) != .orderedSame {
+                        throw WowDeviceAccessError.identityMismatch
+                    }
+                    if let externalCheck {
+                        guard self.externalConnection.recordPairedDeviceResponse(for: externalCheck) else {
+                            throw CancellationError()
+                        }
+                    }
+                    // Setup only verified a signing hint. Compare the physical device
+                    // before using that grant, renewing online or restoring offline access.
+                    guard let accessBinding else { throw WowDeviceAccessError.deviceUnavailable }
+                    let decision = try await self.authorization.authorize(actualUDID: udid, binding: accessBinding)
                     try token.check()
                     try Task.checkCancellation()
                     guard self.operationID == operation, generation == self.preparationGeneration,
-                          self.vpn.isConnected, self.isWiFiAvailable else { throw CancellationError() }
-                    self.accessStatusKey = "access.verified"
+                          self.connectionMode == mode, self.canAttemptDeviceConnection,
+                          self.isWiFiAvailable else { throw CancellationError() }
+                    if let externalCheck, !self.externalConnection.isCurrent(externalCheck) {
+                        throw CancellationError()
+                    }
+                    guard self.authorizationBinding == accessBinding else { throw CancellationError() }
+                    if case .authorized(let offline) = decision {
+                        self.accessStatusKey = offline ? "access.offline" : "access.verified"
+                        self.offlineAccessValidUntil = offline ? self.authorization.offlineValidUntil : nil
+                    } else { throw WowDeviceAccessError.invalidResponse }
                     self.accessCheckedAt = Date()
                     self.accessError = nil
                 }
@@ -602,7 +840,8 @@ final class LauncherModel: ObservableObject {
                     }, token.check)
                 })
             } catch { result = .failure(error) }
-            self.completeOperation(result, operation: operation, generation: generation, failure: failure, token: token)
+            self.completeOperation(result, operation: operation, generation: generation, failure: failure,
+                                   token: token, mode: mode, externalCheck: externalCheck)
         }
     }
 
@@ -613,7 +852,8 @@ final class LauncherModel: ObservableObject {
     }
 
     private func completeOperation(_ result: Result<LauncherResult, Error>, operation: UUID,
-                                   generation: Int, failure: String, token: LauncherOperationToken) {
+                                   generation: Int, failure: String, token: LauncherOperationToken,
+                                   mode: DeviceConnectionMode, externalCheck: UUID?) {
         guard operationID == operation else { return }
         endBackgroundTask()
         operationID = nil
@@ -634,8 +874,8 @@ final class LauncherModel: ObservableObject {
             progressKey = "progress.idle"
             return
         }
-        guard generation == preparationGeneration, vpn.isConnected else {
-            errorMessage = localized("error.prepare_required")
+        guard generation == preparationGeneration, mode == connectionMode, canAttemptDeviceConnection else {
+            errorMessage = localized(mode == .external ? "error.external_connection_failed" : "error.prepare_required")
             progressKey = "progress.idle"
             return
         }
@@ -646,6 +886,14 @@ final class LauncherModel: ObservableObject {
             accessCheckedAt = nil
             accessError = nil
             progressKey = isPrepared ? "progress.ready" : "progress.idle"
+            return
+        }
+        if case .success = result, let externalCheck,
+           (!externalConnection.isCurrent(externalCheck) || externalConnection.phase != .verified) {
+            // Work may have finished during a real background transition. Keep
+            // its recovery side effects above, but do not republish old readiness.
+            if isForeground { errorMessage = localized("error.external_connection_failed") }
+            progressKey = "progress.idle"
             return
         }
         switch result {
@@ -694,7 +942,16 @@ final class LauncherModel: ObservableObject {
             self.successMessage = self.localized("success.jit_enabled")
             self.progressKey = "progress.ready"
         case .failure(let error):
+            let externalDeviceUnavailable = mode == .external && (error as? WowDeviceAccessError) == .deviceUnavailable
+            // Native work failures can mean the external path disappeared after
+            // its identity check. A web denial alone does not imply a bad route.
+            let externalNativeFailure = mode == .external && !(error is WowDeviceAccessError) && !(error is CancellationError)
+            if externalDeviceUnavailable || externalNativeFailure {
+                invalidatePreparation(cancelOperation: false)
+            }
             if let access = error as? WowDeviceAccessError {
+                self.isSetupAccessReady = false
+                self.offlineAccessValidUntil = nil
                 self.accessStatusKey = access.localizationKey
                 self.accessError = access.localizedDescription
                 self.accessCheckedAt = nil
@@ -710,7 +967,9 @@ final class LauncherModel: ObservableObject {
             }
             if failure == "error.preparation_failed" { self.isPrepared = false }
             self.progressKey = self.isPrepared ? "progress.ready" : "progress.idle"
-            self.errorMessage = self.message(failure, error)
+            self.errorMessage = externalDeviceUnavailable
+                ? self.localized("error.external_connection_failed")
+                : self.message(failure, error)
             if failure == "error.apps_failed" {
                 self.applicationError = self.errorMessage
                 self.requestedApplication = nil
@@ -745,11 +1004,11 @@ private enum LauncherOperationError: Error { case deviceRequired }
 private enum LauncherEngine {
     typealias Report = (String, Double?) -> Void
 
-    static func deviceUDID(record: URL) throws -> String {
+    static func deviceUDID(record: URL, cancellationCheck: () throws -> Void) throws -> String {
         #if targetEnvironment(simulator)
         throw LauncherOperationError.deviceRequired
         #else
-        return try StikJIT.deviceUDID(pairingFile: record)
+        return try StikJIT.deviceUDID(pairingFile: record, cancellationCheck: cancellationCheck)
         #endif
     }
 
@@ -799,13 +1058,15 @@ private enum LauncherEngine {
         #endif
     }
 
-    static func enable(pid: Int32, record: URL, cache: URL, script: Data, report: @escaping Report,
+    static func enable(pid: Int32, record: URL, cache: URL, script: LauncherJITConfiguration, report: @escaping Report,
                        cancellationCheck: @escaping () throws -> Void) throws {
         #if targetEnvironment(simulator)
         throw LauncherOperationError.deviceRequired
         #else
+        report("log:Selected JIT script: \(script.name); application requires script: \(script.requiresScript).", nil)
         try StikJIT.enableJIT(targetPID: pid, pairingFile: record, ddiPaths: .default(in: cache),
-                             script: .customBase64(script.base64EncodedString()),
+                             script: .customBase64(script.data.base64EncodedString()),
+                             forceScript: script.requiresScript,
                              preparationProgress: { reportStage($0, report: report) },
                              progress: { report("log:" + $0, nil) }, cancellationCheck: cancellationCheck)
         #endif

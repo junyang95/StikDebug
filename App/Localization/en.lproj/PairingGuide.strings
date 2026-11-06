@@ -1,8 +1,8 @@
-// On-device pairing guide. Existing app strings remain in Localizable.strings.
+// Pairing guides. Existing app strings remain in Localizable.strings.
 "guide.title.pairing" = "Pair this device";
 "guide.title.paired" = "Pairing is ready";
 "guide.subtitle.pairing" = "On iOS 27 or later, pair in Settings without a computer. Keep Wi-Fi on.";
-"guide.subtitle.paired" = "Your pairing record is saved. Connect the built-in VPN and prepare JIT, then choose an app.";
+"guide.subtitle.paired" = "Your pairing record is saved. Choose a connection method and prepare JIT, then choose an app.";
 "guide.pin.step" = "Step 7 · Enter this code in Settings";
 "guide.pin.copy" = "Copy pairing code";
 "guide.pin.copied" = "Pairing code copied";
@@ -28,3 +28,16 @@
 "guide.action.open_apps" = "Choose an app for JIT";
 "guide.action.prepare" = "Check and prepare JIT";
 "guide.action.connect_prepare" = "Connect VPN and prepare JIT";
+
+// Computer pairing and copy-import feedback.
+"guide.computer.title" = "Pair with a computer";
+"guide.computer.subtitle" = "On iOS 26, create a remote pairing file with idevice_pair on a computer, then import it here. Pairing directly in Settings requires iOS 27 or later.";
+"guide.computer.steps.title" = "Import an idevice_pair record";
+"guide.computer.download" = "Download idevice_pair";
+"guide.computer.download.note" = "On your computer, open app-shop.cn/app/106 and find “电脑配对程序 idevice_pair” to download the Windows or Mac version.";
+"guide.computer.step1" = "Connect this device to your computer by USB and tap Trust on the device.";
+"guide.computer.step2" = "Open idevice_pair on the computer, select this device, and choose Remote Pairing (RPPairing). Keep the device unlocked on its Home Screen. Select Create, then Validate, and Save to file to export the .plist.";
+"guide.computer.step3" = "Transfer the .plist to this device with AirDrop or iCloud Drive and save it in Files. Tap Import pairing file here and select it.";
+"guide.computer.step4" = "Enable Developer Mode and keep Wi-Fi on. Choose a connection method below, confirm Developer Mode, then use the bottom button to prepare JIT. For an external VPN, connect in that tool first.";
+"guide.import.copy_note" = "Importing saves a copy in this app. Your original file stays unchanged.";
+"guide.import.success.title" = "Pairing file saved";

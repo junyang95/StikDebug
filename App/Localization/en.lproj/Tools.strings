@@ -1,5 +1,5 @@
 "tools.title" = "Tools";
-"tools.prepare_hint" = "Pair this device, connect the built-in VPN, and prepare JIT to use device tools.";
+"tools.prepare_hint" = "Complete pairing, choose a connection method, and prepare JIT before using device tools.";
 "tools.open_setup" = "Open connection setup";
 "tools.scripts" = "Scripts";
 "tools.scripts.detail" = "Choose a JIT script for each app; import and edit your own.";

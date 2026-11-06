@@ -19,7 +19,7 @@ struct ApplicationLibraryView: View {
         self.openSetup = openSetup
     }
 
-    private var isAvailable: Bool { model.isPrepared && vpn.isConnected }
+    private var isAvailable: Bool { model.isPrepared && model.isDeviceConnectionReady }
     private var isWorking: Bool { model.isBusy || vpn.isBusy || pairing.isRunning }
     private var canRequestIcons: Bool { isAvailable && !model.isBusy && model.isDeviceAccessVerified }
     private var isLoadingApplications: Bool { model.isBusy && model.progressKey == "progress.loading_apps" }
@@ -47,13 +47,13 @@ struct ApplicationLibraryView: View {
         List {
             Section {
                 VStack(alignment: .leading, spacing: 12) {
-                    ConnectionStatusLabel(status: vpn.status)
+                    DeviceConnectionStatusLabel(model: model)
                     if !isAvailable {
                         Text("apps.setup_body", tableName: "Library")
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
                         Button(action: openSetup) {
-                            Text("apps.open_setup", tableName: "Library")
+                            Text(model.isSetupAccessReady ? "access.setup.continue" : "access.setup.start", tableName: "WowAccess")
                         }
                         .buttonStyle(.borderedProminent)
                     } else {
@@ -288,11 +288,11 @@ private struct ApplicationDetailSheet: View {
     }
 
     private var canLaunch: Bool {
-        model.isPrepared && vpn.isConnected && !model.isBusy && !vpn.isBusy && !pairing.isRunning
+        model.isPrepared && model.isDeviceConnectionReady && !model.isBusy && !vpn.isBusy && !pairing.isRunning
     }
 
     private var canRequestIcon: Bool {
-        model.isPrepared && vpn.isConnected && !model.isBusy && model.isDeviceAccessVerified
+        model.isPrepared && model.isDeviceConnectionReady && !model.isBusy && model.isDeviceAccessVerified
     }
 
     var body: some View {
@@ -345,7 +345,7 @@ private struct ApplicationDetailSheet: View {
                 }
 
                 Section {
-                    if !model.isPrepared || !vpn.isConnected {
+                    if !model.isPrepared || !model.isDeviceConnectionReady {
                         Text("apps.setup_body", tableName: "Library")
                             .font(.subheadline)
                             .foregroundStyle(.secondary)

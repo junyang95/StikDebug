@@ -19,7 +19,7 @@
 "apps.empty_title" = "No debuggable apps found";
 "apps.empty_body" = "Only apps with debug permission appear here. Install a development-signed app that supports JIT, then refresh the list.";
 "apps.not_loaded_title" = "Your debuggable apps will appear here";
-"apps.not_loaded_body" = "Pair this device and connect its local VPN to get started.";
+"apps.not_loaded_body" = "Pair this device, choose a connection method, and prepare JIT to get started.";
 "apps.no_results" = "No matching apps";
 "apps.no_results_body" = "Try another search, or choose All to see your debuggable apps.";
 "apps.favorites_empty" = "Keep your favorite apps close";

@@ -197,3 +197,23 @@
 "wifi.required" = "Connect to a Wi-Fi network in Settings → Wi-Fi, then return. Cellular data alone cannot prepare this device or enable JIT.";
 "wifi.interrupted" = "Wi-Fi disconnected and this operation stopped. Reconnect to Wi-Fi, then try again. Verified developer image files are kept.";
 "wifi.unavailable" = "Wi-Fi not connected";
+
+// Pairing copy-import failures.
+"error.pairing_read_failed" = "Could not read the selected file. Download it in Files and confirm it opens, then select it again.";
+"error.pairing_picker_failed" = "Files could not provide a copy of the selected file. Confirm the file is available, then try importing again.";
+"error.pairing_diagnostic %@" = "Error code: %@";
+
+// Built-in and external device connection modes.
+"connection.mode.title" = "Connection method";
+"connection.mode.builtIn" = "Built-in VPN";
+"connection.mode.external" = "External VPN";
+"connection.mode.hint" = "Changing the connection method requires preparing JIT again.";
+"connection.external.instructions" = "Connect in LocalDevVPN or a compatible local loopback VPN using its default configuration, then return here to check the device connection and prepare JIT.";
+"connection.external.configuration" = "The default local address is 10.7.0.1. Custom addresses are not supported.";
+"connection.external.verification_note" = "Verified means the last device-service check succeeded. This app does not monitor or control the external VPN.";
+"connection.external.unverified" = "Device connection not verified";
+"connection.external.checking" = "Checking device connection…";
+"connection.external.verified" = "Device connection verified";
+"connection.external.check" = "Check device connection";
+"connection.external.pairing_required" = "Complete pairing and confirm Developer Mode in the pairing guide before checking.";
+"error.external_connection_failed" = "Could not verify the external device connection. Connect in LocalDevVPN or a compatible local loopback VPN using the default configuration, then return here and try again.";

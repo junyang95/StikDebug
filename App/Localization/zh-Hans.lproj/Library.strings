@@ -19,7 +19,7 @@
 "apps.empty_title" = "没有找到可调试的应用";
 "apps.empty_body" = "列表仅显示具备调试权限的应用。安装支持 JIT 的开发签名应用后，请刷新列表。";
 "apps.not_loaded_title" = "可调试的应用会显示在这里";
-"apps.not_loaded_body" = "先完成本设备的配对，并连接内置本地 VPN。";
+"apps.not_loaded_body" = "请先完成本设备的配对，选择连接方式并准备 JIT。";
 "apps.no_results" = "没有匹配的应用";
 "apps.no_results_body" = "请更改搜索内容，或选择“全部”查看可调试的应用。";
 "apps.favorites_empty" = "还没有收藏的应用";

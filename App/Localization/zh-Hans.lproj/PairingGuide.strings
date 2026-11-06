@@ -1,8 +1,8 @@
-// On-device pairing guide. Existing app strings remain in Localizable.strings.
+// Pairing guides. Existing app strings remain in Localizable.strings.
 "guide.title.pairing" = "本机配对";
 "guide.title.paired" = "配对已就绪";
 "guide.subtitle.pairing" = "iOS 27 起可直接在系统设置中配对，无需电脑。请保持 Wi-Fi 开启。";
-"guide.subtitle.paired" = "配对记录已保存。连接内置 VPN、准备 JIT 后，即可选择应用。";
+"guide.subtitle.paired" = "配对记录已保存。选择连接方式、准备 JIT 后，即可选择应用。";
 "guide.pin.step" = "第 7 步 · 在系统设置中输入此码";
 "guide.pin.copy" = "复制配对码";
 "guide.pin.copied" = "已复制配对码";
@@ -28,3 +28,16 @@
 "guide.action.open_apps" = "选择应用启动 JIT";
 "guide.action.prepare" = "检查并准备 JIT";
 "guide.action.connect_prepare" = "连接 VPN 并准备 JIT";
+
+// Computer pairing and copy-import feedback.
+"guide.computer.title" = "电脑配对";
+"guide.computer.subtitle" = "iOS 26 可在电脑上用 idevice_pair 生成远程配对文件，再导入本应用。直接在系统设置中配对需要 iOS 27 或更新版本。";
+"guide.computer.steps.title" = "导入 idevice_pair 配对文件";
+"guide.computer.download" = "下载 idevice_pair";
+"guide.computer.download.note" = "在电脑上打开 app-shop.cn/app/106，找到「电脑配对程序 idevice_pair」下载 Windows 或 Mac 版。";
+"guide.computer.step1" = "用 USB 将本设备连接电脑，并在设备上选择「信任」。";
+"guide.computer.step2" = "在电脑上打开 idevice_pair，选择本设备，再选择 Remote Pairing（RPPairing）。保持设备解锁并停留在主屏幕，依次点击 Create、Validate、Save to file，导出 .plist。";
+"guide.computer.step3" = "通过隔空投送或 iCloud 云盘将 .plist 传到本设备，保存到「文件」。回到这里点「导入配对文件」，再选择该文件。";
+"guide.computer.step4" = "开启开发者模式，保持 Wi-Fi 开启。在下方选择连接方式、确认开发者模式，再点底部按钮准备 JIT。使用外部 VPN 时，请先到相应工具中连接。";
+"guide.import.copy_note" = "导入时会在本应用内保存一份副本，原文件保持不变。";
+"guide.import.success.title" = "配对文件已保存";
