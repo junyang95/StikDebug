@@ -1,64 +1,11 @@
-import CryptoKit
 import Foundation
 
-struct VipLicense: Decodable, Equatable {
-    let udid: String
-    let status: String
-    let isVip: Bool
-    let isBanned: Bool
-    let expireAt: Double
-    let nonce: String
-    let ts: Double
+typealias VipLicense = SignedDeviceLicense
+typealias VipLicenseVerifier = DeviceAuthorizationVerifier
 
-    var validUntil: Date {
-        let graceEnd = ts / 1000 + 7 * 86400
-        return Date(timeIntervalSince1970: expireAt > 0 ? min(expireAt / 1000, graceEnd) : graceEnd)
-    }
-
-    func permitsUse(at now: Date) -> Bool {
-        status == "VALID" && isVip && !isBanned
-            && ts.isFinite && expireAt.isFinite && ts > 0 && expireAt >= 0
-            && now.timeIntervalSince1970 >= ts / 1000 - 300
-            && now < validUntil
-    }
-}
-
-enum VipLicenseVerifier {
-    // Public key retrieved over HTTPS from the production license service.
-    // Never trust the envelope's `pub` or a replaceable wowvip.plist as a trust anchor.
-    static let publicKeyBase64 = "BFBKnwXkljQY3olaB7UmLcaKQWqsQ2EjxBJEXYvEnzbWaHTZrI8OiaaLG+WYbC7FT8SUBLMQs6EAVHfT48+JsdE="
-
-    enum Failure: Error { case malformed, signature, identity, nonce, timestamp }
-    private struct Envelope: Decodable { let payload: String; let sig: String }
-
-    static func verify(
-        _ data: Data, udid: String, nonce: String?, now: Date = Date(),
-        publicKey: Data = Data(base64Encoded: publicKeyBase64)!,
-        trustFreshServerTime: Bool = false
-    ) throws -> VipLicense {
-        let envelope = try JSONDecoder().decode(Envelope.self, from: data)
-        guard let payload = Data(base64Encoded: envelope.payload),
-              let signature = Data(base64Encoded: envelope.sig) else { throw Failure.malformed }
-        let key = try P256.Signing.PublicKey(x963Representation: publicKey)
-        let sig = try P256.Signing.ECDSASignature(derRepresentation: signature)
-        guard key.isValidSignature(sig, for: payload) else { throw Failure.signature }
-        let license = try JSONDecoder().decode(VipLicense.self, from: payload)
-        guard license.ts.isFinite, license.ts > 0, license.expireAt.isFinite, license.expireAt >= 0 else {
-            throw Failure.timestamp
-        }
-        guard !udid.isEmpty, license.udid.caseInsensitiveCompare(udid) == .orderedSame else {
-            throw Failure.identity
-        }
-        if let nonce {
-            guard !nonce.isEmpty, license.nonce == nonce else { throw Failure.nonce }
-            // A new unpredictable nonce, checked within the request deadline, permits
-            // recovery from a wrong device clock. Cached envelopes never use this path.
-            guard trustFreshServerTime || abs(now.timeIntervalSince1970 - license.ts / 1000) <= 300 else {
-                throw Failure.timestamp
-            }
-        }
-        return license
-    }
+extension SignedDeviceLicense {
+    var validUntil: Date { validUntil(for: .vip) }
+    func permitsUse(at now: Date) -> Bool { permitsUse(policy: .vip, at: now) }
 }
 
 /// Enforced by the device command layer, including timer resends. UI is not the gate.

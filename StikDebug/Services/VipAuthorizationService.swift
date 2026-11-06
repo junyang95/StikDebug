@@ -29,44 +29,8 @@ private struct PendingVipSetupAuthorization {
     let envelope: Data
 }
 
-/// Separate from the grant: a durable request barrier survives failed cache deletion
-/// and crashes while a server decision is in flight. Missing state requires online migration.
-struct VipAuthorizationSecurityState: Codable, Equatable {
-    var serverAnchor: TimeInterval
-    var wallAnchor: TimeInterval
-    var trustedHighwater: TimeInterval
-    var uptime: TimeInterval
-    var bootID: String
-    var allowedEnvelopeDigest: String?
-    var requiresOnline: Bool
-
-    static func digest(_ envelope: Data) -> String {
-        SHA256.hash(data: envelope).map { String(format: "%02x", $0) }.joined()
-    }
-
-    static func anchored(serverTime: TimeInterval, wallTime: Date, uptime: TimeInterval,
-                         bootID: String, envelope: Data?) -> Self {
-        Self(serverAnchor: serverTime, wallAnchor: wallTime.timeIntervalSince1970,
-             trustedHighwater: serverTime, uptime: uptime, bootID: bootID,
-             allowedEnvelopeDigest: envelope.map(digest), requiresOnline: envelope == nil)
-    }
-
-    mutating func observe(wallTime: Date, uptime currentUptime: TimeInterval, bootID currentBoot: String) throws -> Date {
-        guard serverAnchor.isFinite, wallAnchor.isFinite, trustedHighwater.isFinite, uptime.isFinite,
-              currentUptime.isFinite, serverAnchor > 0, trustedHighwater >= serverAnchor else {
-            throw VipPersistenceFailure.invalidState
-        }
-        let floor = trustedHighwater + (bootID == currentBoot ? max(0, currentUptime - uptime) : 0)
-        let projected = serverAnchor + wallTime.timeIntervalSince1970 - wallAnchor
-        guard projected.isFinite, projected + 120 >= floor else { throw VipPersistenceFailure.clockRollback }
-        trustedHighwater = max(floor, projected)
-        uptime = currentUptime
-        bootID = currentBoot
-        return Date(timeIntervalSince1970: trustedHighwater)
-    }
-}
-
-enum VipPersistenceFailure: Error { case unavailable, invalidState, clockRollback, onlineRequired }
+typealias VipAuthorizationSecurityState = DeviceAuthorizationSecurityState
+typealias VipPersistenceFailure = DeviceAuthorizationPersistenceFailure
 
 private enum VipBootSession {
     static let identifier: String = {
