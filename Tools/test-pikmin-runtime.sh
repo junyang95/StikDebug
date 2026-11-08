@@ -12,9 +12,9 @@ let package = Package(name: "PikminRuntime", platforms: [.macOS(.v14)], targets:
     .testTarget(name: "PikminRuntimeTests", dependencies: ["PikminRuntime"])
 ], swiftLanguageModes: [.v5])
 SWIFT
-for source in Core/CoordinateImportParser.swift Models/GPXRouteDocument.swift Core/MapCoordinateSystem.swift Core/DeviceAuthorizationCore.swift Core/VipLicense.swift Core/VipSetupIdentity.swift Core/AuthorizationDeadline.swift Core/PairingGuidePolicy.swift Core/DDIAssetSet.swift Services/VipAuthorizationService.swift Services/AuthorizationNetwork.swift Services/DDIInstallationController.swift Services/DeveloperDiskImageService.swift Core/MovementMath.swift Services/WalkingSessionController.swift Services/FixedLocationSessionController.swift Models/WalkingSessionModels.swift; do
+for source in Core/CoordinateImportParser.swift Models/GPXRouteDocument.swift Core/MapCoordinateSystem.swift Core/PairingGuidePolicy.swift Core/DDIAssetSet.swift Services/DDIInstallationController.swift Services/DeveloperDiskImageService.swift Core/MovementMath.swift Services/WalkingSessionController.swift Services/FixedLocationSessionController.swift Models/WalkingSessionModels.swift; do
   cp "$ROOT/StikDebug/$source" "$BUILD/Sources/PikminRuntime/"
 done
 cp "$ROOT/PikminRuntimeTests/RuntimeDoubles.swift" "$BUILD/Sources/PikminRuntime/"
 cp "$ROOT"/PikminRuntimeTests/*Tests.swift "$BUILD/Tests/PikminRuntimeTests/"
-swift test --package-path "$BUILD" --scratch-path "${PIKMIN_TEST_BUILD:-/tmp/pikmin-runtime-build}" "$@"
+PIKMIN_BUNDLED_DDI_ROOT="$ROOT/Resources/DDI" swift test --package-path "$BUILD" --scratch-path "${PIKMIN_TEST_BUILD:-/tmp/pikmin-runtime-build}" "$@"

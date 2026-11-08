@@ -44,10 +44,8 @@ enum DiagnosticsReport {
         row("系统版本", "iOS \(UIDevice.current.systemVersion)")
         row("低电量模式", ProcessInfo.processInfo.isLowPowerModeEnabled ? "开启（可能影响后台）" : "关闭")
 
-        section("地图与授权")
+        section("地图")
         row("地图坐标模式", MapCoordinateSystem.current.rawValue)
-        row("授权状态", VipAuthorizationService.shared.message)
-        row("授权请求诊断", VipAuthorizationService.shared.lastDiagnostic)
 
         // MARK: 内置 VPN（PikminTunnel）
         section("内置 VPN（PikminTunnel）")
@@ -77,12 +75,10 @@ enum DiagnosticsReport {
         // MARK: 关键路由探测
         section("关键路由探测")
         let target = DeviceConnectionContext.targetIPAddress
-        let authorization = VipAuthorizationService.shared
-        let canProbe = includeDeviceProbe && authorization.hasStartedSetup
-            && (authorization.isSetupVerified || authorization.isAuthorized)
+        let canProbe = includeDeviceProbe && !DeveloperConnectionGate.isBlocked
         let probe = canProbe
             ? await probeTCP(host: target, port: 49152, timeout: 3)
-            : "尚未开始设备设置，未执行连接探测"
+            : (DeveloperConnectionGate.isBlocked ? "本地网络探测正在占用连接，未执行设备探测" : "未请求设备连接探测")
         row("\(target):49152（内置 VPN 路由判定依据）", probe)
         lines.append("说明：App 判定「内置 VPN 路由」是否就绪，靠的就是能否连上这个地址，")
         lines.append("而不是系统 VPN 开关。这个地址由内置隧道映射到设备本地开发服务，")

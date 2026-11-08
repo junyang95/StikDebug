@@ -1,5 +1,4 @@
 import CoreLocation
-import CryptoKit
 import Foundation
 import Testing
 @testable import PikminRuntime
@@ -35,83 +34,13 @@ struct CoordinateTests {
     }
 }
 
-struct LicenseTests {
-    let key = P256.Signing.PrivateKey()
-    let now = Date(timeIntervalSince1970: 1_800_000_000)
-    func envelope(status: String = "VALID", vip: Bool = true, banned: Bool = false,
-                  udid: String = "device-A", nonce: String = "nonce-A", age: Double = 0,
-                  expire: Double = 0, includeFlags: Bool = true) throws -> Data {
-        var payload: [String: Any] = ["udid": udid, "status": status, "nonce": nonce,
-                                     "ts": (now.timeIntervalSince1970 - age)*1000, "expireAt": expire]
-        if includeFlags { payload["isVip"] = vip; payload["isBanned"] = banned }
-        let bytes = try JSONSerialization.data(withJSONObject: payload)
-        return try JSONSerialization.data(withJSONObject: ["payload": bytes.base64EncodedString(),
-            "sig": key.signature(for: bytes).derRepresentation.base64EncodedString(), "pub": "untrusted"])
+struct GuidePolicyTests {
+    @Test func unpairedIOS27PresentsGuideOncePerLaunch() {
+        #expect(PairingGuidePolicy.shouldPresent(isSupported: true, hasValidPairing: false, presentedThisLaunch: false))
+        #expect(!PairingGuidePolicy.shouldPresent(isSupported: true, hasValidPairing: false, presentedThisLaunch: true))
     }
-    func verify(_ data: Data, udid: String = "device-A", nonce: String? = "nonce-A") throws -> VipLicense {
-        try VipLicenseVerifier.verify(data, udid: udid, nonce: nonce, now: now, publicKey: key.publicKey.x963Representation)
-    }
-    @Test func acceptsSignedValidDevice() throws {
-        #expect(try verify(envelope()).permitsUse(at: now))
-    }
-    @Test func deniesBanEvenWhenVIPFlagIsTrue() throws {
-        #expect(try !verify(envelope(banned: true)).permitsUse(at: now))
-        #expect(try !verify(envelope(status: "BANNED")).permitsUse(at: now))
-    }
-    @Test func deniesNonVIPExpiredAndUnknown() throws {
-        #expect(try !verify(envelope(vip: false)).permitsUse(at: now))
-        #expect(try !verify(envelope(status: "UNKNOWN")).permitsUse(at: now))
-        #expect(try !verify(envelope(expire: now.timeIntervalSince1970*1000)).permitsUse(at: now))
-    }
-    @Test func rejectsCopiedIdentityAndNonceReplay() throws {
-        let raw = try envelope()
-        #expect(throws: (any Error).self) { try verify(raw, udid: "device-B") }
-        #expect(throws: (any Error).self) { try verify(raw, nonce: "nonce-B") }
-    }
-    @Test func rejectsReplacementPublicKeyAndTampering() throws {
-        let raw = try envelope()
-        #expect(throws: (any Error).self) {
-            try VipLicenseVerifier.verify(raw, udid: "device-A", nonce: "nonce-A", now: now,
-                                          publicKey: P256.Signing.PrivateKey().publicKey.x963Representation)
-        }
-        var object = try #require(JSONSerialization.jsonObject(with: raw) as? [String: String])
-        object["payload"] = Data("{}".utf8).base64EncodedString()
-        let tampered = try JSONSerialization.data(withJSONObject: object)
-        #expect(throws: (any Error).self) { try verify(tampered) }
-    }
-    @Test func rejectsOldServerWithoutBanFields() throws {
-        let raw = try envelope(includeFlags: false)
-        #expect(throws: (any Error).self) { try verify(raw) }
-    }
-    @Test func offlineGraceIsBoundedBySignedTimeAndExpiry() throws {
-        #expect(try verify(envelope(age: 86400), nonce: nil).permitsUse(at: now))
-        #expect(try verify(envelope(age: 3 * 86400), nonce: nil).permitsUse(at: now))
-        #expect(try verify(envelope(age: 7 * 86400 - 1), nonce: nil).permitsUse(at: now))
-        #expect(try !verify(envelope(age: 7 * 86400), nonce: nil).permitsUse(at: now))
-        #expect(try !verify(envelope(age: 7 * 86400 + 1), nonce: nil).permitsUse(at: now))
-        #expect(try !verify(envelope(age: -600), nonce: nil).permitsUse(at: now))
-        #expect(throws: (any Error).self) { try verify(envelope(age: 600)) }
-    }
-    @Test func membershipExpiryCanShortenButNeverExtendTheWeek() throws {
-        let weekEnd = now.addingTimeInterval(7 * 86400)
-        let noExpiry = try verify(envelope())
-        let laterExpiry = try verify(envelope(expire: now.addingTimeInterval(30 * 86400).timeIntervalSince1970 * 1000))
-        #expect(noExpiry.validUntil == weekEnd && laterExpiry.validUntil == weekEnd)
-
-        let membershipEnd = now.addingTimeInterval(2 * 86400)
-        let earlierExpiry = try verify(envelope(expire: membershipEnd.timeIntervalSince1970 * 1000))
-        #expect(earlierExpiry.validUntil == membershipEnd)
-        #expect(earlierExpiry.permitsUse(at: membershipEnd.addingTimeInterval(-1)))
-        #expect(!earlierExpiry.permitsUse(at: membershipEnd))
-    }
-    @Test func commandGateBindsDeviceAndRevokes() throws {
-        let gate = VipLocationGate()
-        let license = try verify(envelope())
-        #expect(!gate.allows(now: now))
-        gate.update(license, now: now)
-        #expect(gate.allows(udid: "device-A", now: now))
-        #expect(!gate.allows(udid: "device-B", now: now))
-        gate.update(nil, now: now)
-        #expect(!gate.allows(now: now))
+    @Test func pairedAndOlderDevicesDoNotGetAutomaticGuide() {
+        #expect(!PairingGuidePolicy.shouldPresent(isSupported: true, hasValidPairing: true, presentedThisLaunch: false))
+        #expect(!PairingGuidePolicy.shouldPresent(isSupported: false, hasValidPairing: false, presentedThisLaunch: false))
     }
 }

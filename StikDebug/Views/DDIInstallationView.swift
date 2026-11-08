@@ -15,13 +15,13 @@ struct DDIInstallationView: View {
                             .accessibilityHidden(true)
                         Text("为额外开发服务安装 DDI")
                             .font(.title2.bold())
-                        Text("DDI 是可选组件，未安装也可以使用定位模拟。")
+                        Text("DDI 可选安装，App 不以安装状态阻止定位操作。")
                             .foregroundStyle(.secondary)
                     }
                     VStack(alignment: .leading, spacing: 16) {
-                        Label("下载缺少的文件", systemImage: "arrow.down.circle")
+                        Label("准备内置开发者镜像", systemImage: "shippingbox")
                         Label("自动连接并挂载到设备", systemImage: "externaldrive.badge.checkmark")
-                        Text("下载来源：static.wow-app.store。文件较大，建议使用 Wi‑Fi；使用 4G/5G 会消耗流量。已下载的完整文件会保留，重试时无需重复下载。")
+                        Text("镜像文件已内置。安装时会校验文件并按系统要求挂载，请保持设备连接。")
                             .font(.footnote)
                             .foregroundStyle(.secondary)
                     }
@@ -32,19 +32,19 @@ struct DDIInstallationView: View {
                     VStack(spacing: 12) {
                         if !installer.isRunning {
                             Button { installer.start() } label: {
-                                Text(installer.phase == .idle ? "下载并安装 DDI" : "重新检查并安装")
+                                Text(installer.phase == .idle ? "准备并安装内置 DDI" : "重新检查并安装")
                                     .font(.headline)
                                     .frame(maxWidth: .infinity, minHeight: 48)
                             }
                             .buttonStyle(.borderedProminent)
                             .tint(PikminUI.actionGreen)
                             if case .failed = installer.phase {
-                                Button("重新下载全部文件并安装") { installer.start(redownload: true) }
+                                Button("恢复内置文件并安装") { installer.start(restore: true) }
                                     .frame(maxWidth: .infinity, minHeight: 44)
                                     .buttonStyle(.bordered)
                             }
                         } else if installer.canCancel {
-                            Button("取消下载") { installer.cancel() }
+                            Button("取消准备") { installer.cancel() }
                                 .frame(maxWidth: .infinity, minHeight: 44)
                                 .buttonStyle(.bordered)
                         }
@@ -74,22 +74,22 @@ struct DDIInstallationView: View {
         switch installer.phase {
         case .idle: EmptyView()
         case .preparing: progress("正在检查配对与内置 VPN…")
-        case .downloading:
+        case .installing:
             VStack(alignment: .leading, spacing: 10) {
-                Text("正在下载 DDI…").font(.headline)
-                ProgressView(value: installer.downloadProgress)
-                Text(installer.downloadDetail).font(.footnote).foregroundStyle(.secondary)
+                Text("正在准备内置 DDI…").font(.headline)
+                ProgressView(value: installer.installationProgress)
+                Text(installer.installationDetail).font(.footnote).foregroundStyle(.secondary)
             }
         case .mounting:
             progress("正在挂载 DDI，请稍候…")
-            Text("挂载可能需要几分钟。完成后会自动检查安装结果。")
+            Text("挂载按系统要求进行，完成后会自动检查安装结果。")
                 .font(.footnote).foregroundStyle(.secondary)
-        case .cancelling: progress("正在取消下载…")
+        case .cancelling: progress("正在取消准备…")
         case .completed:
             Label("DDI 已安装并挂载", systemImage: "checkmark.circle.fill")
                 .foregroundStyle(PikminUI.green)
         case .cancelled:
-            Label("下载已取消，可以稍后继续。", systemImage: "pause.circle")
+            Label("准备已取消，可以稍后继续。", systemImage: "pause.circle")
                 .foregroundStyle(.secondary)
         case .failed(let message):
             VStack(alignment: .leading, spacing: 8) {

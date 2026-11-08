@@ -17,18 +17,18 @@ struct DDIAssetSelectionTests {
         }
     }
 
-    @Test func allEightAssetsUseTheSameImmutableQiniuRelease() {
+    @Test func allEightAssetsUseTheSameBundledRelease() {
         let release = "6eae353ae694bda1c421d4a3eee5459ae59c99a1"
-        let base = "https://static.wow-app.store/Xcode_iOS_DDI_Personalized/releases/\(release)"
+        let root = URL(fileURLWithPath: "/test/Resources/DDI", isDirectory: true)
         let personalized = DDIAssetSet.current(for: .init(majorVersion: 26, minorVersion: 3, patchVersion: 0))
         let cryptex = DDIAssetSet.current(for: .init(majorVersion: 26, minorVersion: 4, patchVersion: 0))
         #expect(DDIAssetSet.releaseID == release)
         #expect(personalized.release == release && cryptex.release == release)
         #expect(personalized.files.map(\.fileName) == DDITestAssets.personalizedNames)
         #expect(cryptex.files.map(\.fileName) == DDITestAssets.cryptexNames)
-        let expected = Set(DDITestAssets.personalizedNames.map { "\(base)/Xcode_iOS_DDI_Personalized/\($0)" }
-            + DDITestAssets.cryptexNames.map { "\(base)/Xcode_iOS_DDI_Cryptex/\($0)" })
-        let actual = Set([personalized, cryptex].flatMap { set in set.files.map { set.url(for: $0).absoluteString } })
+        let expected = Set(DDITestAssets.personalizedNames.map { root.appendingPathComponent("Xcode_iOS_DDI_Personalized/\($0)").path }
+            + DDITestAssets.cryptexNames.map { root.appendingPathComponent("Xcode_iOS_DDI_Cryptex/\($0)").path })
+        let actual = Set([personalized, cryptex].flatMap { set in set.files.map { set.bundledURL(for: $0, in: root).path } })
         #expect(actual == expected)
         #expect(actual.count == 8)
         #expect(personalized.cacheKey != cryptex.cacheKey)
@@ -39,10 +39,34 @@ struct DDIAssetSelectionTests {
         }
     }
 
+    @Test func allEightPackagedFilesVerifyAndInstallFromTheirFamilyFolders() async throws {
+        let sourcePath = try #require(ProcessInfo.processInfo.environment["PIKMIN_BUNDLED_DDI_ROOT"],
+                                      "The runtime test script must provide the actual bundled DDI root")
+        let source = URL(fileURLWithPath: sourcePath, isDirectory: true)
+        for minor in [3, 4] {
+            let assets = DDIAssetSet.current(for: .init(majorVersion: 26, minorVersion: minor, patchVersion: 0))
+            let directory = try DDITestDirectory()
+            defer { directory.remove() }
+            for item in assets.files {
+                let file = assets.bundledURL(for: item, in: source)
+                #expect(file.isFileURL)
+                try assets.verifyFile(at: file, item: item)
+            }
+            let service = DeveloperDiskImageService(directoryURL: directory.cache, bundleDirectoryURL: source, assetSet: assets)
+            try await service.prepareMissingFiles()
+            #expect(service.cachedFilesAreReady)
+            #expect(try String(contentsOf: directory.cache.appendingPathComponent(".asset-set"), encoding: .utf8) == assets.cacheKey)
+            for item in assets.files { try assets.verifyFile(at: directory.cache.appendingPathComponent(item.fileName), item: item) }
+            let first = try directory.snapshot()
+            try await service.restoreBundledFiles()
+            #expect(try directory.snapshot() == first)
+        }
+    }
+
     @Test func integrityRequiresBothExactSizeAndSHA256() throws {
         let directory = try DDITestDirectory()
         defer { directory.remove() }
-        let item = DDIDownloadItem(fileName: "Image.dmg", size: 3,
+        let item = DDIAssetFile(fileName: "Image.dmg", size: 3,
             sha256: "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad")
         let set = DDIAssetSet(release: "test", method: .personalized, files: [item])
         let file = directory.root.appendingPathComponent(item.fileName)
@@ -58,30 +82,30 @@ struct DDIAssetSelectionTests {
 }
 
 @Suite(.serialized) @MainActor struct DDIAssetCacheTests {
-    @Test func completeDownloadPublishesMarkerAndNextRequestUsesCache() async throws {
+    @Test func completeCopyPublishesMarkerAndNextRequestUsesCache() async throws {
         let directory = try DDITestDirectory()
         defer { directory.remove() }
         let assets = DDITestAssets(method: .personalized)
-        let downloads = DDIFakeDownloads(assets: assets)
-        let service = makeService(directory: directory, assets: assets, downloads: downloads)
+        let copies = DDIFakeCopies(assets: assets)
+        let service = makeService(directory: directory, assets: assets, copies: copies)
         #expect(!service.cachedFilesAreReady)
-        try await service.downloadMissingFiles()
+        try await service.prepareMissingFiles()
         #expect(service.cachedFilesAreReady)
         try expectInstalled(assets, at: directory.cache)
-        try await service.downloadMissingFiles()
-        #expect(await downloads.names == DDITestAssets.personalizedNames)
+        try await service.prepareMissingFiles()
+        #expect(await copies.names == DDITestAssets.personalizedNames)
     }
 
-    @Test func legacyCacheWithoutMarkerIsDownloadedAgain() async throws {
+    @Test func legacyCacheWithoutMarkerIsCopyedAgain() async throws {
         let directory = try DDITestDirectory()
         defer { directory.remove() }
         let assets = DDITestAssets(method: .personalized)
         try assets.install(at: directory.cache, marker: false)
-        let downloads = DDIFakeDownloads(assets: assets)
-        let service = makeService(directory: directory, assets: assets, downloads: downloads)
+        let copies = DDIFakeCopies(assets: assets)
+        let service = makeService(directory: directory, assets: assets, copies: copies)
         #expect(!service.cachedFilesAreReady)
-        try await service.downloadMissingFiles()
-        #expect(await downloads.names == DDITestAssets.personalizedNames)
+        try await service.prepareMissingFiles()
+        #expect(await copies.names == DDITestAssets.personalizedNames)
         try expectInstalled(assets, at: directory.cache)
     }
 
@@ -99,10 +123,10 @@ struct DDIAssetSelectionTests {
             if kind == "truncated" { contents.removeLast() } else { contents[0] ^= 0xff }
             try contents.write(to: image)
         }
-        let downloads = DDIFakeDownloads(assets: assets)
-        let service = makeService(directory: directory, assets: assets, downloads: downloads)
+        let copies = DDIFakeCopies(assets: assets)
+        let service = makeService(directory: directory, assets: assets, copies: copies)
         #expect(!service.cachedFilesAreReady)
-        try await service.downloadMissingFiles()
+        try await service.prepareMissingFiles()
         #expect(service.cachedFilesAreReady)
         try expectInstalled(assets, at: directory.cache)
     }
@@ -114,12 +138,12 @@ struct DDIAssetSelectionTests {
         try old.install(at: directory.cache)
         try Data("stale".utf8).write(to: directory.cache.appendingPathComponent("obsolete-file"))
         let assets = DDITestAssets(method: .personalized, release: "new")
-        let downloads = DDIFakeDownloads(assets: assets)
-        let service = makeService(directory: directory, assets: assets, downloads: downloads)
+        let copies = DDIFakeCopies(assets: assets)
+        let service = makeService(directory: directory, assets: assets, copies: copies)
         #expect(!service.cachedFilesAreReady)
-        try await service.downloadMissingFiles()
+        try await service.prepareMissingFiles()
         #expect(service.cachedFilesAreReady)
-        #expect(await downloads.names == DDITestAssets.personalizedNames)
+        #expect(await copies.names == DDITestAssets.personalizedNames)
         try expectInstalled(assets, at: directory.cache)
         #expect(!FileManager.default.fileExists(atPath: directory.cache.appendingPathComponent("obsolete-file").path))
     }
@@ -130,37 +154,37 @@ struct DDIAssetSelectionTests {
         let personalized = DDITestAssets(method: .personalized)
         try personalized.install(at: directory.cache)
         let cryptex = DDITestAssets(method: .cryptex)
-        let cryptexDownloads = DDIFakeDownloads(assets: cryptex)
-        let cryptexService = makeService(directory: directory, assets: cryptex, downloads: cryptexDownloads)
+        let cryptexCopies = DDIFakeCopies(assets: cryptex)
+        let cryptexService = makeService(directory: directory, assets: cryptex, copies: cryptexCopies)
         #expect(!cryptexService.cachedFilesAreReady)
-        try await cryptexService.downloadMissingFiles()
-        #expect(await cryptexDownloads.names == DDITestAssets.cryptexNames)
+        try await cryptexService.prepareMissingFiles()
+        #expect(await cryptexCopies.names == DDITestAssets.cryptexNames)
         try expectInstalled(cryptex, at: directory.cache)
 
-        let personalizedDownloads = DDIFakeDownloads(assets: personalized)
-        let personalizedService = makeService(directory: directory, assets: personalized, downloads: personalizedDownloads)
+        let personalizedCopies = DDIFakeCopies(assets: personalized)
+        let personalizedService = makeService(directory: directory, assets: personalized, copies: personalizedCopies)
         #expect(!personalizedService.cachedFilesAreReady)
-        try await personalizedService.downloadMissingFiles()
-        #expect(await personalizedDownloads.names == DDITestAssets.personalizedNames)
+        try await personalizedService.prepareMissingFiles()
+        #expect(await personalizedCopies.names == DDITestAssets.personalizedNames)
         try expectInstalled(personalized, at: directory.cache)
         for name in ["Image.dmg.cryptex_info", "Image.dmg.root_hash"] {
             #expect(!FileManager.default.fileExists(atPath: directory.cache.appendingPathComponent(name).path))
         }
     }
 
-    @Test func failedDownloadPreservesCacheAndRetryReusesVerifiedStagedFiles() async throws {
+    @Test func failedCopyPreservesCacheAndRetryReusesVerifiedStagedFiles() async throws {
         let directory = try DDITestDirectory()
         defer { directory.remove() }
         try DDITestAssets(method: .personalized, release: "old").install(at: directory.cache)
         let original = try directory.snapshot()
         let assets = DDITestAssets(method: .cryptex, release: "new")
-        let downloads = DDIFakeDownloads(assets: assets, failOnce: "Image.dmg")
-        let service = makeService(directory: directory, assets: assets, downloads: downloads)
-        await expectFailure { try await service.downloadMissingFiles() }
+        let copies = DDIFakeCopies(assets: assets, failOnce: "Image.dmg")
+        let service = makeService(directory: directory, assets: assets, copies: copies)
+        await expectFailure { try await service.prepareMissingFiles() }
         #expect(try directory.snapshot() == original)
         #expect(!service.cachedFilesAreReady)
-        try await service.downloadMissingFiles()
-        #expect(await downloads.names == ["BuildManifest.plist", "Image.dmg", "Image.dmg", "Image.dmg.trustcache", "Image.dmg.cryptex_info", "Image.dmg.root_hash"])
+        try await service.prepareMissingFiles()
+        #expect(await copies.names == ["BuildManifest.plist", "Image.dmg", "Image.dmg", "Image.dmg.trustcache", "Image.dmg.cryptex_info", "Image.dmg.root_hash"])
         try expectInstalled(assets, at: directory.cache)
     }
 
@@ -171,12 +195,12 @@ struct DDIAssetSelectionTests {
         try old.install(at: directory.cache)
         let original = try directory.snapshot()
         let assets = DDITestAssets(method: .cryptex, release: "new")
-        let downloads = DDIFakeDownloads(assets: assets, hold: "Image.dmg.root_hash")
-        let service = makeService(directory: directory, assets: assets, downloads: downloads)
-        let task = Task { try await service.downloadMissingFiles() }
-        await waitForRequest(downloads, count: 5)
+        let copies = DDIFakeCopies(assets: assets, hold: "Image.dmg.root_hash")
+        let service = makeService(directory: directory, assets: assets, copies: copies)
+        let task = Task { try await service.prepareMissingFiles() }
+        await waitForRequest(copies, count: 5)
         #expect(try directory.snapshot() == original)
-        await downloads.release()
+        await copies.release()
         try await task.value
         try expectInstalled(assets, at: directory.cache)
     }
@@ -187,12 +211,12 @@ struct DDIAssetSelectionTests {
         try DDITestAssets(method: .personalized, release: "old").install(at: directory.cache)
         let original = try directory.snapshot()
         let assets = DDITestAssets(method: .personalized, release: "new")
-        let downloads = DDIFakeDownloads(assets: assets, corruptOnce: "Image.dmg")
-        let service = makeService(directory: directory, assets: assets, downloads: downloads)
-        await expectFailure { try await service.downloadMissingFiles() }
+        let copies = DDIFakeCopies(assets: assets, corruptOnce: "Image.dmg")
+        let service = makeService(directory: directory, assets: assets, copies: copies)
+        await expectFailure { try await service.prepareMissingFiles() }
         #expect(try directory.snapshot() == original)
-        try await service.downloadMissingFiles()
-        #expect(await downloads.names == ["BuildManifest.plist", "Image.dmg", "Image.dmg", "Image.dmg.trustcache"])
+        try await service.prepareMissingFiles()
+        #expect(await copies.names == ["BuildManifest.plist", "Image.dmg", "Image.dmg", "Image.dmg.trustcache"])
         try expectInstalled(assets, at: directory.cache)
     }
 
@@ -200,48 +224,48 @@ struct DDIAssetSelectionTests {
         let directory = try DDITestDirectory()
         defer { directory.remove() }
         let assets = DDITestAssets(method: .personalized)
-        let downloads = DDIFakeDownloads(assets: assets, failOnce: "Image.dmg")
-        let service = makeService(directory: directory, assets: assets, downloads: downloads)
-        await expectFailure { try await service.downloadMissingFiles() }
-        try await service.redownload()
-        #expect(await downloads.names == ["BuildManifest.plist", "Image.dmg", "BuildManifest.plist", "Image.dmg", "Image.dmg.trustcache"])
+        let copies = DDIFakeCopies(assets: assets, failOnce: "Image.dmg")
+        let service = makeService(directory: directory, assets: assets, copies: copies)
+        await expectFailure { try await service.prepareMissingFiles() }
+        try await service.restoreBundledFiles()
+        #expect(await copies.names == ["BuildManifest.plist", "Image.dmg", "BuildManifest.plist", "Image.dmg", "Image.dmg.trustcache"])
         try expectInstalled(assets, at: directory.cache)
     }
 
-    @Test func cancellingForcedDownloadPreservesTheUsableInstalledCache() async throws {
+    @Test func cancellingForcedCopyPreservesTheUsableInstalledCache() async throws {
         let directory = try DDITestDirectory()
         defer { directory.remove() }
         let assets = DDITestAssets(method: .cryptex)
         try assets.install(at: directory.cache)
         let original = try directory.snapshot()
-        let downloads = DDIFakeDownloads(assets: assets, hold: "BuildManifest.plist")
-        let service = makeService(directory: directory, assets: assets, downloads: downloads)
-        let task = Task { try await service.redownload() }
-        await waitForRequest(downloads)
+        let copies = DDIFakeCopies(assets: assets, hold: "BuildManifest.plist")
+        let service = makeService(directory: directory, assets: assets, copies: copies)
+        let task = Task { try await service.restoreBundledFiles() }
+        await waitForRequest(copies)
         task.cancel()
         await expectFailure { try await task.value }
         #expect(try directory.snapshot() == original)
         #expect(service.cachedFilesAreReady)
-        #expect(await downloads.names == ["BuildManifest.plist"])
+        #expect(await copies.names == ["BuildManifest.plist"])
     }
 
-    @Test func duplicateDownloadIsRejectedWithoutDisturbingTheFirstRequest() async throws {
+    @Test func duplicateCopyIsRejectedWithoutDisturbingTheFirstRequest() async throws {
         let directory = try DDITestDirectory()
         defer { directory.remove() }
         let assets = DDITestAssets(method: .personalized)
-        let downloads = DDIFakeDownloads(assets: assets, hold: "BuildManifest.plist")
-        let service = makeService(directory: directory, assets: assets, downloads: downloads)
-        let first = Task { try await service.downloadMissingFiles() }
-        await waitForRequest(downloads)
-        // Release the first request even if a regression lets the second request wait or download.
+        let copies = DDIFakeCopies(assets: assets, hold: "BuildManifest.plist")
+        let service = makeService(directory: directory, assets: assets, copies: copies)
+        let first = Task { try await service.prepareMissingFiles() }
+        await waitForRequest(copies)
+        // Release the first request even if a regression lets the second request wait or copy.
         let release = Task {
             try await Task.sleep(for: .milliseconds(50))
-            await downloads.release()
+            await copies.release()
         }
-        await expectFailure { try await service.redownload() }
+        await expectFailure { try await service.restoreBundledFiles() }
         try await release.value
         try await first.value
-        #expect(await downloads.names == DDITestAssets.personalizedNames)
+        #expect(await copies.names == DDITestAssets.personalizedNames)
         try expectInstalled(assets, at: directory.cache)
     }
 
@@ -249,23 +273,78 @@ struct DDIAssetSelectionTests {
         let directory = try DDITestDirectory()
         defer { directory.remove() }
         let personalized = DDITestAssets(method: .personalized)
-        let personalizedDownloads = DDIFakeDownloads(assets: personalized, failOnce: "Image.dmg")
-        let personalizedService = makeService(directory: directory, assets: personalized, downloads: personalizedDownloads)
-        await expectFailure { try await personalizedService.downloadMissingFiles() }
+        let personalizedCopies = DDIFakeCopies(assets: personalized, failOnce: "Image.dmg")
+        let personalizedService = makeService(directory: directory, assets: personalized, copies: personalizedCopies)
+        await expectFailure { try await personalizedService.prepareMissingFiles() }
         let cryptex = DDITestAssets(method: .cryptex)
-        let cryptexDownloads = DDIFakeDownloads(assets: cryptex)
-        try await makeService(directory: directory, assets: cryptex, downloads: cryptexDownloads).downloadMissingFiles()
-        #expect(await cryptexDownloads.names == DDITestAssets.cryptexNames)
+        let cryptexCopies = DDIFakeCopies(assets: cryptex)
+        try await makeService(directory: directory, assets: cryptex, copies: cryptexCopies).prepareMissingFiles()
+        #expect(await cryptexCopies.names == DDITestAssets.cryptexNames)
         try expectInstalled(cryptex, at: directory.cache)
         // The original method keeps its own complete staged file for a later retry.
-        try await personalizedService.downloadMissingFiles()
-        #expect(await personalizedDownloads.names == ["BuildManifest.plist", "Image.dmg", "Image.dmg", "Image.dmg.trustcache"])
+        try await personalizedService.prepareMissingFiles()
+        #expect(await personalizedCopies.names == ["BuildManifest.plist", "Image.dmg", "Image.dmg", "Image.dmg.trustcache"])
         try expectInstalled(personalized, at: directory.cache)
     }
 
-    private func makeService(directory: DDITestDirectory, assets: DDITestAssets, downloads: DDIFakeDownloads) -> DeveloperDiskImageService {
-        DeveloperDiskImageService(directoryURL: directory.cache, assetSet: assets.set, downloader: { url, destination, progress in
-            try await downloads.download(url: url, to: destination, progress: progress)
+    @Test(arguments: ["missing", "truncated", "same-size-corruption", "symlink"])
+    func brokenBundledFilePreservesInstalledCacheWithoutFallback(kind: String) async throws {
+        let directory = try DDITestDirectory()
+        defer { directory.remove() }
+        let old = DDITestAssets(method: .personalized, release: "old")
+        try old.install(at: directory.cache)
+        let original = try directory.snapshot()
+        let assets = DDITestAssets(method: .cryptex, release: "new")
+        let source = directory.root.appendingPathComponent("Resources/DDI", isDirectory: true)
+        let family = source.appendingPathComponent(assets.set.method.directoryName, isDirectory: true)
+        try assets.install(at: family, marker: false)
+        let image = family.appendingPathComponent("Image.dmg")
+        if kind == "missing" || kind == "symlink" {
+            try FileManager.default.removeItem(at: image)
+            if kind == "symlink" {
+                let outside = directory.root.appendingPathComponent("other-image")
+                try assets.contents["Image.dmg"]!.write(to: outside)
+                try FileManager.default.createSymbolicLink(at: image, withDestinationURL: outside)
+            }
+        } else {
+            var content = try Data(contentsOf: image)
+            if kind == "truncated" { content.removeLast() } else { content[0] ^= 0xff }
+            try content.write(to: image)
+        }
+        let service = DeveloperDiskImageService(directoryURL: directory.cache, bundleDirectoryURL: source, assetSet: assets.set)
+        await expectFailure { try await service.prepareMissingFiles() }
+        #expect(try directory.snapshot() == original)
+        #expect(!service.cachedFilesAreReady)
+    }
+
+    @Test func cancellationDuringRealFileCopyKeepsThePreviousCache() async throws {
+        let directory = try DDITestDirectory()
+        defer { directory.remove() }
+        try DDITestAssets(method: .personalized, release: "old").install(at: directory.cache)
+        let original = try directory.snapshot()
+        let assets = DDITestAssets(method: .cryptex, release: "new", imageSize: 3 * 1_048_576)
+        let source = directory.root.appendingPathComponent("Resources/DDI", isDirectory: true)
+        try assets.install(at: source.appendingPathComponent(assets.set.method.directoryName), marker: false)
+        let service = DeveloperDiskImageService(directoryURL: directory.cache, bundleDirectoryURL: source, assetSet: assets.set)
+        let task = Task {
+            try await service.prepareMissingFiles { progress, detail in
+                if detail.hasSuffix("· Image.dmg"), progress > 0.2 {
+                    withUnsafeCurrentTask { $0?.cancel() }
+                }
+            }
+        }
+        do {
+            try await task.value
+            Issue.record("Cancellation must stop the local copy")
+        } catch { #expect(error is CancellationError) }
+        #expect(try directory.snapshot() == original)
+        let stagedImage = directory.root.appendingPathComponent(".DDI-staging/new/cryptex/Image.dmg")
+        #expect(!FileManager.default.fileExists(atPath: stagedImage.path))
+    }
+
+    private func makeService(directory: DDITestDirectory, assets: DDITestAssets, copies: DDIFakeCopies) -> DeveloperDiskImageService {
+        DeveloperDiskImageService(directoryURL: directory.cache, assetSet: assets.set, copier: { url, destination, progress in
+            try await copies.copy(url: url, to: destination, progress: progress)
         })
     }
 
@@ -279,16 +358,16 @@ struct DDIAssetSelectionTests {
     private func expectFailure(_ operation: () async throws -> Void) async {
         do {
             try await operation()
-            Issue.record("Expected this download attempt to fail")
+            Issue.record("Expected this copy attempt to fail")
         } catch {}
     }
 
-    private func waitForRequest(_ downloads: DDIFakeDownloads, count: Int = 1) async {
+    private func waitForRequest(_ copies: DDIFakeCopies, count: Int = 1) async {
         for _ in 0..<200 {
-            if await downloads.names.count >= count { return }
+            if await copies.names.count >= count { return }
             try? await Task.sleep(for: .milliseconds(5))
         }
-        Issue.record("The fixture download did not start")
+        Issue.record("The fixture copy did not start")
     }
 }
 
@@ -316,12 +395,14 @@ private struct DDITestAssets: Sendable {
     let set: DDIAssetSet
     let contents: [String: Data]
 
-    init(method: DDIMountMethod, release: String = "test-release") {
+    init(method: DDIMountMethod, release: String = "test-release", imageSize: Int? = nil) {
         let names = method == .personalized ? Self.personalizedNames : Self.cryptexNames
         let data = Dictionary(uniqueKeysWithValues: names.map { name -> (String, Data) in
             let content: Data
             if name == "BuildManifest.plist" {
                 content = try! PropertyListSerialization.data(fromPropertyList: ["Release": release, "Method": method.rawValue], format: .xml, options: 0)
+            } else if name == "Image.dmg", let imageSize {
+                content = Data(repeating: 0xAB, count: imageSize)
             } else {
                 content = Data("fixture-\(release)-\(method.rawValue)-\(name)".utf8)
             }
@@ -330,7 +411,7 @@ private struct DDITestAssets: Sendable {
         contents = data
         set = DDIAssetSet(release: release, method: method, files: names.map { name in
             let bytes = data[name]!
-            return DDIDownloadItem(fileName: name, size: Int64(bytes.count), sha256: SHA256.hash(data: bytes).map { String(format: "%02x", $0) }.joined())
+            return DDIAssetFile(fileName: name, size: Int64(bytes.count), sha256: SHA256.hash(data: bytes).map { String(format: "%02x", $0) }.joined())
         })
     }
 
@@ -341,7 +422,7 @@ private struct DDITestAssets: Sendable {
     }
 }
 
-private actor DDIFakeDownloads {
+private actor DDIFakeCopies {
     let assets: DDITestAssets
     var names: [String] = []
     var failOnce: String?
@@ -357,14 +438,16 @@ private actor DDIFakeDownloads {
 
     func release() { hold = nil }
 
-    func download(url: URL, to destination: URL, progress: @escaping @Sendable (Double) -> Void) async throws {
+    func copy(url: URL, to destination: URL, progress: @escaping @Sendable (Double) -> Void) async throws {
+        #expect(url.isFileURL, "The copy boundary must receive only local bundle file URLs")
         let name = url.lastPathComponent
+        #expect(url.deletingLastPathComponent().lastPathComponent == assets.set.method.directoryName)
         names.append(name)
         while hold == name { try await Task.sleep(for: .milliseconds(5)) }
         try Task.checkCancellation()
         if failOnce == name {
             failOnce = nil
-            throw URLError(.networkConnectionLost)
+            throw CocoaError(.fileReadUnknown)
         }
         var data = try #require(assets.contents[name])
         if corruptOnce == name {

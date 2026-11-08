@@ -11,11 +11,9 @@ struct StikDebugApp: App {
     @StateObject private var vpn = EmbeddedVPNService.shared
     @StateObject private var onDevicePairing = OnDevicePairingService.shared
     @StateObject private var localization = LocalizationManager.shared
-    @StateObject private var authorization = VipAuthorizationService.shared
-    @State private var startupStarted = false
+    @State private var hasStartedDeviceSetup = false
+    @State private var setupNavigationRevision = 0
     @State private var startupDecisionMade = false
-    @State private var showVIPSetup = false
-    @State private var isVIPSheetPresented = false
     @State private var showStartupPairingGuide = false
     @State private var presentedPairingGuideThisLaunch = false
     @State private var isPreparingEnvironment = false
@@ -35,7 +33,7 @@ struct StikDebugApp: App {
 
     var body: some Scene {
         WindowGroup {
-            MainTabView()
+            MainTabView(setupNavigationRevision: setupNavigationRevision)
                 .environmentObject(session)
                 .environmentObject(preflight)
                 .environmentObject(permissions)
@@ -44,25 +42,10 @@ struct StikDebugApp: App {
                 .environmentObject(onDevicePairing)
                 .environmentObject(localization)
                 .environment(\.locale, localization.locale)
-                .environment(\.deviceSetupEnabled, canPrepareEnvironment && !automaticWorkDisabled
-                             && !isVIPSheetPresented && !showStartupPairingGuide)
+                .environment(\.deviceSetupEnabled, canPrepareEnvironment && !showStartupPairingGuide)
                 .environment(\.beginDeviceSetup, beginDeviceSetup)
                 // 重建整棵树，让已经渲染出来的文案按新语言重新查表。
                 .id(localization.language)
-                .sheet(isPresented: vipSheetPresentation, onDismiss: {
-                    isVIPSheetPresented = false
-                    if canPrepareEnvironment {
-                        Task { await advanceSetup() }
-                    } else {
-                        authorization.cancelVerification()
-                    }
-                }) {
-                    VipSetupView(authorization: authorization,
-                                 restoreLocation: restoreLocationAction,
-                                 verify: beginDeviceSetup,
-                                 close: dismissVIPSetup)
-                        .environment(\.locale, localization.locale)
-                }
                 .sheet(isPresented: $showStartupPairingGuide, onDismiss: {
                     Task { await advanceSetup() }
                 }) {
@@ -73,52 +56,27 @@ struct StikDebugApp: App {
                         .environmentObject(localization)
                         .environment(\.locale, localization.locale)
                 }
-                .task {
-                    guard !automaticWorkDisabled, !startupStarted else { return }
-                    startupStarted = true
-                    // Browsing is passive. Only the explicit setup button starts verification.
-                    authorization.restoreCachedAuthorization()
-                }
-                .onChange(of: canPrepareEnvironment) { _, enabled in
-                    if enabled {
-                        if isVIPSheetPresented {
-                            showVIPSetup = false
-                        } else {
-                            Task { await advanceSetup() }
-                        }
-                    } else {
-                        environmentGeneration += 1
-                        startupDecisionMade = false
-                        showStartupPairingGuide = false
-                        #if DEBUG
-                        if !automaticWorkDisabled { WLOCUSBDebugBridge.shared.setActive(false) }
-                        #endif
-                    }
-                }
                 .onChange(of: onDevicePairing.phase) { _, phase in
                     if phase == .succeeded, canPrepareEnvironment, !showStartupPairingGuide {
                         Task { await advanceSetup() }
                     }
                 }
                 .onChange(of: vpn.status) { _, status in
-                    guard status.isConnected, !automaticWorkDisabled, canPrepareEnvironment, startupDecisionMade,
+                    guard status.isConnected, canPrepareEnvironment, startupDecisionMade,
                           !showStartupPairingGuide, !onDevicePairing.isBusy else { return }
-                    authorization.connectionDidBecomeAvailable()
+                    Task { await preflight.refresh() }
                 }
                 .onChange(of: scenePhase) { _, phase in
+                    if phase == .background { environmentGeneration += 1 }
                     #if DEBUG
                     if !automaticWorkDisabled {
                         WLOCUSBDebugBridge.shared.setActive(phase == .active && canPrepareEnvironment)
                     }
                     #endif
                     FixedLocationSessionController.shared.updateForegroundState(phase == .active)
-                    guard phase == .active, !automaticWorkDisabled, startupStarted, authorization.hasStartedSetup,
+                    guard phase == .active, canPrepareEnvironment,
                           !showStartupPairingGuide, !onDevicePairing.isBusy else { return }
                     Task {
-                        // Returning from a permission prompt/settings must not lose a retry.
-                        authorization.connectionDidBecomeAvailable()
-                        await authorization.refresh()
-                        guard canPrepareEnvironment else { return }
                         session.refreshAfterForeground()
                         await advanceSetup()
                     }
@@ -127,58 +85,18 @@ struct StikDebugApp: App {
         .modelContainer(modelContainer)
     }
 
-    private var hasPassedVIPStep: Bool {
-        authorization.isSetupVerified || authorization.isAuthorized
-    }
-
     private var canPrepareEnvironment: Bool {
-        authorization.hasStartedSetup && hasPassedVIPStep
-    }
-
-    /// A swipe dismissal withdraws the request just like the explicit close button.
-    /// Programmatic dismissal after verification preserves the completed first step.
-    private var vipSheetPresentation: Binding<Bool> {
-        Binding(get: { showVIPSetup }, set: { presented in
-            if !presented { authorization.cancelVerification() }
-            showVIPSetup = presented
-        })
-    }
-
-    private func dismissVIPSetup() {
-        authorization.cancelVerification()
-        showVIPSetup = false
+        hasStartedDeviceSetup && !automaticWorkDisabled
     }
 
     @MainActor
     private func beginDeviceSetup() {
-        guard !automaticWorkDisabled else {
-            // UI tests exercise presentation without contacting production services.
-            isVIPSheetPresented = true
-            showVIPSetup = true
-            return
-        }
-        if authorization.isChecking {
-            authorization.cancelVerification()
-            return
-        }
-        startupStarted = true
-        authorization.startSetup()
-        if canPrepareEnvironment {
-            Task { await advanceSetup() }
-        } else {
-            isVIPSheetPresented = true
-            showVIPSetup = true
-        }
-    }
-
-    /// Revocation must not hide the command that clears an existing simulated location.
-    /// This explicit recovery action does not start setup or request new permissions.
-    private var restoreLocationAction: (() async -> String?)? {
-        guard FileManager.default.fileExists(atPath: PairingFileStore.url.path) else { return nil }
-        return {
-            await session.restoreRealLocation()
-            return session.lastError
-        }
+        hasStartedDeviceSetup = true
+        setupNavigationRevision += 1
+        // UI tests follow the same navigation without starting device or permission work.
+        guard !automaticWorkDisabled else { return }
+        preflight.setDeviceSetupEnabled(true)
+        Task { await advanceSetup() }
     }
 
     private var automaticWorkDisabled: Bool {
@@ -187,8 +105,7 @@ struct StikDebugApp: App {
 
     @MainActor
     private func advanceSetup() async {
-        guard !automaticWorkDisabled, startupStarted, canPrepareEnvironment,
-              !isVIPSheetPresented, !showStartupPairingGuide, !onDevicePairing.isBusy else { return }
+        guard canPrepareEnvironment, !showStartupPairingGuide, !onDevicePairing.isBusy else { return }
         if !startupDecisionMade {
             startupDecisionMade = true
             let pairingURL = PairingFileStore.prepareURL()
@@ -208,14 +125,14 @@ struct StikDebugApp: App {
 
     @MainActor
     private func prepareEnvironment() async {
-        guard !automaticWorkDisabled, canPrepareEnvironment, !isVIPSheetPresented, !showStartupPairingGuide,
+        guard canPrepareEnvironment, !showStartupPairingGuide,
               !onDevicePairing.isBusy, !isPreparingEnvironment else { return }
         isPreparingEnvironment = true
         let generation = environmentGeneration
         defer {
             isPreparingEnvironment = false
-            // A renewed grant may have arrived while a previous preparation was suspended.
-            if generation != environmentGeneration, canPrepareEnvironment {
+            // A foreground return may arrive while an older preparation is unwinding.
+            if generation != environmentGeneration, canPrepareEnvironment, scenePhase == .active {
                 Task { await advanceSetup() }
             }
         }
@@ -228,7 +145,6 @@ struct StikDebugApp: App {
             await vpn.connect()
         }
         guard mayContinuePreparation(generation) else { return }
-        if vpn.status.isConnected { authorization.connectionDidBecomeAvailable() }
         await permissions.refresh()
         guard mayContinuePreparation(generation) else { return }
         await preflight.refresh()
@@ -239,6 +155,6 @@ struct StikDebugApp: App {
     @MainActor
     private func mayContinuePreparation(_ generation: Int) -> Bool {
         !Task.isCancelled && generation == environmentGeneration && canPrepareEnvironment
-            && !isVIPSheetPresented && !showStartupPairingGuide && !onDevicePairing.isBusy
+            && scenePhase != .background && !showStartupPairingGuide && !onDevicePairing.isBusy
     }
 }

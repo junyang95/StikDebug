@@ -31,17 +31,17 @@ extension DDIInstallationDependencies {
                 }
                 throw DDIInstallationError.message("内置 VPN 尚未连接，请允许 VPN 连接后重试。".localized)
             },
-            download: { force, progress in
+            install: { force, progress in
                 if force {
-                    try await DeveloperDiskImageService.shared.redownload(progressHandler: progress)
+                    try await DeveloperDiskImageService.shared.restoreBundledFiles(progressHandler: progress)
                 } else {
-                    try await DeveloperDiskImageService.shared.downloadMissingFiles(progressHandler: progress)
+                    try await DeveloperDiskImageService.shared.prepareMissingFiles(progressHandler: progress)
                 }
             },
             mount: {
-                // Recheck after the download: a user may have started movement in another tab.
+                // Recheck after the local copy: a user may have started movement in another tab.
                 guard !WalkingSessionController.shared.isActive, !DeveloperConnectionGate.isBlocked else {
-                    throw DDIInstallationError.message("文件已下载。请先停止路线、摇杆或连接测试，再重试安装。".localized)
+                    throw DDIInstallationError.message("文件已准备。请先停止路线、摇杆或连接测试，再重试安装。".localized)
                 }
                 try await Task.detached(priority: .userInitiated) {
                     if checkMountStatus() == .mounted { return }
@@ -49,7 +49,7 @@ extension DDIInstallationDependencies {
                         throw DDIInstallationError.message(error)
                     }
                     guard checkMountStatus() == .mounted else {
-                        throw DDIInstallationError.message("文件已下载，但未确认 DDI 挂载成功。请检查内置 VPN 和开发者模式后重试。".localized)
+                        throw DDIInstallationError.message("文件已准备，但未确认 DDI 挂载成功。请检查内置 VPN 和开发者模式后重试。".localized)
                     }
                 }.value
                 MountingProgress.shared.checkforMounted()

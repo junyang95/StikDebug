@@ -1,5 +1,7 @@
 # 七牛 Personalized / Cryptex DDI — 0.1.7 (8)
 
+> 历史版本记录：0.1.9 (10) 已移除商业授权并改用内置 DDI。本文中的授权和联网下载机制不再适用；当前行为见 [精简版说明](simplified-setup-and-bundled-ddi.md)。
+
 ## 变化
 
 `codex/pikmin-helper` 保留原有定位、路线、步数、内置 VPN 和配对功能。此次补齐两套 DDI 的下载、挂载与状态检查：

@@ -16,14 +16,13 @@ private enum TabState {
 }
 
 struct MainTabView: View {
+    var setupNavigationRevision = 0
     @Environment(\.modelContext) private var modelContext
     @Environment(\.openURL) private var openURL
     @Environment(\.deviceSetupEnabled) private var deviceSetupEnabled
-    @Environment(\.beginDeviceSetup) private var beginDeviceSetup
     @EnvironmentObject private var session: WalkingSessionController
     @EnvironmentObject private var health: HealthStepService
     @AppStorage(AppearancePreference.storageKey) private var appearanceRaw = AppearancePreference.system.rawValue
-    @ObservedObject private var authorization = VipAuthorizationService.shared
     @State private var selectedTab: MainTab = TabState.selected
 
     private var appearance: AppearancePreference {
@@ -66,39 +65,12 @@ struct MainTabView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            if !deviceSetupEnabled || !authorization.isAuthorized {
-                VStack(alignment: .leading, spacing: 6) {
-                    if !deviceSetupEnabled {
-                        if authorization.hasStartedSetup, !authorization.isSetupVerified,
-                           !authorization.isAuthorized, !authorization.isChecking {
-                            Text(authorization.message)
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                        }
-                        DeviceSetupPrompt()
-                    } else {
-                        Text("下一步：连接设备")
-                            .font(.subheadline.weight(.semibold))
-                        Text(authorization.message).font(.caption)
-                        AdaptiveActionStack {
-                            Button(action: beginDeviceSetup) {
-                                HStack {
-                                    if authorization.isChecking { ProgressView() }
-                                    Text(authorization.isChecking ? "取消验证" : "继续设置")
-                                }
-                                .frame(minHeight: 44)
-                            }
-                            if authorization.needsNetworkSettings {
-                                Link("打开网络设置", destination: URL(string: UIApplication.openSettingsURLString)!)
-                                    .frame(minHeight: 44)
-                            }
-                        }
-                    }
-                }
-                .frame(maxWidth: 780, alignment: .leading)
-                .padding(10)
-                .frame(maxWidth: .infinity)
-                .background(.regularMaterial)
+            if !deviceSetupEnabled {
+                DeviceSetupPrompt()
+                    .frame(maxWidth: 780, alignment: .leading)
+                    .padding(10)
+                    .frame(maxWidth: .infinity)
+                    .background(.regularMaterial)
             }
 
             TabView(selection: $selectedTab) {
@@ -141,6 +113,9 @@ struct MainTabView: View {
             }
         } message: { stage in
             Text(capNoticeMessage(for: stage))
+        }
+        .onChange(of: setupNavigationRevision) { _, _ in
+            selectedTab = .settings
         }
         .onChange(of: selectedTab) { _, tab in
             TabState.selected = tab

@@ -22,43 +22,34 @@ final class PikminHelperUITests: XCTestCase {
     }
 
     @MainActor
-    func testVIPIsTheFirstStepAfterStartingSetup() throws {
+    func testStartingSetupOpensDeviceSettingsWithoutVerification() throws {
         let app = launchApp()
         let startButton = app.buttons["begin-device-setup"]
         XCTAssertTrue(startButton.waitForExistence(timeout: 5))
         startButton.tap()
 
-        XCTAssertTrue(app.staticTexts["先验证 VIP"].waitForExistence(timeout: 5))
-        XCTAssertTrue(app.buttons["close-vip-setup"].exists)
-        XCTAssertTrue(app.buttons["验证 VIP"].exists)
-        XCTAssertFalse(app.buttons["请求 VPN 配置权限"].exists)
-        XCTAssertFalse(app.buttons["请求 HealthKit 步数权限"].exists)
+        XCTAssertTrue(app.navigationBars["设置"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["设备信任"].exists)
+        XCTAssertFalse(app.staticTexts["先验证 VIP"].exists)
+        XCTAssertFalse(app.buttons["验证 VIP"].exists)
+        XCTAssertFalse(app.buttons["购买或续费"].exists)
+        XCTAssertFalse(app.alerts.element.exists)
     }
 
     @MainActor
-    func testClosingVIPSetupReturnsToBrowsableHome() throws {
+    func testDeviceSetupKeepsMainNavigationAvailable() throws {
         let app = launchApp()
         let startButton = app.buttons["begin-device-setup"]
         XCTAssertTrue(startButton.waitForExistence(timeout: 5))
         startButton.tap()
+        XCTAssertTrue(app.navigationBars["设置"].waitForExistence(timeout: 5))
 
-        let closeButton = app.buttons["close-vip-setup"]
-        XCTAssertTrue(closeButton.waitForExistence(timeout: 5))
-        closeButton.tap()
-        let dismissed = XCTNSPredicateExpectation(
-            predicate: NSPredicate(format: "exists == false"),
-            object: app.staticTexts["先验证 VIP"]
-        )
-        wait(for: [dismissed], timeout: 5)
-
-        XCTAssertTrue(app.staticTexts["Pikmin 日常助手"].exists)
-        XCTAssertTrue(startButton.isHittable)
-        XCTAssertFalse(app.buttons["取消验证"].exists)
-        XCTAssertFalse(app.descendants(matching: .any)["正在验证授权…"].exists)
         app.tabBars.buttons["路线"].tap()
         XCTAssertTrue(app.navigationBars["模拟位置"].waitForExistence(timeout: 5))
         app.tabBars.buttons["首页"].tap()
         XCTAssertTrue(app.staticTexts["Pikmin 日常助手"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.buttons["取消验证"].exists)
+        XCTAssertFalse(app.descendants(matching: .any)["正在验证授权…"].exists)
     }
 
     @MainActor

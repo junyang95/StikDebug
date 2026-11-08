@@ -13,7 +13,7 @@ final class MountingProgress: ObservableObject {
     @Published private(set) var mountingThread: Thread?
     @Published private(set) var coolisMounted: Bool = false
 
-    // Reserved by the guided installer, including its download stage.
+    // Reserved by the guided installer, including its local resource installation stage.
     var installationInProgress = false
 
     private init() {}
@@ -62,7 +62,7 @@ final class MountingProgress: ObservableObject {
                 if mountError == nil {
                     confirmedMounted = isMounted()
                     if !confirmedMounted {
-                        mountError = "文件已下载，但未确认 DDI 挂载成功。请检查内置 VPN 和开发者模式后重试。".localized
+                        mountError = "文件已准备，但未确认 DDI 挂载成功。请检查内置 VPN 和开发者模式后重试。".localized
                     }
                 }
             }

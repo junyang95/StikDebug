@@ -5,6 +5,8 @@
 
 import Foundation
 
+/// Prepares the optional DDI cache from files shipped inside the IPA.
+/// Missing or damaged app resources fail locally; there is no download fallback.
 final class DeveloperDiskImageService {
     static let shared = DeveloperDiskImageService()
     static let directoryURL = URL.documentsDirectory.appendingPathComponent("DDI", isDirectory: true)
@@ -13,25 +15,26 @@ final class DeveloperDiskImageService {
     static var requiredFileNames: [String] { shared.assetSet.files.map(\.fileName) }
     static var missingFiles: [String] { shared.missingOrInvalidFiles }
 
-    typealias Downloader = @Sendable (URL, URL, @escaping @Sendable (Double) -> Void) async throws -> Void
+    typealias Copier = @Sendable (URL, URL, @escaping @Sendable (Double) -> Void) async throws -> Void
 
     private let fileManager: FileManager
-    private let session: URLSession
     private let cacheDirectoryURL: URL
+    private let bundleDirectoryURL: URL
     private let assetSet: DDIAssetSet
-    private let downloader: Downloader?
-    private let downloadLock = NSLock()
-    private var downloadInProgress = false
+    private let copier: Copier?
+    private let installationLock = NSLock()
+    private var installationInProgress = false
     private static let receiptName = ".asset-set"
 
-    init(fileManager: FileManager = .default, session: URLSession? = nil,
+    init(fileManager: FileManager = .default,
          directoryURL: URL = DeveloperDiskImageService.directoryURL,
-         assetSet: DDIAssetSet = .current(), downloader: Downloader? = nil) {
+         bundleDirectoryURL: URL = (Bundle.main.resourceURL ?? Bundle.main.bundleURL).appendingPathComponent("DDI", isDirectory: true),
+         assetSet: DDIAssetSet = .current(), copier: Copier? = nil) {
         self.fileManager = fileManager
-        self.session = session ?? Self.makeEphemeralSession()
         self.cacheDirectoryURL = directoryURL
+        self.bundleDirectoryURL = bundleDirectoryURL
         self.assetSet = assetSet
-        self.downloader = downloader
+        self.copier = copier
     }
 
     var cachedFilesAreReady: Bool { missingOrInvalidFiles.isEmpty }
@@ -47,64 +50,25 @@ final class DeveloperDiskImageService {
         }
     }
 
-    func downloadMissingFiles(progressHandler: (@Sendable (Double, String) -> Void)? = nil) async throws {
-        try await downloadItems(force: false, progressHandler: progressHandler)
+    func prepareMissingFiles(progressHandler: (@Sendable (Double, String) -> Void)? = nil) async throws {
+        try await installItems(force: false, progressHandler: progressHandler)
     }
 
-    func downloadFile(from urlString: String, to destinationURL: URL,
-                      progressHandler: (@Sendable (Double) -> Void)? = nil) async throws {
-        guard let url = URL(string: urlString), Self.isAllowed(url) else {
-            throw DDIDownloadError.invalidURL(urlString)
-        }
-        let delegate = DownloadDelegate(progress: progressHandler)
-        let (temporaryURL, response) = try await session.download(from: url, delegate: delegate)
-        defer { try? fileManager.removeItem(at: temporaryURL) }
-        try installDownloadedFile(at: temporaryURL, response: response, to: destinationURL)
+    func restoreBundledFiles(progressHandler: (@Sendable (Double, String) -> Void)? = nil) async throws {
+        try await installItems(force: true, progressHandler: progressHandler)
     }
 
-    func installDownloadedFile(at temporaryURL: URL, response: URLResponse, to destinationURL: URL) throws {
-        guard let http = response as? HTTPURLResponse, let finalURL = http.url, Self.isAllowed(finalURL) else {
-            throw DDIDownloadError.invalidResponse
-        }
-        guard (200..<300).contains(http.statusCode) else { throw DDIDownloadError.badStatus(http.statusCode) }
-        let handle = try FileHandle(forReadingFrom: temporaryURL)
-        defer { try? handle.close() }
-        let prefix = try handle.read(upToCount: 512) ?? Data()
-        let text = String(data: prefix, encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() ?? ""
-        guard !prefix.isEmpty, http.mimeType != "text/html", !text.hasPrefix("<!doctype html"), !text.hasPrefix("<html") else {
-            throw DDIDownloadError.invalidResponse
-        }
-        if ["plist", "cryptex_info"].contains(destinationURL.pathExtension) {
-            let data = try Data(contentsOf: temporaryURL)
-            guard (try? PropertyListSerialization.propertyList(from: data, format: nil)) is [String: Any] else {
-                throw DDIDownloadError.invalidResponse
-            }
-        }
-        try Task.checkCancellation()
-        try fileManager.createDirectory(at: destinationURL.deletingLastPathComponent(), withIntermediateDirectories: true)
-        if fileManager.fileExists(atPath: destinationURL.path) {
-            // Keep the existing file intact if a replacement download fails.
-            _ = try fileManager.replaceItemAt(destinationURL, withItemAt: temporaryURL)
-        } else {
-            try fileManager.moveItem(at: temporaryURL, to: destinationURL)
-        }
-    }
-
-    func redownload(progressHandler: (@Sendable (Double, String) -> Void)? = nil) async throws {
-        try await downloadItems(force: true, progressHandler: progressHandler)
-    }
-
-    private func downloadItems(force: Bool, progressHandler: (@Sendable (Double, String) -> Void)?) async throws {
-        guard beginDownload() else { throw DDIDownloadError.downloadInProgress }
-        defer { endDownload() }
+    private func installItems(force: Bool, progressHandler: (@Sendable (Double, String) -> Void)?) async throws {
+        guard beginInstallation() else { throw DDIAssetError.installationInProgress }
+        defer { endInstallation() }
         try Task.checkCancellation()
         if !force && cachedFilesAreReady {
-            progressHandler?(1, "DDI 文件下载完成".localized)
+            progressHandler?(1, "DDI 内置文件已准备完成".localized)
             return
         }
 
-        // Complete files survive a failed/cancelled attempt, but different asset sets
-        // never share staging files or replace the active cache one file at a time.
+        // Verified staging is isolated by asset release and mount method. A failed
+        // or cancelled copy never replaces a file in the active complete cache.
         let staging = cacheDirectoryURL.deletingLastPathComponent()
             .appendingPathComponent(".DDI-staging", isDirectory: true)
             .appendingPathComponent(assetSet.release, isDirectory: true)
@@ -117,99 +81,99 @@ final class DeveloperDiskImageService {
             let destination = staging.appendingPathComponent(item.fileName)
             if (try? assetSet.verifyFile(at: destination, item: item)) != nil { continue }
             let detail = "\(index + 1)/\(assetSet.files.count) · \(item.fileName)"
-            progressHandler?(0, detail)
-            let report: @Sendable (Double) -> Void = { value in progressHandler?(value, detail) }
-            if let downloader {
-                try await downloader(assetSet.url(for: item), destination, report)
-            } else {
-                try await downloadFile(from: assetSet.url(for: item).absoluteString, to: destination, progressHandler: report)
+            let report: @Sendable (Double) -> Void = { [count = assetSet.files.count] value in
+                progressHandler?((Double(index) + min(1, max(0, value))) / Double(count), detail)
             }
-            try assetSet.verifyFile(at: destination, item: item)
+            report(0)
+            let source = assetSet.bundledURL(for: item, in: bundleDirectoryURL)
+            do {
+                if let copier {
+                    try await copier(source, destination, report)
+                } else {
+                    try copyBundledFile(from: source, to: destination, item: item, progress: report)
+                }
+                try Task.checkCancellation()
+                try assetSet.verifyFile(at: destination, item: item)
+            } catch {
+                // Incomplete bytes must never be mistaken for resumable verified data.
+                try? fileManager.removeItem(at: destination)
+                throw error
+            }
         }
         try Task.checkCancellation()
         for item in assetSet.files { try assetSet.verifyFile(at: staging.appendingPathComponent(item.fileName), item: item) }
         try assetSet.cacheKey.write(to: staging.appendingPathComponent(Self.receiptName), atomically: true, encoding: .utf8)
         try Task.checkCancellation()
+        // The commit is not interrupted halfway through: the complete directory
+        // and receipt replace the old set together, including obsolete extra files.
         if fileManager.fileExists(atPath: cacheDirectoryURL.path) {
             _ = try fileManager.replaceItemAt(cacheDirectoryURL, withItemAt: staging)
         } else {
             try fileManager.moveItem(at: staging, to: cacheDirectoryURL)
         }
-        progressHandler?(1, "DDI 文件下载完成".localized)
+        progressHandler?(1, "DDI 内置文件已准备完成".localized)
     }
 
-    private func beginDownload() -> Bool {
-        downloadLock.lock()
-        defer { downloadLock.unlock() }
-        guard !downloadInProgress else { return false }
-        downloadInProgress = true
+    private func copyBundledFile(from source: URL, to destination: URL, item: DDIAssetFile,
+                                 progress: @Sendable (Double) -> Void) throws {
+        guard source.isFileURL,
+              let attributes = try? fileManager.attributesOfItem(atPath: source.path),
+              attributes[.type] as? FileAttributeType == .typeRegular else {
+            throw DDIAssetError.missingBundledFile(item.fileName)
+        }
+        guard (attributes[.size] as? NSNumber)?.int64Value == item.size else {
+            throw DDIAssetError.invalidFile(item.fileName)
+        }
+        let input = try FileHandle(forReadingFrom: source)
+        defer { try? input.close() }
+        guard fileManager.createFile(atPath: destination.path, contents: nil) else {
+            throw CocoaError(.fileWriteUnknown)
+        }
+        let output = try FileHandle(forWritingTo: destination)
+        defer { try? output.close() }
+        var copied: Int64 = 0
+        while true {
+            try Task.checkCancellation()
+            let data = try input.read(upToCount: 1_048_576) ?? Data()
+            if data.isEmpty { break }
+            guard Int64(data.count) <= item.size - copied else { throw DDIAssetError.invalidFile(item.fileName) }
+            try Task.checkCancellation()
+            try output.write(contentsOf: data)
+            copied += Int64(data.count)
+            progress(Double(copied) / Double(item.size))
+        }
+        guard copied == item.size else { throw DDIAssetError.invalidFile(item.fileName) }
+        try output.synchronize()
+    }
+
+    private func beginInstallation() -> Bool {
+        installationLock.lock()
+        defer { installationLock.unlock() }
+        guard !installationInProgress else { return false }
+        installationInProgress = true
         return true
     }
 
-    private func endDownload() {
-        downloadLock.lock()
-        defer { downloadLock.unlock() }
-        downloadInProgress = false
-    }
-
-    private static func isAllowed(_ url: URL) -> Bool {
-        url.scheme?.lowercased() == "https" && url.host?.lowercased() == allowedDownloadHost
-    }
-
-    private final class DownloadDelegate: NSObject, URLSessionDownloadDelegate, @unchecked Sendable {
-        let progress: (@Sendable (Double) -> Void)?
-        init(progress: (@Sendable (Double) -> Void)?) { self.progress = progress }
-        func urlSession(_ session: URLSession, downloadTask: URLSessionDownloadTask, didFinishDownloadingTo location: URL) {}
-        func urlSession(_ session: URLSession, downloadTask: URLSessionDownloadTask, didWriteData bytesWritten: Int64,
-                        totalBytesWritten: Int64, totalBytesExpectedToWrite: Int64) {
-            if totalBytesExpectedToWrite > 0 { progress?(Double(totalBytesWritten) / Double(totalBytesExpectedToWrite)) }
-        }
-        func urlSession(_ session: URLSession, task: URLSessionTask, willPerformHTTPRedirection response: HTTPURLResponse,
-                        newRequest request: URLRequest, completionHandler: @escaping (URLRequest?) -> Void) {
-            completionHandler(request.url.map { DeveloperDiskImageService.isAllowed($0) } == true ? request : nil)
-        }
-    }
-
-    static let allowedDownloadHost = "static.wow-app.store"
-
-    private static func makeEphemeralSession() -> URLSession {
-        let configuration = URLSessionConfiguration.ephemeral
-        configuration.waitsForConnectivity = true
-        configuration.allowsCellularAccess = true
-        configuration.allowsExpensiveNetworkAccess = true
-        configuration.allowsConstrainedNetworkAccess = true
-        configuration.timeoutIntervalForRequest = 60
-        configuration.timeoutIntervalForResource = 1800
-        configuration.httpShouldSetCookies = false
-        configuration.urlCache = nil
-        configuration.requestCachePolicy = .reloadIgnoringLocalCacheData
-        return URLSession(configuration: configuration)
+    private func endInstallation() {
+        installationLock.lock()
+        defer { installationLock.unlock() }
+        installationInProgress = false
     }
 }
 
-enum DDIDownloadError: LocalizedError {
-    case invalidURL(String)
-    case invalidResponse
-    case badStatus(Int)
+enum DDIAssetError: LocalizedError {
+    case missingBundledFile(String)
     case invalidFile(String)
-    case downloadInProgress
+    case installationInProgress
 
     var errorDescription: String? {
         switch self {
-        case .invalidURL(let string):
-            return "DDI 下载地址无效：".localized + string
-        case .invalidResponse:
-            return "DDI 下载内容无效，请稍后重新下载。".localized
-        case .badStatus(let statusCode):
-            return String(format: "DDI 下载服务器返回 HTTP %d，请稍后重试。".localized, statusCode)
+        case .missingBundledFile(let name):
+            return String(format: "IPA 缺少内置 DDI 文件：%@，请重新安装完整版本。".localized, name)
         case .invalidFile(let name):
-            return String(format: "DDI 文件校验失败：%@，请重新下载。".localized, name)
-        case .downloadInProgress:
-            return "DDI 正在下载，请等待当前任务完成。".localized
+            return String(format: "内置 DDI 文件校验失败：%@，请重新安装完整版本。".localized, name)
+        case .installationInProgress:
+            return "DDI 正在准备，请等待当前任务完成。".localized
         }
     }
-}
-
-func redownloadDDI(progressHandler: (@Sendable (Double, String) -> Void)? = nil) async throws {
-    try await DeveloperDiskImageService.shared.redownload(progressHandler: progressHandler)
 }

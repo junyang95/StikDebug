@@ -21,7 +21,6 @@ struct HelperSettingsView: View {
     @AppStorage("autoConnectEmbeddedVPN") private var autoConnectVPN = true
     @AppStorage("keepAliveLocation") private var keepAliveLocation = true
     @AppStorage("keepAliveAudio") private var keepAliveAudio = true
-    @ObservedObject private var authorization = VipAuthorizationService.shared
     @AppStorage(MapCoordinateSystem.storageKey) private var mapCoordinatesRaw = MapCoordinateSystem.wgs84.rawValue
     @State private var showPairingImporter = false
     @State private var showOnDevicePairing = false
@@ -80,25 +79,6 @@ struct HelperSettingsView: View {
     var body: some View {
         NavigationStack {
             Form {
-                Section("VIP 授权") {
-                    Text(authorization.message)
-                    if let until = authorization.offlineValidUntil {
-                        LabeledContent("离线授权有效至") {
-                            Text(until, format: .dateTime.month().day().hour().minute())
-                        }
-                        .font(.caption)
-                    }
-                    Button(action: beginDeviceSetup) {
-                        HStack {
-                            if authorization.isChecking { ProgressView() }
-                            Text((authorization.isChecking ? "取消验证" : deviceSetupEnabled ? "重新验证授权" : "开始设置").localized)
-                        }
-                    }
-                    if authorization.needsNetworkSettings {
-                        Link("打开网络设置", destination: URL(string: UIApplication.openSettingsURLString)!)
-                    }
-                    Link("购买或续费", destination: URL(string: "https://app-shop.cn/vip")!)
-                }
                 Section {
                     HStack(spacing: 12) {
                         Image(systemName: pairingStatusSymbol)
@@ -345,7 +325,7 @@ struct HelperSettingsView: View {
                     } label: {
                         Label("隐私与网络说明", systemImage: "hand.raised.fill")
                     }
-                    Text("无分析、广告或遥测。地图搜索/路线使用 Apple MapKit；可选 DDI 仅在你确认后下载。")
+                    Text("无分析、广告或遥测。地图搜索和路线使用 Apple MapKit；可选 DDI 使用应用内置资源。")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }

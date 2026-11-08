@@ -134,10 +134,6 @@ final class WalkingSessionController: ObservableObject {
             return
         }
 
-        guard VipLocationGate.shared.allows() else {
-            fail(VipAuthorizationService.shared.message)
-            return
-        }
         generation = UUID()
         let startingGeneration = generation
         phase = .preparing
@@ -201,7 +197,7 @@ final class WalkingSessionController: ObservableObject {
     }
 
     func resume() {
-        guard phase == .paused, VipLocationGate.shared.allows() else { return }
+        guard phase == .paused, !DeveloperConnectionGate.isBlocked else { return }
         FixedLocationSessionController.shared.stop()
         reconnectAttempt = 0
         lastError = nil
@@ -462,10 +458,6 @@ final class WalkingSessionController: ObservableObject {
     private func handleLocationResult(_ code: Int32) {
         guard phase == .running, config != nil else { return }
         guard code != 0 else { return }
-        if code == LocationSimulationStatus.unauthorized {
-            Task { await stop(reason: "授权验证失败，请检查连接并重新验证".localized, holdLocation: false) }
-            return
-        }
         beginReconnect(after: code)
     }
 

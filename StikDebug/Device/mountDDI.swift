@@ -38,7 +38,7 @@ func checkMountStatus() -> MountCheckResult {
 /// Shared by the guided installer and automatic tunnel mounting.
 func mountDeveloperDiskImage(from directoryPath: String) -> String? {
     guard DeveloperDiskImageService.filesAreReady else {
-        return "DDI 文件尚未下载完成，请先安装 DDI。".localized
+        return "DDI 文件尚未准备完成，请先安装 DDI。".localized
     }
 
     do {

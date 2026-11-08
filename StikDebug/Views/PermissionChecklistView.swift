@@ -184,7 +184,7 @@ struct PermissionChecklistView: View {
         case .network:
             permissionAlert = .init(
                 title: "无线局域网与蜂窝网络".localized,
-                message: "首次联网如出现系统弹窗，请允许 App 使用无线局域网与蜂窝数据。若之前拒绝，请到系统设置开启；设备配对还可能需要单独允许“本地网络”访问。返回 App 后会自动重试验证。".localized,
+                message: "首次联网如出现系统弹窗，请允许 App 使用无线局域网与蜂窝数据。若之前拒绝，请到系统设置开启；设备配对还可能需要单独允许“本地网络”访问。返回 App 后会刷新连接状态。".localized,
                 opensSettings: true
             )
         }

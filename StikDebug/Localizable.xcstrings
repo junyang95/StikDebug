@@ -1,22 +1,6 @@
 {
   "sourceLanguage" : "zh-Hans",
   "strings" : {
-    "准备使用时，点开始设置验证 VIP 并连接设备。" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "When you’re ready, tap Get started to verify your VIP membership and connect your device."
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "準備使用時，點「開始設定」驗證 VIP 並連接裝置。"
-          }
-        }
-      }
-    },
     "尚未读取" : {
       "localizations" : {
         "en" : {
@@ -113,86 +97,6 @@
         }
       }
     },
-    "先验证 VIP": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Verify VIP access first"
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "先驗證 VIP"
-          }
-        }
-      }
-    },
-    "验证通过后，再设置设备连接与系统权限。": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Once verification succeeds, set up the device connection and system permissions."
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "驗證通過後，再設定裝置連線與系統權限。"
-          }
-        }
-      }
-    },
-    "VIP 验证": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "VIP verification"
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "VIP 驗證"
-          }
-        }
-      }
-    },
-    "验证 VIP": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Verify VIP access"
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "驗證 VIP"
-          }
-        }
-      }
-    },
-    "完成设备连接后，会自动核对当前设备与 VIP 授权是否匹配。": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "After the device connects, the app will automatically check that it matches the VIP license."
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "完成裝置連線後，會自動核對目前裝置與 VIP 授權是否相符。"
-          }
-        }
-      }
-    },
     "下一步：连接设备": {
       "localizations": {
         "en": {
@@ -205,102 +109,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "下一步：連接裝置"
-          }
-        }
-      }
-    },
-    "首先验证 VIP 授权，验证通过后继续设置": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Verify VIP access first, then continue setup."
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "首先驗證 VIP 授權，驗證通過後繼續設定"
-          }
-        }
-      }
-    },
-    "正在核对已连接设备…": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Checking the connected device…"
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "正在核對已連接裝置…"
-          }
-        }
-      }
-    },
-    "安装包授权与已连接设备不一致，请获取为本设备签名的安装包": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "The app package’s license does not match the connected device. Get a package signed for this device."
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "安裝包授權與已連接裝置不一致，請取得為本裝置簽署的安裝包"
-          }
-        }
-      }
-    },
-    "VIP 已验证，请继续配置设备连接": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "VIP verification passed. Continue setting up the device connection."
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "VIP 已驗證，請繼續設定裝置連線"
-          }
-        }
-      }
-    },
-    "当前安装包缺少设备标识，请获取为本设备签名的安装包后重试": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "This app package has no device identifier. Get a package signed for this device, then try again."
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "目前安裝包缺少裝置識別碼，請取得為本裝置簽署的安裝包後重試"
-          }
-        }
-      }
-    },
-    "验证超时，请检查网络后重试": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Verification timed out. Check your network connection and try again."
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "驗證逾時，請檢查網路後重試"
           }
         }
       }
@@ -353,38 +161,6 @@
         }
       }
     },
-    "DDI 是可选组件，未安装也可以使用定位模拟。": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "DDI is optional. Location simulation works without it."
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "DDI 是選用元件，未安裝也可以使用定位模擬。"
-          }
-        }
-      }
-    },
-    "下载缺少的文件": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Download missing files"
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "下載缺少的檔案"
-          }
-        }
-      }
-    },
     "自动连接并挂载到设备": {
       "localizations": {
         "en": {
@@ -401,38 +177,6 @@
         }
       }
     },
-    "下载来源：static.wow-app.store。文件较大，建议使用 Wi‑Fi；使用 4G/5G 会消耗流量。已下载的完整文件会保留，重试时无需重复下载。": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Downloads come from static.wow-app.store. The files are large; Wi-Fi is recommended. Using 4G/5G consumes mobile data. Completed files are kept for retries."
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "下載來源：static.wow-app.store。檔案較大，建議使用 Wi‑Fi；使用 4G/5G 會消耗行動數據。已下載的完整檔案會保留，重試時無需重複下載。"
-          }
-        }
-      }
-    },
-    "下载并安装 DDI": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Download and install DDI"
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "下載並安裝 DDI"
-          }
-        }
-      }
-    },
     "重新检查并安装": {
       "localizations": {
         "en": {
@@ -445,38 +189,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "重新檢查並安裝"
-          }
-        }
-      }
-    },
-    "重新下载全部文件并安装": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Download all files again and install"
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "重新下載全部檔案並安裝"
-          }
-        }
-      }
-    },
-    "取消下载": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Cancel download"
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "取消下載"
           }
         }
       }
@@ -529,38 +241,6 @@
         }
       }
     },
-    "挂载可能需要几分钟。完成后会自动检查安装结果。": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Mounting may take a few minutes. The result will be checked automatically."
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "掛載可能需要幾分鐘。完成後會自動檢查安裝結果。"
-          }
-        }
-      }
-    },
-    "正在取消下载…": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Cancelling download…"
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "正在取消下載…"
-          }
-        }
-      }
-    },
     "DDI 已安装并挂载": {
       "localizations": {
         "en": {
@@ -573,22 +253,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "DDI 已安裝並掛載"
-          }
-        }
-      }
-    },
-    "下载已取消，可以稍后继续。": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Download cancelled. You can continue later."
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "下載已取消，可以稍後繼續。"
           }
         }
       }
@@ -701,118 +365,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "檔案已下載。請先停止路線、搖桿或連線測試，再重試安裝。"
-          }
-        }
-      }
-    },
-    "文件已下载，但未确认 DDI 挂载成功。请检查内置 VPN 和开发者模式后重试。": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Files downloaded, but DDI mounting could not be confirmed. Check the built-in VPN and Developer Mode, then try again."
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "檔案已下載，但未確認 DDI 掛載成功。請檢查內建 VPN 和開發者模式後重試。"
-          }
-        }
-      }
-    },
-    "DDI 文件校验失败：%@，请重新下载。": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "DDI file verification failed: %@. Please download it again."
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "DDI 檔案驗證失敗：%@，請重新下載。"
-          }
-        }
-      }
-    },
-    "DDI 正在下载，请等待当前任务完成。": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "DDI is downloading. Please wait for the current task to finish."
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "DDI 正在下載，請等待目前的工作完成。"
-          }
-        }
-      }
-    },
-    "DDI 文件尚未下载完成，请先安装 DDI。": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "DDI files are not ready. Please install DDI first."
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "DDI 檔案尚未下載完成，請先安裝 DDI。"
-          }
-        }
-      }
-    },
-    "DDI 下载地址无效：": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Invalid DDI download address: "
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "DDI 下載位址無效："
-          }
-        }
-      }
-    },
-    "DDI 下载内容无效，请稍后重新下载。": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Invalid DDI download. Please download the files again later."
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "DDI 下載內容無效，請稍後重新下載。"
-          }
-        }
-      }
-    },
-    "DDI 下载服务器返回 HTTP %d，请稍后重试。": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "The DDI server returned HTTP %d. Please try again later."
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "DDI 下載伺服器回傳 HTTP %d，請稍後重試。"
           }
         }
       }
@@ -1681,38 +1233,6 @@
         }
       }
     },
-    "等待联网；如出现系统弹窗，请允许网络访问，允许后会自动验证" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Waiting for a connection. Allow network access if prompted; verification will continue automatically."
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "等待連網；如出現系統彈窗，請允許網路存取，允許後會自動驗證"
-          }
-        }
-      }
-    },
-    "暂时无法联网验证。请允许 App 使用网络；恢复联网后会自动重试，也可前往设置检查权限" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Unable to connect for verification. Allow network access; verification will retry when connectivity returns. You can also check permissions in Settings."
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "暫時無法連網驗證。請允許 App 使用網路；恢復連網後會自動重試，也可前往設定檢查權限"
-          }
-        }
-      }
-    },
     "打开网络设置" : {
       "localizations" : {
         "en" : {
@@ -1793,86 +1313,6 @@
         }
       }
     },
-    "首次联网如出现系统弹窗，请允许 App 使用无线局域网与蜂窝数据。若之前拒绝，请到系统设置开启；设备配对还可能需要单独允许“本地网络”访问。返回 App 后会自动重试验证。" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "If prompted on first connection, allow Wi-Fi and cellular data access. If previously denied, enable it in Settings. Device pairing may also require separate local network access. Verification retries when you return to the app."
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "首次連網如出現系統彈窗，請允許 App 使用 Wi-Fi 與行動數據。若之前拒絕，請到系統設定開啟；裝置配對還可能需要另外允許「本機網路」存取。返回 App 後會自動重試驗證。"
-          }
-        }
-      }
-    },
-    "已取消验证，可重新尝试" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Verification canceled. You can try again."
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "已取消驗證，可重新嘗試"
-          }
-        }
-      }
-    },
-    "正在验证授权…" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Verifying access…"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "正在驗證授權…"
-          }
-        }
-      }
-    },
-    "请先完成设备配对，再验证 VIP" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Pair your device before verifying VIP access."
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "請先完成裝置配對，再驗證 VIP"
-          }
-        }
-      }
-    },
-    "请先连接内置 VPN，再验证 VIP" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Connect the built-in VPN before verifying VIP access."
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "請先連接內建 VPN，再驗證 VIP"
-          }
-        }
-      }
-    },
     "正在读取设备信息…" : {
       "localizations" : {
         "en" : {
@@ -1889,214 +1329,6 @@
         }
       }
     },
-    "正在连接授权服务器…" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Contacting the authorization server…"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "正在連接授權伺服器…"
-          }
-        }
-      }
-    },
-    "验证超时，请检查 VPN 和网络后重试" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Verification timed out. Check your VPN and network, then retry."
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "驗證逾時，請檢查 VPN 和網路後重試"
-          }
-        }
-      }
-    },
-    "暂时无法验证授权，本机没有有效的离线授权，请联网重试" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Unable to verify access. No valid offline license is stored on this device. Connect and retry."
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "暫時無法驗證授權，本機沒有有效的離線授權，請連網重試"
-          }
-        }
-      }
-    },
-    "服务器暂不可用时可继续使用本地授权，最多保留 7 天" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Your saved license allows up to 7 days of access while the server is unavailable."
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "伺服器暫不可用時可繼續使用本機授權，最多保留 7 天"
-          }
-        }
-      }
-    },
-    "离线授权有效至" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Offline access expires"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "離線授權有效至"
-          }
-        }
-      }
-    },
-    "取消验证" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Cancel verification"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "取消驗證"
-          }
-        }
-      }
-    },
-    "请完成设备连接后验证 VIP" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Connect your device to verify VIP access"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "請完成裝置連線後驗證 VIP"
-          }
-        }
-      }
-    },
-    "离线授权有效，请联网更新状态" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Offline license valid. Connect to refresh your status."
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "離線授權有效，請連網更新狀態"
-          }
-        }
-      }
-    },
-    "VIP 授权有效" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "VIP access verified"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "VIP 授權有效"
-          }
-        }
-      }
-    },
-    "此设备已被封禁，请联系商家" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "This device is blocked. Contact the seller."
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "此裝置已被封禁，請聯絡商家"
-          }
-        }
-      }
-    },
-    "VIP 已过期，请续费后重新验证" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "VIP has expired. Renew and verify again."
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "VIP 已到期，請續費後重新驗證"
-          }
-        }
-      }
-    },
-    "此设备尚未获得 VIP 授权" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "This device does not have VIP access."
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "此裝置尚未獲得 VIP 授權"
-          }
-        }
-      }
-    },
-    "授权验证失败，请检查连接并重新验证" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Authorization failed. Check your connection and try again."
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "授權驗證失敗，請檢查連線並重新驗證"
-          }
-        }
-      }
-    },
     "验证" : {
       "localizations" : {
         "en" : {
@@ -2109,54 +1341,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "驗證"
-          }
-        }
-      }
-    },
-    "VIP 授权" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "VIP access"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "VIP 授權"
-          }
-        }
-      }
-    },
-    "重新验证授权" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Verify access again"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "重新驗證授權"
-          }
-        }
-      }
-    },
-    "购买或续费" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Purchase or renew"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "購買或續費"
           }
         }
       }
@@ -2285,38 +1469,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "已停留在最後位置，恢復真實定位後才會離開"
-          }
-        }
-      }
-    },
-    "设备授权校验" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Device authorization"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "裝置授權驗證"
-          }
-        }
-      }
-    },
-    "App 会将安装包中的设备标识或已配对设备的 UDID 发送到 app-shop.cn，连接失败时尝试 wow-app.store，用于检查 VIP、到期与封禁状态；不会上传配对文件或模拟坐标。" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "The app sends the device identifier included in the app package or the paired device’s UDID to app-shop.cn, falling back to wow-app.store if the connection fails, to check VIP access, expiry and bans. Pairing files and simulated coordinates are not uploaded."
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "App 會將安裝包中的裝置識別碼或已配對裝置的 UDID 傳送至 app-shop.cn，連線失敗時嘗試 wow-app.store，用於檢查 VIP、到期與封禁狀態；不會上傳配對檔案或模擬座標。"
           }
         }
       }
@@ -2713,29 +1865,6 @@
         }
       }
     },
-    "DDI 下载失败" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "DDI download failed"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "DDI 下载失败"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "DDI 下載失敗"
-          }
-        }
-      }
-    },
     "DDI 已挂载" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -2755,29 +1884,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "DDI 已掛載"
-          }
-        }
-      }
-    },
-    "DDI 文件下载完成" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "DDI files downloaded"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "DDI 文件下载完成"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "DDI 檔案下載完成"
           }
         }
       }
@@ -2847,29 +1953,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "DDI 檔案已準備，等待 CoreDevice/RSD 通道後掛載"
-          }
-        }
-      }
-    },
-    "DDI 文件缺失，先下载 DDI" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "DDI files missing — download them first"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "DDI 文件缺失，先下载 DDI"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "DDI 檔案缺失，請先下載 DDI"
           }
         }
       }
@@ -3392,29 +2475,6 @@
         }
       }
     },
-    "下一步：把 DDI 挂载到设备，供定位模拟服务使用。" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Next: mount the DDI on the device so location simulation can use it."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "下一步：把 DDI 挂载到设备，供定位模拟服务使用。"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "下一步：把 DDI 掛載到裝置，供定位模擬服務使用。"
-          }
-        }
-      }
-    },
     "下一步：授权读取/写入步数。" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -3460,9 +2520,6 @@
           }
         }
       }
-    },
-    "下一步：用 pairing file 和内置 VPN 路由建立 CoreDevice/RSD 定位通道。DDI 不是定位前置条件。" : {
-
     },
     "下一步：用 pairing file 和内置 VPN 路由建立 CoreDevice/RSD 通道；定位模拟和 DDI 挂载依赖它。" : {
       "extractionState" : "manual",
@@ -3552,29 +2609,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "下一步：選擇「永遠允許」，背景行走保活需要它。"
-          }
-        }
-      }
-    },
-    "下载/重新下载 DDI 文件" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Download / re-download DDI files"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "下载/重新下载 DDI 文件"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "下載／重新下載 DDI 檔案"
           }
         }
       }
@@ -4039,29 +3073,6 @@
         }
       }
     },
-    "先下载 DDI 文件" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Download the DDI files first"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "先下载 DDI 文件"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "請先下載 DDI 檔案"
-          }
-        }
-      }
-    },
     "先连接 Wi‑Fi，再连接内置 VPN" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -4258,29 +3269,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "內建通道基於 LocalDevVPN / StosVPN（SideStore Team）"
-          }
-        }
-      }
-    },
-    "准备下载 DDI 文件…" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Preparing to download DDI files…"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "准备下载 DDI 文件…"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "準備下載 DDI 檔案…"
           }
         }
       }
@@ -6603,29 +5591,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "檢查"
-          }
-        }
-      }
-    },
-    "正在下载 DDI…" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Downloading DDI…"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "正在下载 DDI…"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "正在下載 DDI…"
           }
         }
       }
@@ -9918,6 +8883,696 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "電腦方案：用傳輸線連接 iPhone，把對應下載連結傳送到電腦；Windows 會同時收到 iTunes 和 idevice_pair。"
+          }
+        }
+      }
+    },
+    "准备使用时，点开始设置完成设备连接与系统权限。": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "When you’re ready, tap Get started to set up the device connection and system permissions."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "准备使用时，点开始设置完成设备连接与系统权限。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "準備使用時，點「開始設定」完成裝置連線與系統權限。"
+          }
+        }
+      }
+    },
+    "无分析、广告或遥测。地图搜索和路线使用 Apple MapKit；可选 DDI 使用应用内置资源。": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No analytics, ads or telemetry. Map search and routes use Apple MapKit; optional DDI installation uses resources included with the app."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无分析、广告或遥测。地图搜索和路线使用 Apple MapKit；可选 DDI 使用应用内置资源。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "無分析、廣告或遙測。地圖搜尋和路線使用 Apple MapKit；選用 DDI 使用 App 內建資源。"
+          }
+        }
+      }
+    },
+    "无法模拟定位（错误 %d）。请检查设备连接、开发者模式和定位服务状态。": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Could not simulate location (error %d). Check the device connection, Developer Mode and location service status."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无法模拟定位（错误 %d）。请检查设备连接、开发者模式和定位服务状态。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "無法模擬定位（錯誤 %d）。請檢查裝置連線、開發者模式和定位服務狀態。"
+          }
+        }
+      }
+    },
+    "内置开发者镜像": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bundled developer image"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "内置开发者镜像"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "內建開發者映像檔"
+          }
+        }
+      }
+    },
+    "DDI 文件已内置，只有你选择安装时才会准备和挂载。挂载按系统要求进行，可能需要连接 Apple 服务；App 不以 DDI 安装状态阻止定位操作。": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "DDI files are included in the app and prepared and mounted when you choose to install them. Mounting follows system requirements and may contact Apple services. The app does not block location actions based on DDI installation status."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "DDI 文件已内置，只有你选择安装时才会准备和挂载。挂载按系统要求进行，可能需要连接 Apple 服务；App 不以 DDI 安装状态阻止定位操作。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "DDI 檔案已內建，只有你選擇安裝時才會準備和掛載。掛載依系統要求進行，可能需要連接 Apple 服務；App 不以 DDI 安裝狀態阻止定位操作。"
+          }
+        }
+      }
+    },
+    "首次联网如出现系统弹窗，请允许 App 使用无线局域网与蜂窝数据。若之前拒绝，请到系统设置开启；设备配对还可能需要单独允许“本地网络”访问。返回 App 后会刷新连接状态。": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "If iOS asks when you first connect, allow the app to use Wi-Fi and cellular data. If you previously declined, enable access in Settings. Device pairing may also require Local Network access. Connection status refreshes when you return to the app."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "首次联网如出现系统弹窗，请允许 App 使用无线局域网与蜂窝数据。若之前拒绝，请到系统设置开启；设备配对还可能需要单独允许“本地网络”访问。返回 App 后会刷新连接状态。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "首次連網如出現系統提示，請允許 App 使用 Wi-Fi 與行動數據。若之前拒絕，請到系統設定開啟；裝置配對還可能需要另外允許「區域網路」存取。返回 App 後會重新整理連線狀態。"
+          }
+        }
+      }
+    },
+    "DDI 可选安装，App 不以安装状态阻止定位操作。": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "DDI installation is optional. The app does not block location actions based on its installation status."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "DDI 可选安装，App 不以安装状态阻止定位操作。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "DDI 可選擇安裝，App 不以安裝狀態阻止定位操作。"
+          }
+        }
+      }
+    },
+    "准备内置开发者镜像": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prepare the bundled developer image"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "准备内置开发者镜像"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "準備內建開發者映像檔"
+          }
+        }
+      }
+    },
+    "镜像文件已内置。安装时会校验文件并按系统要求挂载，请保持设备连接。": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Image files are included with the app. Installation checks the files and mounts them as required by the system. Keep the device connected."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "镜像文件已内置。安装时会校验文件并按系统要求挂载，请保持设备连接。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "映像檔已內建。安裝時會檢查檔案並依系統要求掛載，請保持裝置連線。"
+          }
+        }
+      }
+    },
+    "准备并安装内置 DDI": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prepare and install bundled DDI"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "准备并安装内置 DDI"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "準備並安裝內建 DDI"
+          }
+        }
+      }
+    },
+    "恢复内置文件并安装": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Restore bundled files and install"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "恢复内置文件并安装"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "恢復內建檔案並安裝"
+          }
+        }
+      }
+    },
+    "取消准备": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cancel preparation"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "取消准备"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "取消準備"
+          }
+        }
+      }
+    },
+    "正在准备内置 DDI…": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Preparing bundled DDI…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在准备内置 DDI…"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在準備內建 DDI…"
+          }
+        }
+      }
+    },
+    "正在取消准备…": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cancelling preparation…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在取消准备…"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在取消準備…"
+          }
+        }
+      }
+    },
+    "准备已取消，可以稍后继续。": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Preparation cancelled. You can continue later."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "准备已取消，可以稍后继续。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "準備已取消，可以稍後繼續。"
+          }
+        }
+      }
+    },
+    "挂载按系统要求进行，完成后会自动检查安装结果。": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mounting follows system requirements. The installation result is checked when it finishes."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "挂载按系统要求进行，完成后会自动检查安装结果。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "掛載依系統要求進行，完成後會自動檢查安裝結果。"
+          }
+        }
+      }
+    },
+    "准备或恢复内置 DDI 文件": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prepare or restore bundled DDI files"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "准备或恢复内置 DDI 文件"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "準備或恢復內建 DDI 檔案"
+          }
+        }
+      }
+    },
+    "准备内置 DDI 文件": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prepare bundled DDI files"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "准备内置 DDI 文件"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "準備內建 DDI 檔案"
+          }
+        }
+      }
+    },
+    "本机配对需要 iOS 27 或更高版本；旧系统可用电脑生成文件。DDI 可选安装，App 不以安装状态阻止定位操作。": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "On-device pairing requires iOS 27 or later. On earlier systems, create the file on a computer. DDI installation is optional; the app does not block location actions based on its installation status."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "本机配对需要 iOS 27 或更高版本；旧系统可用电脑生成文件。DDI 可选安装，App 不以安装状态阻止定位操作。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "本機配對需要 iOS 27 或以上版本；較舊系統可用電腦產生檔案。DDI 可選擇安裝，App 不以安裝狀態阻止定位操作。"
+          }
+        }
+      }
+    },
+    "下一步：用 pairing file 和内置 VPN 建立定位通道；需要额外开发服务时可安装内置 DDI。": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Next: use the pairing file and built-in VPN to establish the location connection. Install bundled DDI if additional developer services are needed."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "下一步：用 pairing file 和内置 VPN 建立定位通道；需要额外开发服务时可安装内置 DDI。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "下一步：用 pairing file 和內建 VPN 建立定位通道；需要額外開發服務時可安裝內建 DDI。"
+          }
+        }
+      }
+    },
+    "DDI 尚未安装；App 不以此阻止定位操作。": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "DDI is not installed. The app does not block location actions on this basis."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "DDI 尚未安装；App 不以此阻止定位操作。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "DDI 尚未安裝；App 不以此阻止定位操作。"
+          }
+        }
+      }
+    },
+    "DDI 内置文件已准备完成": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bundled DDI files are ready"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "DDI 内置文件已准备完成"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "DDI 內建檔案已準備完成"
+          }
+        }
+      }
+    },
+    "IPA 缺少内置 DDI 文件：%@，请重新安装完整版本。": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The IPA is missing bundled DDI file %@. Reinstall the complete app."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "IPA 缺少内置 DDI 文件：%@，请重新安装完整版本。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "IPA 缺少內建 DDI 檔案：%@，請重新安裝完整版本。"
+          }
+        }
+      }
+    },
+    "内置 DDI 文件校验失败：%@，请重新安装完整版本。": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bundled DDI file verification failed: %@. Reinstall the complete app."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "内置 DDI 文件校验失败：%@，请重新安装完整版本。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "內建 DDI 檔案檢查失敗：%@，請重新安裝完整版本。"
+          }
+        }
+      }
+    },
+    "DDI 正在准备，请等待当前任务完成。": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "DDI is being prepared. Wait for the current task to finish."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "DDI 正在准备，请等待当前任务完成。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "DDI 正在準備，請等待目前工作完成。"
+          }
+        }
+      }
+    },
+    "DDI 文件尚未准备完成，请先安装 DDI。": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "DDI files are not ready. Install DDI first."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "DDI 文件尚未准备完成，请先安装 DDI。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "DDI 檔案尚未準備完成，請先安裝 DDI。"
+          }
+        }
+      }
+    },
+    "文件已准备，但未确认 DDI 挂载成功。请检查内置 VPN 和开发者模式后重试。": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Files are ready, but DDI mounting was not confirmed. Check the built-in VPN and Developer Mode, then try again."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "文件已准备，但未确认 DDI 挂载成功。请检查内置 VPN 和开发者模式后重试。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "檔案已準備，但未確認 DDI 掛載成功。請檢查內建 VPN 和開發者模式後再試。"
+          }
+        }
+      }
+    },
+    "文件已准备。请先停止路线、摇杆或连接测试，再重试安装。": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Files are ready. Stop routes, joystick control or connection tests, then retry installation."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "文件已准备。请先停止路线、摇杆或连接测试，再重试安装。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "檔案已準備。請先停止路線、搖桿或連線測試，再重試安裝。"
+          }
+        }
+      }
+    },
+    "未请求设备连接探测": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Device connection probe not requested"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "未请求设备连接探测"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "尚未要求裝置連線探測"
+          }
+        }
+      }
+    },
+    "本地网络探测正在占用连接，未执行设备探测": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A local network probe is using the connection; device probing was skipped."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "本地网络探测正在占用连接，未执行设备探测"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "本地網路探測正在使用連線，未執行裝置探測"
           }
         }
       }

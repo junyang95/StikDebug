@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		AD4000010000000000000001 /* DDI in Resources */ = {isa = PBXBuildFile; fileRef = AD4000020000000000000001 /* DDI */; };
 		AC3000010000000000000001 /* X509 in Frameworks */ = {isa = PBXBuildFile; productRef = AC3000030000000000000001 /* X509 */; };
 		AA0000010000000000000001 /* PikminTunnel.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = AA0000020000000000000001 /* PikminTunnel.appex */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		AB1000010000000000000001 /* PikminLiveActivity.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = AB1000030000000000000001 /* PikminLiveActivity.appex */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
@@ -60,6 +61,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		AD4000020000000000000001 /* DDI */ = {isa = PBXFileReference; lastKnownFileType = folder; name = DDI; path = Resources/DDI; sourceTree = "<group>"; };
 		AA0000020000000000000001 /* PikminTunnel.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = PikminTunnel.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		AB1000030000000000000001 /* PikminLiveActivity.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = PikminLiveActivity.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		AB10000F0000000000000001 /* StikDebug/Models/PikminSessionAttributes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StikDebug/Models/PikminSessionAttributes.swift; sourceTree = "<group>"; };
@@ -185,6 +187,7 @@
 			isa = PBXGroup;
 			children = (
 				DC6F1D392D94EADD0071B2B6 /* StikDebug */,
+				AD4000020000000000000001 /* DDI */,
 				AA0000040000000000000001 /* PikminTunnel */,
 				AC2000040000000000000001 /* WLOCProbeCore */,
 				AC3000040000000000000001 /* WLOCCertificateCore */,
@@ -421,6 +424,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				AD4000010000000000000001 /* DDI in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -509,7 +513,7 @@
 				CODE_SIGN_ENTITLEMENTS = PikminTunnel/PikminTunnel.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 9;
+				CURRENT_PROJECT_VERSION = 10;
 				DEVELOPMENT_TEAM = W8UCWPZS66;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = PikminTunnel/Info.plist;
@@ -520,7 +524,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 0.1.8;
+				MARKETING_VERSION = 0.1.9;
 				PRODUCT_BUNDLE_IDENTIFIER = com.jy.stikdebug.pikmin.networkextension;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
@@ -539,7 +543,7 @@
 				CODE_SIGN_ENTITLEMENTS = PikminTunnel/PikminTunnel.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 9;
+				CURRENT_PROJECT_VERSION = 10;
 				DEVELOPMENT_TEAM = W8UCWPZS66;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = PikminTunnel/Info.plist;
@@ -550,7 +554,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 0.1.8;
+				MARKETING_VERSION = 0.1.9;
 				PRODUCT_BUNDLE_IDENTIFIER = com.jy.stikdebug.pikmin.networkextension;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
@@ -568,7 +572,7 @@
 				APPLICATION_EXTENSION_API_ONLY = YES;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 9;
+				CURRENT_PROJECT_VERSION = 10;
 				DEVELOPMENT_TEAM = W8UCWPZS66;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = PikminLiveActivity/Info.plist;
@@ -579,7 +583,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 0.1.8;
+				MARKETING_VERSION = 0.1.9;
 				PRODUCT_BUNDLE_IDENTIFIER = com.jy.stikdebug.pikmin.liveactivity;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
@@ -598,7 +602,7 @@
 				APPLICATION_EXTENSION_API_ONLY = YES;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 9;
+				CURRENT_PROJECT_VERSION = 10;
 				DEVELOPMENT_TEAM = W8UCWPZS66;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = PikminLiveActivity/Info.plist;
@@ -609,7 +613,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 0.1.8;
+				MARKETING_VERSION = 0.1.9;
 				PRODUCT_BUNDLE_IDENTIFIER = com.jy.stikdebug.pikmin.liveactivity;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
@@ -745,7 +749,7 @@
 				CODE_SIGN_ENTITLEMENTS = StikDebug/StikDebug.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 9;
+				CURRENT_PROJECT_VERSION = 10;
 				DEVELOPMENT_TEAM = W8UCWPZS66;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
@@ -785,7 +789,7 @@
 					"$(PROJECT_DIR)/StikDebug/idevice",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 15.1;
-				MARKETING_VERSION = 0.1.8;
+				MARKETING_VERSION = 0.1.9;
 				PRODUCT_BUNDLE_IDENTIFIER = com.jy.stikdebug.pikmin;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
@@ -812,7 +816,7 @@
 				CODE_SIGN_ENTITLEMENTS = StikDebug/StikDebug.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 9;
+				CURRENT_PROJECT_VERSION = 10;
 				DEVELOPMENT_TEAM = W8UCWPZS66;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
@@ -852,7 +856,7 @@
 					"$(PROJECT_DIR)/StikDebug/idevice",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 15.1;
-				MARKETING_VERSION = 0.1.8;
+				MARKETING_VERSION = 0.1.9;
 				PRODUCT_BUNDLE_IDENTIFIER = com.jy.stikdebug.pikmin;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";

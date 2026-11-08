@@ -8,9 +8,6 @@ import Testing
     let fixed = FixedLocationSessionController.shared
     func setup() async {
         await session.restoreRealLocation()
-        let now = Date().timeIntervalSince1970
-        VipLocationGate.shared.update(VipLicense(udid: "test-device", status: "VALID", isVip: true,
-            isBanned: false, expireAt: 0, nonce: "test", ts: now*1000))
         DeviceCommands.shared.reset()
     }
     func config(goal: SessionGoalKind = .manual, value: Double = 0) -> WalkingSessionConfig {
@@ -18,6 +15,14 @@ import Testing
     }
     func drain() async {
         await withCheckedContinuation { c in LocationSimulationCommandQueue.shared.async { c.resume() } }
+    }
+    @Test func localReadinessStartsSessionWithoutWebsiteAuthorization() async {
+        await setup()
+        await session.start(config: config())
+        await drain()
+        #expect(session.phase == .running)
+        #expect(DeviceCommands.shared.snapshot().contains("set"))
+        await session.restoreRealLocation()
     }
     @Test func manualRouteStopHoldsLastCoordinateWithoutClear() async throws {
         await setup()
@@ -98,17 +103,15 @@ import Testing
         try await Task.sleep(for: .milliseconds(1200))
         #expect(DeviceCommands.shared.snapshot() == commands)
     }
-    @Test func revokedLicenseStopsWithoutHoldingOrClearing() async {
+    @Test func stoppingWithoutHoldKeepsExplicitRestoreAvailable() async {
         await setup()
         await session.start(config: config())
-        VipLocationGate.shared.update(nil)
         await session.stop(holdLocation: false)
         await drain()
         #expect(fixed.coordinate == nil)
         #expect(!DeviceCommands.shared.snapshot().contains("clear"))
         #expect(BackgroundAudioManager.shared.leases == 0)
-        // The setup screen retains this explicit recovery action after revocation.
-        #expect(!VipLocationGate.shared.allows())
+        // Stopping a session and restoring physical GPS remain separate actions.
         await session.restoreRealLocation()
         await drain()
         #expect(DeviceCommands.shared.snapshot().last == "clear")

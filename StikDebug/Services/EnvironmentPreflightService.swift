@@ -70,6 +70,9 @@ final class EnvironmentPreflightService: ObservableObject {
     @Published private(set) var ddiFilesMissing = false
     @Published private(set) var isRefreshing = false
     @Published private(set) var lastCheckedAt: Date?
+    /// Explicit setup intent enables local device work; opening the app stays passive.
+    @Published private(set) var deviceSetupEnabled = false
+    private var setupGeneration = UUID()
 
     private let pathMonitor = NWPathMonitor()
     private let monitorQueue = DispatchQueue(label: "com.pikminhelper.preflight.network")
@@ -78,9 +81,19 @@ final class EnvironmentPreflightService: ObservableObject {
     private var pairingNotificationObserver: NSObjectProtocol?
     private var lastPairingSignature = PairingFileStore.stateSignature()
 
-    private var deviceSetupEnabled: Bool {
-        let authorization = VipAuthorizationService.shared
-        return authorization.hasStartedSetup && (authorization.isSetupVerified || authorization.isAuthorized)
+    func setDeviceSetupEnabled(_ enabled: Bool) {
+        guard deviceSetupEnabled != enabled else { return }
+        deviceSetupEnabled = enabled
+        setupGeneration = UUID()
+        if !enabled {
+            items = PreflightKind.allCases.map { PreflightItem(kind: $0, status: .unknown) }
+            ddiFilesMissing = false
+            lastCheckedAt = nil
+        }
+    }
+
+    private func canContinueRefresh(_ generation: UUID) -> Bool {
+        deviceSetupEnabled && setupGeneration == generation && !DeveloperConnectionGate.isBlocked
     }
 
     var blockingItems: [PreflightItem] {
@@ -128,6 +141,7 @@ final class EnvironmentPreflightService: ObservableObject {
         guard deviceSetupEnabled,
               !DeveloperConnectionGate.isBlocked, !isRefreshing else { return }
         isRefreshing = true
+        let generation = setupGeneration
         for kind in PreflightKind.allCases {
             set(.checking, for: kind)
         }
@@ -141,25 +155,25 @@ final class EnvironmentPreflightService: ObservableObject {
         let pairingResult = await Task.detached(priority: .userInitiated) {
             Self.validatePairingFile()
         }.value
+        guard canContinueRefresh(generation) else { finishRefresh(); return }
         set(pairingResult, for: .pairing)
-        guard deviceSetupEnabled, !DeveloperConnectionGate.isBlocked else { finishRefresh(); return }
 
         let missingDDIFiles = await Task.detached(priority: .userInitiated) {
             DeveloperDiskImageService.missingFiles
         }.value
-        guard deviceSetupEnabled, !DeveloperConnectionGate.isBlocked else { finishRefresh(); return }
+        guard canContinueRefresh(generation) else { finishRefresh(); return }
         ddiFilesMissing = !missingDDIFiles.isEmpty
         if missingDDIFiles.isEmpty {
             set(.warning("DDI 文件可用，等待 CoreDevice/RSD 后挂载".localized), for: .ddi)
         } else {
             set(
-                .warning("未安装 DDI；不影响定位模拟，仅额外开发服务需要。".localized),
+                .warning("DDI 尚未安装；App 不以此阻止定位操作。".localized),
                 for: .ddi
             )
         }
 
         let routeReachable = await Self.probeLocalDevRoute()
-        guard deviceSetupEnabled, !DeveloperConnectionGate.isBlocked else { finishRefresh(); return }
+        guard canContinueRefresh(generation) else { finishRefresh(); return }
         let vpnConnected = EmbeddedVPNService.shared.status.isConnected
         LogManager.shared.addLog(
             message: "内置 VPN 路由探测 \(DeviceConnectionContext.targetIPAddress):49152 → \(routeReachable ? "可达" : "不可达")（VPN \(vpnConnected ? "已连接" : "未连接")）",
@@ -194,6 +208,7 @@ final class EnvironmentPreflightService: ObservableObject {
             }
         }.value
 
+        guard canContinueRefresh(generation) else { finishRefresh(); return }
         switch tunnelResult {
         case .success:
             set(.ready("CoreDevice/RSD 握手成功".localized), for: .coreDeviceTunnel)
@@ -204,7 +219,7 @@ final class EnvironmentPreflightService: ObservableObject {
             return
         }
 
-        guard deviceSetupEnabled, !DeveloperConnectionGate.isBlocked else { finishRefresh(); return }
+        guard canContinueRefresh(generation) else { finishRefresh(); return }
         guard missingDDIFiles.isEmpty else {
             finishRefresh()
             return
@@ -213,6 +228,7 @@ final class EnvironmentPreflightService: ObservableObject {
         let ddiResult = await Task.detached(priority: .userInitiated) {
             checkMountStatus()
         }.value
+        guard canContinueRefresh(generation) else { finishRefresh(); return }
         switch ddiResult {
         case .mounted:
             set(.ready("DDI 已挂载".localized), for: .ddi)

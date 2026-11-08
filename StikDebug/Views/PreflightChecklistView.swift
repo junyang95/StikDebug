@@ -235,7 +235,7 @@ struct PreflightChecklistView: View {
                 waitingCard("等待 pairing file")
             } else {
                 actionCard {
-                    Text("下一步：用 pairing file 和内置 VPN 路由建立 CoreDevice/RSD 定位通道。DDI 不是定位前置条件。")
+                    Text("下一步：用 pairing file 和内置 VPN 建立定位通道；需要额外开发服务时可安装内置 DDI。")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                     primaryActionButton("建立定位通道", systemImage: "point.3.connected.trianglepath.dotted") {
@@ -245,7 +245,7 @@ struct PreflightChecklistView: View {
             }
 
         case .ddi:
-            primaryActionButton("打开 DDI 安装", systemImage: "arrow.down.circle") {
+            primaryActionButton("打开 DDI 安装", systemImage: "shippingbox") {
                 showDDIInstallation = true
             }
             .padding(.leading, compact ? 0 : 32)

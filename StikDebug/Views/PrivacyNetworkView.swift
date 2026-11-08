@@ -31,13 +31,8 @@ struct PrivacyNetworkView: View {
                     tint: .mint
                 )
                 disclosure(
-                    title: "设备授权校验",
-                    detail: "App 会将安装包中的设备标识或已配对设备的 UDID 发送到 app-shop.cn，连接失败时尝试 wow-app.store，用于检查 VIP、到期与封禁状态；不会上传配对文件或模拟坐标。",
-                    symbol: "checkmark.shield", tint: .green
-                )
-                disclosure(
-                    title: "可选 DDI 下载",
-                    detail: "DDI 不影响定位模拟。只有你确认下载时，App 才会连接 static.wow-app.store；启动 App 不会自动下载。",
+                    title: "内置开发者镜像",
+                    detail: "DDI 文件已内置，只有你选择安装时才会准备和挂载。挂载按系统要求进行，可能需要连接 Apple 服务；App 不以 DDI 安装状态阻止定位操作。",
                     symbol: "externaldrive.badge.questionmark",
                     tint: .orange
                 )

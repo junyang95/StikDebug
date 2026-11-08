@@ -7,7 +7,6 @@ enum DeveloperConnectionGate { static var isBlocked: Bool { false } }
 enum DeviceConnectionContext { static let targetIPAddress = "127.0.0.1" }
 enum PairingFileStore { static let url = URL(fileURLWithPath: "/tmp/test-pairing"); static func prepareURL() -> URL { url }; static let didChangeNotification = Notification.Name("PairingChanged"); static func stateSignature() -> String { "test-pairing" } }
 enum LocationSimulationCommandQueue { static let shared = DispatchQueue(label: "test.location") }
-enum LocationSimulationStatus { static let unauthorized: Int32 = 13 }
 @MainActor final class EnvironmentPreflightService { static let shared = EnvironmentPreflightService(); var canStartSession = true }
 final class BackgroundAudioManager { static let shared = BackgroundAudioManager(); var leases = 0; func requestStart() { leases += 1 }; func requestStop() { leases -= 1 } }
 final class BackgroundLocationManager { static let shared = BackgroundLocationManager(); var leases = 0; func requestStart() { leases += 1 }; func requestStop() { leases -= 1 } }
@@ -44,10 +43,7 @@ final class DeviceCommands: @unchecked Sendable {
     func reset() { lock.lock(); defer { lock.unlock() }; commands = [] }
 }
 func simulate_location(_ ip: String, _ lat: Double, _ lon: Double, _ pairing: String) -> Int32 {
-    guard VipLocationGate.shared.allows() else { return 13 }
     DeviceCommands.shared.append("set")
     return 0
 }
 func clear_simulated_location(_ ip: String, _ pairing: String) -> Int32 { DeviceCommands.shared.append("clear"); return 0 }
-
-func readAuthorizationDeviceUDID(deviceIP: String, pairingFile: String) throws -> String { "test-device" }

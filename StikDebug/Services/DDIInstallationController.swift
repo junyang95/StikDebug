@@ -4,7 +4,7 @@ import Foundation
 @MainActor
 struct DDIInstallationDependencies {
     var prepare: () async throws -> Void
-    var download: (Bool, @escaping @Sendable (Double, String) -> Void) async throws -> Void
+    var install: (Bool, @escaping @Sendable (Double, String) -> Void) async throws -> Void
     var mount: () async throws -> Void
     var finish: () async -> Void
 }
@@ -12,27 +12,27 @@ struct DDIInstallationDependencies {
 @MainActor
 final class DDIInstallationController: ObservableObject {
     enum Phase: Equatable {
-        case idle, preparing, downloading, mounting, cancelling, completed, cancelled, failed(String)
+        case idle, preparing, installing, mounting, cancelling, completed, cancelled, failed(String)
     }
 
     @Published private(set) var phase: Phase = .idle
     @Published private(set) var isRunning = false
-    @Published private(set) var downloadProgress = 0.0
-    @Published private(set) var downloadDetail = ""
+    @Published private(set) var installationProgress = 0.0
+    @Published private(set) var installationDetail = ""
     private let dependencies: DDIInstallationDependencies
     private var task: Task<Void, Never>?
     private var runID = UUID()
 
     init(dependencies: DDIInstallationDependencies) { self.dependencies = dependencies }
 
-    var canCancel: Bool { isRunning && (phase == .preparing || phase == .downloading) }
+    var canCancel: Bool { isRunning && (phase == .preparing || phase == .installing) }
 
-    func start(redownload: Bool = false) {
+    func start(restore: Bool = false) {
         guard !isRunning else { return }
         isRunning = true
         phase = .preparing
-        downloadProgress = 0
-        downloadDetail = ""
+        installationProgress = 0
+        installationDetail = ""
         let id = UUID()
         runID = id
         task = Task {
@@ -40,12 +40,12 @@ final class DDIInstallationController: ObservableObject {
             do {
                 try await dependencies.prepare()
                 try Task.checkCancellation()
-                phase = .downloading
-                try await dependencies.download(redownload) { [weak self] progress, detail in
+                phase = .installing
+                try await dependencies.install(restore) { [weak self] progress, detail in
                     Task { @MainActor in
-                        guard let self, self.runID == id, self.phase == .downloading else { return }
-                        self.downloadProgress = min(1, max(0, progress))
-                        self.downloadDetail = detail
+                        guard let self, self.runID == id, self.phase == .installing else { return }
+                        self.installationProgress = min(1, max(0, progress))
+                        self.installationDetail = detail
                     }
                 }
                 try Task.checkCancellation()

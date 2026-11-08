@@ -3,36 +3,6 @@ import SwiftUI
 
 enum MainTab { case home, route, history, settings }
 extension String { var localized: String { NSLocalizedString(self, comment: "") } }
-/// Layout state only. No authorization, networking, Keychain, VPN or HealthKit I/O.
-@MainActor final class VipAuthorizationService: ObservableObject {
-    enum State { case idle, checking, missingIdentity, networkRetry, revoked }
-    @Published var message = "首先验证 VIP 授权，验证通过后继续设置".localized
-    @Published var isChecking = false
-    @Published var needsSetupIdentity = false
-    @Published var needsNetworkSettings = false
-
-    init(state: State = .idle) {
-        switch state {
-        case .idle: break
-        case .checking:
-            isChecking = true
-            message = "正在连接授权服务器…".localized
-        case .missingIdentity:
-            needsSetupIdentity = true
-            message = "当前安装包缺少设备标识，请获取为本设备签名的安装包后重试".localized
-        case .networkRetry:
-            needsNetworkSettings = true
-            message = "暂时无法联网验证。请允许 App 使用网络；恢复联网后会自动重试，也可前往设置检查权限".localized
-        case .revoked:
-            message = "此设备已被封禁，请联系商家".localized
-        }
-    }
-
-    func verifyManually() {
-        isChecking.toggle()
-        message = isChecking ? "正在连接授权服务器…".localized : "已取消验证，可重新尝试".localized
-    }
-}
 enum WalkingSessionPhase { case idle, preparing, running, reconnecting, paused, completed, failed }
 @MainActor final class WalkingSessionController: ObservableObject {
     var phase = WalkingSessionPhase.running
@@ -136,9 +106,9 @@ extension DDIInstallationController {
     static func preview(failing: Bool = false) -> DDIInstallationController {
         DDIInstallationController(dependencies: .init(
             prepare: {},
-            download: { _, callback in
+            install: { _, callback in
                 callback(0.42, "2/3 · Image.dmg")
-                if failing { throw NSError(domain: "fixture", code: 1, userInfo: [NSLocalizedDescriptionKey: "文件已下载，但未确认 DDI 挂载成功。请检查内置 VPN 和开发者模式后重试。"]) }
+                if failing { throw NSError(domain: "fixture", code: 1, userInfo: [NSLocalizedDescriptionKey: "文件已准备，但未确认 DDI 挂载成功。请检查内置 VPN 和开发者模式后重试。"]) }
                 try await Task.sleep(for: .seconds(30))
             }, mount: {}, finish: {}))
     }

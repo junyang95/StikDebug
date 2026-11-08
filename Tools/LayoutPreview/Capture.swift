@@ -56,26 +56,16 @@ import UIKit
         let out = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
         try? FileManager.default.removeItem(at: out.appendingPathComponent("complete.txt"))
         let ddiOnly = ProcessInfo.processInfo.arguments.contains("--ddi")
-        let vipOnly = ProcessInfo.processInfo.arguments.contains("--vip")
         let setupEntryOnly = ProcessInfo.processInfo.arguments.contains("--setup-entry")
         UserDefaults.standard.set(AppearancePreference.system.rawValue, forKey: AppearancePreference.storageKey)
         let allCases: [(String, String, CGFloat, CGFloat, DynamicTypeSize, ColorScheme)] = [
             ("setup-entry-small", "setup-entry", 375, 667, .large, .light),
             ("setup-entry-accessibility", "setup-entry", 320, 667, .accessibility5, .light),
-            ("setup-entry-vip-close", "vip-close", 375, 667, .large, .light),
-            ("vip-small", "vip", 375, 667, .large, .light),
-            ("vip-accessibility", "vip", 320, 667, .accessibility5, .light),
-            ("vip-dark", "vip", 430, 932, .large, .dark),
-            ("vip-missing-identity", "vip-missing", 375, 667, .large, .light),
-            ("vip-network-retry", "vip-retry", 375, 667, .large, .light),
-            ("vip-network-accessibility", "vip-retry", 320, 667, .accessibility5, .light),
-            ("vip-checking", "vip-checking", 375, 667, .large, .light),
-            ("vip-revoked", "vip-revoked", 375, 667, .large, .light),
             ("ddi-small", "ddi", 375, 667, .large, .light),
             ("ddi-accessibility", "ddi", 320, 667, .accessibility5, .light),
             ("ddi-ipad", "ddi", 1024, 768, .large, .light),
             ("ddi-landscape", "ddi", 667, 375, .large, .light),
-            ("ddi-downloading-dark", "ddi-downloading", 430, 932, .large, .dark),
+            ("ddi-installing-dark", "ddi-installing", 430, 932, .large, .dark),
             ("ddi-failed", "ddi-failed", 375, 667, .large, .light),
             ("ddi-entry", "ddi-entry", 375, 667, .large, .light),
             ("home-small", "home", 375, 667, .large, .light),
@@ -97,7 +87,6 @@ import UIKit
             ("pin-dark", "pin", 430, 932, .large, .dark)
         ]
         let cases = setupEntryOnly ? allCases.filter { $0.0.hasPrefix("setup-entry") }
-            : vipOnly ? allCases.filter { $0.0.hasPrefix("vip") }
             : ddiOnly ? allCases.filter { $0.0.hasPrefix("ddi") } : allCases
         for (name, page, width, height, type, scheme) in cases {
             let pairing = OnDevicePairingService()
@@ -117,14 +106,7 @@ import UIKit
             if page == "pin" { pairing.phase = .awaitingPIN }
             let content: AnyView
             switch page {
-            case "vip", "vip-missing", "vip-retry", "vip-checking", "vip-revoked", "vip-close":
-                let state: VipAuthorizationService.State = page == "vip-missing" ? .missingIdentity
-                    : page == "vip-retry" ? .networkRetry : page == "vip-checking" ? .checking
-                    : page == "vip-revoked" ? .revoked : .idle
-                content = AnyView(VipSetupView(authorization: VipAuthorizationService(state: state),
-                    restoreLocation: page == "vip-revoked" ? { nil } : nil,
-                    close: page == "vip-close" ? {} : nil))
-            case "ddi", "ddi-downloading", "ddi-failed":
+            case "ddi", "ddi-installing", "ddi-failed":
                 let installer = DDIInstallationController.preview(failing: page == "ddi-failed")
                 if page != "ddi" { installer.start() }
                 content = AnyView(DDIInstallationView(installer: installer))
@@ -138,7 +120,7 @@ import UIKit
             if page == "setup-entry" {
                 wrapped = passiveHome()
             } else {
-                wrapped = (page == "pairing" || page == "pin" || page.hasPrefix("ddi") || page.hasPrefix("vip")) ? content : AnyView(PreviewTabs(content: content, route: page != "home"))
+                wrapped = (page == "pairing" || page == "pin" || page.hasPrefix("ddi")) ? content : AnyView(PreviewTabs(content: content, route: page != "home"))
             }
             let root = wrapped
                 .environmentObject(session)
@@ -169,7 +151,7 @@ import UIKit
                 host.view.drawHierarchy(in: host.view.bounds, afterScreenUpdates: true)
             }
             try! image.pngData()!.write(to: out.appendingPathComponent(name + ".png"))
-            if name.hasPrefix("vip") || name.hasPrefix("setup-entry") || name == "joystick-accessibility" || name == "route-largest-type" || ["ddi-accessibility", "ddi-landscape", "ddi-failed"].contains(name) {
+            if name.hasPrefix("setup-entry") || name == "joystick-accessibility" || name == "route-largest-type" || ["ddi-accessibility", "ddi-landscape", "ddi-failed"].contains(name) {
                 var scrollMetrics: [[String: CGFloat]] = []
                 func scrollToBottom(_ view: UIView) {
                     if let scroll = view as? UIScrollView {
@@ -199,26 +181,11 @@ import UIKit
                     host.view.drawHierarchy(in: host.view.bounds, afterScreenUpdates: true)
                 }
                 try! bottom.pngData()!.write(to: out.appendingPathComponent(name + "-scrolled.png"))
-                if name.hasPrefix("vip") || name.hasPrefix("setup-entry") {
+                if name.hasPrefix("setup-entry") {
                     let metrics = try! JSONSerialization.data(withJSONObject: scrollMetrics, options: [.prettyPrinted, .sortedKeys])
                     try! metrics.write(to: out.appendingPathComponent(name + "-scroll.json"))
                 }
-                if name == "vip-accessibility" || name == "vip-network-accessibility" {
-                    func showActions(_ view: UIView) {
-                        if let scroll = view as? UIScrollView {
-                            let offset = max(-scroll.adjustedContentInset.top,
-                                scroll.contentSize.height - scroll.bounds.height + scroll.adjustedContentInset.bottom - 280)
-                            scroll.setContentOffset(CGPoint(x: 0, y: offset), animated: false)
-                        }
-                        view.subviews.forEach(showActions)
-                    }
-                    showActions(host.view)
-                    try? await Task.sleep(for: .milliseconds(200))
-                    let actions = UIGraphicsImageRenderer(size: CGSize(width: width, height: height), format: format).image { _ in
-                        host.view.drawHierarchy(in: host.view.bounds, afterScreenUpdates: true)
-                    }
-                    try! actions.pngData()!.write(to: out.appendingPathComponent(name + "-actions.png"))
-                }
+
             }
             host.willMove(toParent: nil)
             host.view.removeFromSuperview()

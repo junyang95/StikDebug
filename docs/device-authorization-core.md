@@ -1,5 +1,7 @@
 # Shared device authorization core
 
+> 历史版本记录：0.1.9 (10) 已移除商业授权并改用内置 DDI。本文中的授权和联网下载机制不再适用；当前行为见 [精简版说明](simplified-setup-and-bundled-ddi.md)。
+
 `DeviceAuthorizationCore.swift` is versioned verbatim in both app branches: PikminHelper uses `StikDebug/Core/DeviceAuthorizationCore.swift`; JITLauncher uses `App/Models/DeviceAuthorizationCore.swift`. Neither build depends on an absolute machine path or the other checkout. Change the shared source in both branches together and check byte-for-byte parity with `python3 Tools/check-device-authorization-parity.py <jit-checkout>` or JIT's `scripts/check-device-authorization-parity.py <pikmin-checkout>`.
 
 The shared Foundation/CryptoKit source owns signed payload decoding, pinned P-256 verification, nonce checks, policy evaluation, the seven-day clock, persistent clock state, and automatic signing-identity parsing. Platform adapters own Keychain, transport, UI state and paired-device I/O. Pikmin uses thin aliases/wrappers and keeps its existing VIP policy and setup flow.

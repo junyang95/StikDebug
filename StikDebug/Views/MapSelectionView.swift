@@ -1185,16 +1185,10 @@ struct LocationSimulationView: View {
     private func simulate(at coord: CLLocationCoordinate2D) {
         guard deviceSetupEnabled else { beginDeviceSetup(); return }
         guard pairingExists, !isBusy else { return }
-        guard VipLocationGate.shared.allows() else {
-            alertTitle = "VIP 授权".localized
-            alertMessage = VipAuthorizationService.shared.message
-            showAlert = true
-            return
-        }
         runLocationCommand(
             errorTitle: "定点失败".localized,
             errorMessage: { code in
-                String(format: "无法模拟定位（错误 %d）。请确认设备已连接、隧道正常且 DDI 已挂载。".localized, code)
+                String(format: "无法模拟定位（错误 %d）。请检查设备连接、开发者模式和定位服务状态。".localized, code)
             },
             operation: { locationUpdateCode(for: coord) }
         ) {
