@@ -38,12 +38,22 @@ final class DeviceCommands: @unchecked Sendable {
     static let shared = DeviceCommands()
     private let lock = NSLock()
     private var commands: [String] = []
+    private var setHandler: (@Sendable () -> Int32)?
     func append(_ command: String) { lock.lock(); defer { lock.unlock() }; commands.append(command) }
     func snapshot() -> [String] { lock.lock(); defer { lock.unlock() }; return commands }
-    func reset() { lock.lock(); defer { lock.unlock() }; commands = [] }
+    func reset() { lock.lock(); defer { lock.unlock() }; commands = []; setHandler = nil }
+    func respondToSet(_ handler: (@Sendable () -> Int32)?) {
+        lock.lock(); defer { lock.unlock() }; setHandler = handler
+    }
+    func sendSet() -> Int32 {
+        lock.lock()
+        commands.append("set")
+        let handler = setHandler
+        lock.unlock()
+        return handler?() ?? 0
+    }
 }
 func simulate_location(_ ip: String, _ lat: Double, _ lon: Double, _ pairing: String) -> Int32 {
-    DeviceCommands.shared.append("set")
-    return 0
+    DeviceCommands.shared.sendSet()
 }
 func clear_simulated_location(_ ip: String, _ pairing: String) -> Int32 { DeviceCommands.shared.append("clear"); return 0 }

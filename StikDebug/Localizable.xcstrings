@@ -9576,6 +9576,190 @@
           }
         }
       }
+    },
+    "安装包缺少设备绑定凭据，请安装为本设备生成的完整安装包。": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This package is missing its device binding credential. Install the complete package made for this device."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "安装包缺少设备绑定凭据，请安装为本设备生成的完整安装包。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "安裝包缺少裝置綁定憑據，請安裝為本裝置產生的完整安裝包。"
+          }
+        }
+      }
+    },
+    "设备绑定凭据损坏或签名无效，请重新安装完整安装包。": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The device binding credential is damaged or its signature is invalid. Reinstall the complete package."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "设备绑定凭据损坏或签名无效，请重新安装完整安装包。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "裝置綁定憑據損壞或簽章無效，請重新安裝完整安裝包。"
+          }
+        }
+      }
+    },
+    "设备绑定凭据版本不受支持，请更新安装包。": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This device binding credential version is not supported. Update the app package."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "设备绑定凭据版本不受支持，请更新安装包。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "裝置綁定憑據版本不受支援，請更新安裝包。"
+          }
+        }
+      }
+    },
+    "设备绑定凭据不适用于此 App，请安装正确的安装包。": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The device binding credential is for a different app. Install the correct package."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "设备绑定凭据不适用于此 App，请安装正确的安装包。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "裝置綁定憑據不適用於此 App，請安裝正確的安裝包。"
+          }
+        }
+      }
+    },
+    "无法读取连接设备的有效标识，请检查配对与设备连接。": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Could not read a valid identifier from the connected device. Check pairing and the device connection."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无法读取连接设备的有效标识，请检查配对与设备连接。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "無法讀取連接裝置的有效識別碼，請檢查配對與裝置連線。"
+          }
+        }
+      }
+    },
+    "此安装包与当前连接的设备不匹配，请使用为本设备生成的安装包。": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This package does not match the connected device. Use the package made for this device."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "此安装包与当前连接的设备不匹配，请使用为本设备生成的安装包。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "此安裝包與目前連接的裝置不符，請使用為本裝置產生的安裝包。"
+          }
+        }
+      }
+    },
+    "本地设备绑定": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Local device binding"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "本地设备绑定"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "本機裝置綁定"
+          }
+        }
+      }
+    },
+    "开始定位或开发操作前，App 会在本地核对安装包凭据与实际连接设备的标识，不向网站发送设备标识。恢复真实定位不受绑定检查限制。": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Before location or developer operations, the app checks the package credential against the connected device locally. Device identifiers are not sent to a website. Restoring real location remains available without this check."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "开始定位或开发操作前，App 会在本地核对安装包凭据与实际连接设备的标识，不向网站发送设备标识。恢复真实定位不受绑定检查限制。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "開始定位或開發操作前，App 會在本機核對安裝包憑據與實際連接裝置的識別碼，不向網站傳送裝置識別碼。恢復真實定位不受綁定檢查限制。"
+          }
+        }
+      }
     }
   },
   "version" : "1.0"

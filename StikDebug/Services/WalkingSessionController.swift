@@ -149,7 +149,7 @@ final class WalkingSessionController: ObservableObject {
         let initialCode = await sendLocation(config.startCoordinate)
         guard generation == startingGeneration else { return }
         guard initialCode == 0 else {
-            fail(String(format: "无法开始位置模拟（错误 %d）".localized, initialCode))
+            fail(OfflineBindingMessages.message(for: initialCode) ?? String(format: "无法开始位置模拟（错误 %d）".localized, initialCode))
             return
         }
 
@@ -458,6 +458,12 @@ final class WalkingSessionController: ObservableObject {
     private func handleLocationResult(_ code: Int32) {
         guard phase == .running, config != nil else { return }
         guard code != 0 else { return }
+        if let message = OfflineBindingMessages.message(for: code) {
+            phase = .paused
+            lastError = message
+            updateLiveActivity(force: true)
+            return
+        }
         beginReconnect(after: code)
     }
 
@@ -512,7 +518,7 @@ final class WalkingSessionController: ObservableObject {
             guard !Task.isCancelled, self.config != nil else { return }
             self.reconnectTask = nil
             self.phase = .paused
-            self.lastError = String(
+            self.lastError = OfflineBindingMessages.message(for: latestErrorCode) ?? String(
                 format: "自动重连 %1$d 次后仍失败（错误 %2$d），会话已暂停".localized,
                 SessionReconnectPolicy.maximumAttempts,
                 latestErrorCode

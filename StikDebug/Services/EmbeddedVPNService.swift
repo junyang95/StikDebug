@@ -579,6 +579,7 @@ final class EmbeddedVPNService: ObservableObject {
         if newStatus != status {
             LogManager.shared.addInfoLog("内置 VPN 状态：\(newStatus.title)")
         }
+        if status.isConnected && !newStatus.isConnected { invalidate_location_connection() }
         status = newStatus
         if !newStatus.isConnected {
             certificateSystemTrusted = nil

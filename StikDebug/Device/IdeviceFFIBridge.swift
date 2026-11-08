@@ -77,8 +77,7 @@ private enum IdeviceBridge {
         for context: JITEnableContext,
         _ body: (OpaquePointer, OpaquePointer) throws -> T
     ) throws -> T {
-        let handles = try activeTunnelHandles(for: context)
-        return try body(handles.adapter, handles.handshake)
+        try context.withProtectedTunnel(body)
     }
 
     static func connectClient(
@@ -249,16 +248,7 @@ private enum IdeviceBridge {
         return result
     }
 
-    static func activeTunnelHandles(for context: JITEnableContext) throws -> (adapter: OpaquePointer, handshake: OpaquePointer) {
-        try context.ensureTunnel()
 
-        guard let adapterHandle = context.adapterHandle,
-              let handshakeHandle = context.handshakeHandle else {
-            throw makeError(message: "Tunnel is not connected")
-        }
-
-        return (adapterHandle, handshakeHandle)
-    }
 }
 
 extension JITEnableContext {
@@ -299,7 +289,7 @@ extension JITEnableContext {
         }
         defer { cryptex1_assets_free(assets) }
 
-        try withDDITunnel { adapter, handshake in
+        try withDDITunnel(requiresBinding: true) { adapter, handshake in
             if let ffiError = cryptexd_install_ddi(adapter, handshake, assets, nil) {
                 throw IdeviceBridge.consumeFFIError(ffiError, fallback: "Failed to install DDI cryptex")
             }
@@ -344,7 +334,7 @@ extension JITEnableContext {
         let trustcacheData = try IdeviceBridge.mappedFileData(atPath: trustcachePath, description: "developer disk image trust cache")
         let manifestData = try IdeviceBridge.mappedFileData(atPath: manifestPath, description: "developer disk image manifest")
 
-        try withDDITunnel { adapter, handshake in
+        try withDDITunnel(requiresBinding: true) { adapter, handshake in
             let uniqueChipID = try IdeviceBridge.withConnectedClient(
                 fallback: "Failed to connect to lockdownd",
                 missingClientMessage: "Lockdownd client was not created",
@@ -772,189 +762,175 @@ enum LocationSimulationStatus {
     static let locationClear: Int32 = 12
 }
 
-private enum LocationSimulationState {
-    static var connectionIdentity: String?
-    static var adapter: OpaquePointer?
-    static var handshake: OpaquePointer?
-    static var remoteServer: OpaquePointer?
-    static var locationSimulation: OpaquePointer?
-
-    static func cleanup() {
-        connectionIdentity = nil
-        if let locationSimulation {
-            location_simulation_free(locationSimulation)
-            self.locationSimulation = nil
+/// The identity is read from the same RSD tunnel that will perform the operation.
+/// No UI flag, pairing-file UDID, or separate probe connection can authorize it.
+func verifyOfflineDeviceBinding(adapter: OpaquePointer, handshake: OpaquePointer) throws {
+    do {
+        let credential = try OfflineDeviceBinding.credential(expectedProduct: "pikmin-helper")
+        let udid = try IdeviceBridge.withConnectedClient(
+            fallback: "无法读取连接设备的有效标识，请检查配对与设备连接。".localized,
+            missingClientMessage: "无法读取连接设备的有效标识，请检查配对与设备连接。".localized,
+            connect: { lockdownd_connect_rsd(adapter, handshake, $0) },
+            cleanup: { lockdownd_client_free($0) }
+        ) { lockdown in
+            var value: plist_t?
+            if let error = lockdownd_get_value(lockdown, "UniqueDeviceID", nil, &value) {
+                idevice_error_free(error)
+                if let value { plist_free(value) }
+                throw OfflineDeviceBindingError.invalidDeviceIdentifier
+            }
+            defer { if let value { plist_free(value) } }
+            guard let value, plist_get_node_type(value) == PLIST_STRING else {
+                throw OfflineDeviceBindingError.invalidDeviceIdentifier
+            }
+            var length: UInt64 = 0
+            guard let bytes = plist_get_string_ptr(value, &length), length == 25 || length == 40,
+                  let udid = String(data: Data(bytes: bytes, count: Int(length)), encoding: .utf8) else {
+                throw OfflineDeviceBindingError.invalidDeviceIdentifier
+            }
+            return udid
         }
-        if let remoteServer {
-            remote_server_free(remoteServer)
-            self.remoteServer = nil
-        }
-        if let handshake {
-            rsd_handshake_free(handshake)
-            self.handshake = nil
-        }
-        if let adapter {
-            adapter_free(adapter)
-            self.adapter = nil
-        }
+        try credential.validate(actualUDID: udid)
+    } catch let error as OfflineDeviceBindingError {
+        throw OfflineBindingMessages.error(error)
+    } catch {
+        throw OfflineBindingMessages.error(.invalidDeviceIdentifier)
     }
+}
+
+private struct LocationTunnel {
+    let adapter: OpaquePointer
+    let handshake: OpaquePointer
+}
+
+private struct LocationController {
+    let location: OpaquePointer
+    let server: OpaquePointer
+}
+
+private struct LocationCommandError: Error {
+    let status: Int32
+}
+
+private enum LocationSimulationState {
+    static let session = LocationSimulationSession<LocationTunnel, LocationController>(dependencies: .init(
+        verifyBinding: { try verifyOfflineDeviceBinding(adapter: $0.adapter, handshake: $0.handshake) },
+        makeController: { tunnel in
+            var remoteServer: OpaquePointer?
+            if let error = remote_server_connect_rsd(tunnel.adapter, tunnel.handshake, &remoteServer) {
+                idevice_error_free(error)
+                if let remoteServer { remote_server_free(remoteServer) }
+                throw LocationCommandError(status: LocationSimulationStatus.remoteServer)
+            }
+            guard let remoteServer else { throw LocationCommandError(status: LocationSimulationStatus.remoteServer) }
+            var controller: OpaquePointer?
+            if let error = location_simulation_new(remoteServer, &controller) {
+                idevice_error_free(error)
+                if let controller { location_simulation_free(controller) }
+                remote_server_free(remoteServer)
+                throw LocationCommandError(status: LocationSimulationStatus.locationSimulation)
+            }
+            guard let controller else {
+                remote_server_free(remoteServer)
+                throw LocationCommandError(status: LocationSimulationStatus.locationSimulation)
+            }
+            // The bundled FFI controller borrows the server; keep both alive.
+            return LocationController(location: controller, server: remoteServer)
+        },
+        set: { controller, latitude, longitude in
+            if let error = location_simulation_set(controller.location, latitude, longitude) {
+                idevice_error_free(error)
+                throw LocationCommandError(status: LocationSimulationStatus.locationSet)
+            }
+        },
+        clear: { controller in
+            if let error = location_simulation_clear(controller.location) {
+                idevice_error_free(error)
+                throw LocationCommandError(status: LocationSimulationStatus.locationClear)
+            }
+        },
+        freeController: {
+            location_simulation_free($0.location)
+            remote_server_free($0.server)
+        },
+        freeConnection: { rsd_handshake_free($0.handshake); adapter_free($0.adapter) }
+    ))
 }
 
 enum LocationSimulationCommandQueue {
     static let shared = DispatchQueue(label: "com.stik.location-sim", qos: .userInitiated)
 }
 
-/// 建立到设备的定位模拟通道，成功后 `LocationSimulationState.locationSimulation` 可用。
-///
-/// 单独抽出来是因为清除模拟定位也需要它：App 重启后本地句柄没了，
-/// 但设备上的模拟定位仍然生效，必须重新连上才能真正清掉。
-private func establishLocationSimulation(deviceIP: String, pairingFile: String) -> Int32 {
+/// Invalidate successful binding whenever the transport disconnects.
+func invalidate_location_connection() {
+    LocationSimulationCommandQueue.shared.async { LocationSimulationState.session.disconnect() }
+}
+
+private func createLocationTunnel(deviceIP: String, pairingFile: String) throws -> LocationTunnel {
     var address = sockaddr_in()
     address.sin_family = sa_family_t(AF_INET)
     address.sin_port = in_port_t(49152).bigEndian
-
-    let inetResult = deviceIP.withCString { inet_pton(AF_INET, $0, &address.sin_addr) }
-    guard inetResult == 1 else {
-        return LocationSimulationStatus.invalidIP
+    guard deviceIP.withCString({ inet_pton(AF_INET, $0, &address.sin_addr) }) == 1 else {
+        throw LocationCommandError(status: LocationSimulationStatus.invalidIP)
     }
-
     var pairingHandle: OpaquePointer?
-    let pairingError = pairingFile.withCString { rp_pairing_file_read($0, &pairingHandle) }
-    if let pairingError {
-        idevice_error_free(pairingError)
-        return LocationSimulationStatus.pairingRead
+    if let error = pairingFile.withCString({ rp_pairing_file_read($0, &pairingHandle) }) {
+        idevice_error_free(error)
+        if let pairingHandle { rp_pairing_file_free(pairingHandle) }
+        throw LocationCommandError(status: LocationSimulationStatus.pairingRead)
     }
-
-    guard let pairingHandle else {
-        return LocationSimulationStatus.pairingRead
-    }
-
+    guard let pairingHandle else { throw LocationCommandError(status: LocationSimulationStatus.pairingRead) }
     defer { rp_pairing_file_free(pairingHandle) }
-
-    let providerError = withUnsafePointer(to: &address) { pointer in
+    var adapter: OpaquePointer?
+    var handshake: OpaquePointer?
+    let error = withUnsafePointer(to: &address) { pointer in
         pointer.withMemoryRebound(to: sockaddr.self, capacity: 1) {
-            tunnel_create_rppairing(
-                $0,
-                socklen_t(MemoryLayout<sockaddr_in>.stride),
-                "StikDebugLocation",
-                pairingHandle,
-                nil,
-                nil,
-                &LocationSimulationState.adapter,
-                &LocationSimulationState.handshake
-            )
+            tunnel_create_rppairing($0, socklen_t(MemoryLayout<sockaddr_in>.stride),
+                                   "StikDebugLocation", pairingHandle, nil, nil, &adapter, &handshake)
         }
     }
-
-    if let providerError {
-        idevice_error_free(providerError)
-        LocationSimulationState.cleanup()
-        return LocationSimulationStatus.providerCreate
+    if let error { idevice_error_free(error) }
+    guard error == nil, let adapter, let handshake else {
+        if let handshake { rsd_handshake_free(handshake) }
+        if let adapter { adapter_free(adapter) }
+        throw LocationCommandError(status: LocationSimulationStatus.providerCreate)
     }
-
-    guard LocationSimulationState.adapter != nil, LocationSimulationState.handshake != nil else {
-        LocationSimulationState.cleanup()
-        return LocationSimulationStatus.providerCreate
-    }
-    LocationSimulationState.connectionIdentity = locationConnectionIdentity(deviceIP, pairingFile)
-
-    let remoteServerError = remote_server_connect_rsd(
-        LocationSimulationState.adapter,
-        LocationSimulationState.handshake,
-        &LocationSimulationState.remoteServer
-    )
-    if let remoteServerError {
-        idevice_error_free(remoteServerError)
-        LocationSimulationState.cleanup()
-        return LocationSimulationStatus.remoteServer
-    }
-
-    let locationSimulationError = location_simulation_new(
-        LocationSimulationState.remoteServer,
-        &LocationSimulationState.locationSimulation
-    )
-    if let locationSimulationError {
-        idevice_error_free(locationSimulationError)
-        LocationSimulationState.cleanup()
-        return LocationSimulationStatus.locationSimulation
-    }
-
-    LocationSimulationState.remoteServer = nil
-
-    return LocationSimulationStatus.ok
+    return LocationTunnel(adapter: adapter, handshake: handshake)
 }
 
 private func locationConnectionIdentity(_ ip: String, _ pairingFile: String) -> String {
     "\(ip)|\(pairingFile)|\(PairingFileStore.stateSignature())"
 }
 
+private func locationStatus(for error: Error, fallback: Int32) -> Int32 {
+    if let error = error as? LocationCommandError { return error.status }
+    let error = error as NSError
+    if error.domain == "OfflineDeviceBinding" { return Int32(error.code) }
+    LogManager.shared.addErrorLog(error.localizedDescription)
+    return fallback
+}
+
 func simulate_location(_ deviceIP: String, _ latitude: Double, _ longitude: Double, _ pairingFile: String) -> Int32 {
-    return DeveloperConnectionGate.performLocationCommand(clear: false) {
-        simulateLocationUnchecked(deviceIP, latitude, longitude, pairingFile)
-    }
-}
-
-private func simulateLocationUnchecked(_ deviceIP: String, _ latitude: Double, _ longitude: Double, _ pairingFile: String) -> Int32 {
-    if LocationSimulationState.connectionIdentity != locationConnectionIdentity(deviceIP, pairingFile) {
-        LocationSimulationState.cleanup()
-    }
-    if let locationSimulation = LocationSimulationState.locationSimulation {
-        if let ffiError = location_simulation_set(locationSimulation, latitude, longitude) {
-            idevice_error_free(ffiError)
-            LocationSimulationState.cleanup()
-        } else {
+    DeveloperConnectionGate.performLocationCommand(clear: false) {
+        do {
+            try LocationSimulationState.session.set(
+                identity: locationConnectionIdentity(deviceIP, pairingFile),
+                latitude: latitude, longitude: longitude,
+                connect: { try createLocationTunnel(deviceIP: deviceIP, pairingFile: pairingFile) }
+            )
             return LocationSimulationStatus.ok
-        }
+        } catch { return locationStatus(for: error, fallback: LocationSimulationStatus.locationSet) }
     }
-
-    let connectStatus = establishLocationSimulation(deviceIP: deviceIP, pairingFile: pairingFile)
-    guard connectStatus == LocationSimulationStatus.ok else {
-        return connectStatus
-    }
-
-    let locationSetError = location_simulation_set(
-        LocationSimulationState.locationSimulation,
-        latitude,
-        longitude
-    )
-    if let locationSetError {
-        idevice_error_free(locationSetError)
-        LocationSimulationState.cleanup()
-        return LocationSimulationStatus.locationSet
-    }
-
-    return LocationSimulationStatus.ok
 }
 
-/// 清除设备上的模拟定位，让系统回到真实 GPS。
-///
-/// 本地句柄不存在时会先重新建立通道再清除，否则 App 重启后设备会一直卡在
-/// 上一次模拟的位置上，用户无论点多少次「恢复真实定位」都回不去。
+/// Reconnect if needed to restore real GPS, without requiring a binding credential.
 func clear_simulated_location(_ deviceIP: String, _ pairingFile: String) -> Int32 {
     DeveloperConnectionGate.performLocationCommand(clear: true) {
-        clearSimulatedLocationUnchecked(deviceIP, pairingFile)
+        do {
+            try LocationSimulationState.session.clear {
+                try createLocationTunnel(deviceIP: deviceIP, pairingFile: pairingFile)
+            }
+            return LocationSimulationStatus.ok
+        } catch { return locationStatus(for: error, fallback: LocationSimulationStatus.locationClear) }
     }
-}
-
-private func clearSimulatedLocationUnchecked(_ deviceIP: String, _ pairingFile: String) -> Int32 {
-    if LocationSimulationState.locationSimulation == nil {
-        let connectStatus = establishLocationSimulation(deviceIP: deviceIP, pairingFile: pairingFile)
-        guard connectStatus == LocationSimulationStatus.ok else {
-            return connectStatus
-        }
-    }
-
-    guard let locationSimulation = LocationSimulationState.locationSimulation else {
-        return LocationSimulationStatus.locationClear
-    }
-
-    let ffiError = location_simulation_clear(locationSimulation)
-    LocationSimulationState.cleanup()
-
-    if let ffiError {
-        idevice_error_free(ffiError)
-        return LocationSimulationStatus.locationClear
-    }
-
-    return LocationSimulationStatus.ok
 }

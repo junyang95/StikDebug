@@ -35,6 +35,7 @@ final class JITEnableContext {
 
     private var adapter: OpaquePointer?
     private var handshake: OpaquePointer?
+    private var tunnelIdentity: String?
 
     private let tunnelLock = NSLock()
     private var tunnelConnecting = false
@@ -46,9 +47,6 @@ final class JITEnableContext {
     private var syslogClient: OpaquePointer?
     private var syslogLineHandler: SyslogLineHandler?
     private var syslogErrorHandler: SyslogErrorHandler?
-
-    var adapterHandle: OpaquePointer? { adapter }
-    var handshakeHandle: OpaquePointer? { handshake }
 
     private init() {
         let logURL = FileManager.default
@@ -238,26 +236,42 @@ final class JITEnableContext {
 
         adapter = newAdapter
         handshake = newHandshake
+        tunnelIdentity = currentTunnelIdentity
+    }
+
+    private var currentTunnelIdentity: String {
+        "\(DeviceConnectionContext.targetIPAddress)|\(PairingFileStore.stateSignature())"
     }
 
     func ensureTunnel() throws {
-        if adapter == nil || handshake == nil {
+        if adapter == nil || handshake == nil || tunnelIdentity != currentTunnelIdentity {
             try startTunnel()
         }
     }
 
-    /// DDI operations own their handles until all blocking native work finishes.
-    /// A preflight refresh can replace the shared tunnel without invalidating them.
-    func withDDITunnel<T>(_ body: (OpaquePointer, OpaquePointer) throws -> T) throws -> T {
+    /// Protected operations own their verified handles, so a parallel preflight
+    /// cannot replace the tunnel between identity checking and command dispatch.
+    func withProtectedTunnel<T>(_ body: (OpaquePointer, OpaquePointer) throws -> T) throws -> T {
         guard DeveloperConnectionGate.beginDeveloperOperation() else {
             throw makeError("请先停止本机 WLOC 连接测试。")
         }
         defer { DeveloperConnectionGate.endDeveloperOperation() }
-        return try withFreshDebugTunnel(hostname: "StikDebug-DDI", body)
+        return try withFreshDebugTunnel(hostname: "StikDebug-Operation", body)
+    }
+
+    /// DDI operations own their handles until all blocking native work finishes.
+    /// A preflight refresh can replace the shared tunnel without invalidating them.
+    func withDDITunnel<T>(requiresBinding: Bool = false, _ body: (OpaquePointer, OpaquePointer) throws -> T) throws -> T {
+        guard DeveloperConnectionGate.beginDeveloperOperation() else {
+            throw makeError("请先停止本机 WLOC 连接测试。")
+        }
+        defer { DeveloperConnectionGate.endDeveloperOperation() }
+        return try withFreshDebugTunnel(hostname: "StikDebug-DDI", requiresBinding: requiresBinding, body)
     }
 
     private func withFreshDebugTunnel<T>(
         hostname: String,
+        requiresBinding: Bool = true,
         _ body: (OpaquePointer, OpaquePointer) throws -> T
     ) throws -> T {
         var tunnel = try createTunnel(hostname: hostname)
@@ -267,6 +281,7 @@ final class JITEnableContext {
             throw makeError("Tunnel is not connected")
         }
 
+        if requiresBinding { try verifyOfflineDeviceBinding(adapter: adapter, handshake: handshake) }
         return try body(adapter, handshake)
     }
 
@@ -426,7 +441,7 @@ final class JITEnableContext {
     private func withConnectedDebugSession<T>(
         _ body: (OpaquePointer, OpaquePointer) throws -> T
     ) throws -> T {
-        try withFreshDebugTunnel(hostname: "StikDebugDebug") { adapter, handshake in
+        try withProtectedTunnel { adapter, handshake in
             var session = try connectDebugSession(adapter: adapter, handshake: handshake)
             defer { session.free() }
 
@@ -442,22 +457,17 @@ final class JITEnableContext {
     private func withConnectedRemoteServer<T>(
         _ body: (OpaquePointer) throws -> T
     ) throws -> T {
-        try ensureTunnel()
-        guard let adapter, let handshake else {
-            throw makeError("Tunnel is not connected")
+        try withProtectedTunnel { adapter, handshake in
+            var remoteServer: OpaquePointer?
+            if let ffiError = remote_server_connect_rsd(adapter, handshake, &remoteServer) {
+                throw error(from: ffiError, fallback: "Failed to connect remote server")
+            }
+            guard let remoteServer else {
+                throw makeError("Remote server handle was not created")
+            }
+            defer { remote_server_free(remoteServer) }
+            return try body(remoteServer)
         }
-
-        var remoteServer: OpaquePointer?
-        if let ffiError = remote_server_connect_rsd(adapter, handshake, &remoteServer) {
-            throw error(from: ffiError, fallback: "Failed to connect remote server")
-        }
-
-        guard let remoteServer else {
-            throw makeError("Remote server handle was not created")
-        }
-
-        defer { remote_server_free(remoteServer) }
-        return try body(remoteServer)
     }
 
     private func withProcessControl<T>(
@@ -495,6 +505,12 @@ final class JITEnableContext {
                     throw self.makeError("Tunnel is not connected")
                 }
 
+                do {
+                    try verifyOfflineDeviceBinding(adapter: adapter, handshake: handshake)
+                } catch {
+                    tunnel.free()
+                    throw error
+                }
                 var heartbeatClient: OpaquePointer?
                 if let ffiError = heartbeat_connect_rsd(adapter, handshake, &heartbeatClient) {
                     tunnel.free()
@@ -657,16 +673,6 @@ final class JITEnableContext {
     }
 
     func startSyslogRelay(handler: @escaping SyslogLineHandler, onError: @escaping SyslogErrorHandler) {
-        do {
-            try ensureTunnel()
-        } catch let nsError as NSError {
-            onError(nsError)
-            return
-        } catch {
-            onError(makeError(error.localizedDescription))
-            return
-        }
-
         guard !syslogStreaming else { return }
 
         syslogStreaming = true
@@ -675,11 +681,29 @@ final class JITEnableContext {
 
         syslogQueue.async { [weak self] in
             guard let self else { return }
-            guard let adapter = self.adapter, let handshake = self.handshake else {
+            guard DeveloperConnectionGate.beginDeveloperOperation() else {
+                self.handleSyslogFailure(self.makeError("请先停止本机 WLOC 连接测试。"))
+                return
+            }
+            defer { DeveloperConnectionGate.endDeveloperOperation() }
+            var tunnel: TunnelHandles
+            do {
+                tunnel = try self.createTunnel(hostname: "StikDebug-Syslog")
+            } catch {
+                self.handleSyslogFailure(error as NSError)
+                return
+            }
+            defer { tunnel.free() }
+            guard let adapter = tunnel.adapter, let handshake = tunnel.handshake else {
                 self.handleSyslogFailure(self.makeError("Tunnel is not connected"))
                 return
             }
-
+            do {
+                try verifyOfflineDeviceBinding(adapter: adapter, handshake: handshake)
+            } catch {
+                self.handleSyslogFailure(error as NSError)
+                return
+            }
             var client: OpaquePointer?
             if let ffiError = syslog_relay_connect_rsd(adapter, handshake, &client) {
                 self.handleSyslogFailure(self.error(from: ffiError, fallback: "Failed to connect to syslog relay"))

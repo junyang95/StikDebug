@@ -31,6 +31,12 @@ struct PrivacyNetworkView: View {
                     tint: .mint
                 )
                 disclosure(
+                    title: "本地设备绑定",
+                    detail: "开始定位或开发操作前，App 会在本地核对安装包凭据与实际连接设备的标识，不向网站发送设备标识。恢复真实定位不受绑定检查限制。",
+                    symbol: "checkmark.shield",
+                    tint: .blue
+                )
+                disclosure(
                     title: "内置开发者镜像",
                     detail: "DDI 文件已内置，只有你选择安装时才会准备和挂载。挂载按系统要求进行，可能需要连接 Apple 服务；App 不以 DDI 安装状态阻止定位操作。",
                     symbol: "externaldrive.badge.questionmark",
@@ -67,8 +73,8 @@ struct PrivacyNetworkView: View {
                 .frame(width: 34, height: 34)
                 .background(tint.opacity(0.12), in: Circle())
             VStack(alignment: .leading, spacing: 4) {
-                Text(title).font(.subheadline.weight(.semibold))
-                Text(detail)
+                Text(title.localized).font(.subheadline.weight(.semibold))
+                Text(detail.localized)
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }

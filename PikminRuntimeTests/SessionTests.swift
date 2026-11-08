@@ -16,6 +16,67 @@ import Testing
     func drain() async {
         await withCheckedContinuation { c in LocationSimulationCommandQueue.shared.async { c.resume() } }
     }
+    @Test func bindingFailureStopsFixedKeepAliveAndKeepsRecoveryAvailable() async throws {
+        for code: Int32 in 80...86 {
+            await setup()
+            DeviceCommands.shared.respondToSet { code }
+            fixed.hold(config().startCoordinate)
+            await drain()
+            for _ in 0..<100 where fixed.lastError == nil { await Task.yield() }
+            #expect(fixed.coordinate == nil)
+            #expect(fixed.lastError == OfflineBindingMessages.message(for: code))
+            #expect(BackgroundAudioManager.shared.leases == 0)
+            #expect(BackgroundLocationManager.shared.leases == 0)
+            #expect(!DeviceCommands.shared.snapshot().contains("clear"))
+            if code == 86 {
+                let commands = DeviceCommands.shared.snapshot()
+                try await Task.sleep(for: .milliseconds(1200))
+                #expect(DeviceCommands.shared.snapshot() == commands)
+            }
+            await session.restoreRealLocation()
+            #expect(DeviceCommands.shared.snapshot().last == "clear")
+            #expect(fixed.lastError == nil && session.lastError == nil)
+        }
+    }
+
+    @Test func transientFixedLocationFailureKeepsRetrying() async {
+        await setup()
+        DeviceCommands.shared.respondToSet { 11 }
+        fixed.hold(config().startCoordinate)
+        await drain()
+        #expect(fixed.coordinate != nil && fixed.lastError == nil)
+        #expect(BackgroundAudioManager.shared.leases == 1)
+        DeviceCommands.shared.respondToSet(nil)
+        fixed.updateForegroundState(false)
+        fixed.updateForegroundState(true)
+        await drain()
+        #expect(DeviceCommands.shared.snapshot().filter { $0 == "set" }.count == 2)
+        await session.restoreRealLocation()
+    }
+
+    @Test func staleBindingFailureCannotStopANewerFixedSession() async {
+        await setup()
+        let began = DispatchSemaphore(value: 0)
+        let release = DispatchSemaphore(value: 0)
+        DeviceCommands.shared.respondToSet {
+            began.signal()
+            release.wait()
+            return 86
+        }
+        fixed.hold(config().startCoordinate)
+        while began.wait(timeout: .now()) != .success { await Task.yield() }
+        let replacement = CLLocationCoordinate2D(latitude: 35, longitude: 139)
+        fixed.start(replacement, isForeground: true)
+        DeviceCommands.shared.respondToSet(nil)
+        release.signal()
+        await drain()
+        for _ in 0..<20 { await Task.yield() }
+        #expect(fixed.coordinate?.latitude == replacement.latitude)
+        #expect(fixed.lastError == nil)
+        #expect(BackgroundAudioManager.shared.leases == 1)
+        await session.restoreRealLocation()
+    }
+
     @Test func localReadinessStartsSessionWithoutWebsiteAuthorization() async {
         await setup()
         await session.start(config: config())

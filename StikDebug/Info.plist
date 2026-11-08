@@ -2,6 +2,15 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>WowOfflineDeviceBinding</key>
+	<dict>
+		<key>schema</key>
+		<integer>1</integer>
+		<key>product</key>
+		<string>pikmin-helper</string>
+		<key>keyId</key>
+		<string>9a6a40f263ac458839e9a4fe6973cee315e10111e1ffd30425788491deefe607</string>
+	</dict>
 	<key>NSSupportsLiveActivities</key>
 	<true/>
 	<key>CFBundleDisplayName</key>

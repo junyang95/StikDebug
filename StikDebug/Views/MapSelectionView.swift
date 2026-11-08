@@ -310,7 +310,7 @@ struct LocationSimulationView: View {
             .padding(.top, 10)
     }
 
-    var body: some View {
+    private var mapWorkspace: some View {
         MapWorkspace(title: selectedMode == .route ? "路线选项" : "定点选项", showsPanel: !searchFocused) {
             MapReader { proxy in
                 Map(position: $position) {
@@ -431,6 +431,10 @@ struct LocationSimulationView: View {
                 pinActions
             }
         }
+    }
+
+    private var interactiveWorkspace: some View {
+        mapWorkspace
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItemGroup(placement: .keyboard) {
@@ -473,9 +477,20 @@ struct LocationSimulationView: View {
                 searchCompleter.results = []
             }
         }
+        .onChange(of: fixedSession.lastError) { _, message in
+            guard let message else { return }
+            endBackgroundTask()
+            alertTitle = "定点失败".localized
+            alertMessage = message
+            showAlert = true
+        }
         .onChange(of: scenePhase) { _, phase in
             fixedSession.updateForegroundState(phase == .active)
         }
+    }
+
+    private var presentedWorkspace: some View {
+        interactiveWorkspace
         .alert(alertTitle, isPresented: $showAlert) {
             Button("好", role: .cancel) { }
         } message: {
@@ -528,6 +543,10 @@ struct LocationSimulationView: View {
                 }
             }
         }
+    }
+
+    private var fileTransferWorkspace: some View {
+        presentedWorkspace
         .fileImporter(
             isPresented: $showCoordinateImporter,
             allowedContentTypes: CoordinateImportParser.supportedContentTypes,
@@ -541,17 +560,12 @@ struct LocationSimulationView: View {
             contentType: .gpx,
             defaultFilename: gpxFilename
         ) { result in
-            switch result {
-            case .success:
-                Haptic.success()
-            case .failure(let error):
-                let cocoaError = error as NSError
-                guard cocoaError.code != NSUserCancelledError else { return }
-                alertTitle = "导出失败".localized
-                alertMessage = error.localizedDescription
-                showAlert = true
-            }
+            handleGPXExport(result)
         }
+    }
+
+    var body: some View {
+        fileTransferWorkspace
         .onAppear {
             if coordinate == nil, let fixedCoordinate = fixedSession.coordinate {
                 coordinate = fixedCoordinate
@@ -562,6 +576,18 @@ struct LocationSimulationView: View {
         }
         .onDisappear {
             endBackgroundTask()
+        }
+    }
+
+    private func handleGPXExport(_ result: Result<URL, Error>) {
+        switch result {
+        case .success:
+            Haptic.success()
+        case .failure(let error):
+            guard (error as NSError).code != NSUserCancelledError else { return }
+            alertTitle = "导出失败".localized
+            alertMessage = error.localizedDescription
+            showAlert = true
         }
     }
 
@@ -814,6 +840,11 @@ struct LocationSimulationView: View {
 
     @ViewBuilder
     private var pinControls: some View {
+        if let error = fixedSession.lastError {
+            Label(error, systemImage: "exclamationmark.triangle.fill")
+                .font(.caption)
+                .foregroundStyle(.orange)
+        }
         if let coord = coordinate {
             Text(String(format: "%.6f, %.6f", coord.latitude, coord.longitude))
                 .font(.footnote.monospaced())
@@ -1188,7 +1219,7 @@ struct LocationSimulationView: View {
         runLocationCommand(
             errorTitle: "定点失败".localized,
             errorMessage: { code in
-                String(format: "无法模拟定位（错误 %d）。请检查设备连接、开发者模式和定位服务状态。".localized, code)
+                OfflineBindingMessages.message(for: code) ?? String(format: "无法模拟定位（错误 %d）。请检查设备连接、开发者模式和定位服务状态。".localized, code)
             },
             operation: { locationUpdateCode(for: coord) }
         ) {

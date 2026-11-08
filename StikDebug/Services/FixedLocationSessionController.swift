@@ -7,6 +7,7 @@ final class FixedLocationSessionController: ObservableObject {
     static let shared = FixedLocationSessionController()
 
     @Published private(set) var coordinate: CLLocationCoordinate2D?
+    @Published private(set) var lastError: String?
 
     private var resendTimer: DispatchSourceTimer?
     private var hasKeepAliveLease = false
@@ -22,6 +23,7 @@ final class FixedLocationSessionController: ObservableObject {
     func start(_ coordinate: CLLocationCoordinate2D, isForeground: Bool) {
         guard !DeveloperConnectionGate.isBlocked else { return }
         guard CLLocationCoordinate2DIsValid(coordinate) else { return }
+        self.lastError = nil
         self.coordinate = coordinate
         self.isForeground = isForeground
         acquireKeepAliveIfNeeded()
@@ -46,6 +48,7 @@ final class FixedLocationSessionController: ObservableObject {
         resendTimer?.cancel()
         resendTimer = nil
         coordinate = nil
+        lastError = nil
         releaseKeepAliveIfNeeded()
     }
 
@@ -54,18 +57,25 @@ final class FixedLocationSessionController: ObservableObject {
         resendTimer?.cancel()
 
         let interval = resendInterval
-        let ip = DeviceConnectionContext.targetIPAddress
         let pairingPath = PairingFileStore.prepareURL().path
         let generation = commandGeneration.invalidate()
         let commandGeneration = commandGeneration
-        let send: @Sendable () -> Void = {
+        let send: @Sendable () -> Void = { [weak self] in
             guard commandGeneration.isCurrent(generation) else { return }
             let jittered = MovementMath.offset(
                 coordinate,
                 eastMeters: Double.random(in: -1.5...1.5),
                 northMeters: Double.random(in: -1.5...1.5)
             )
-            _ = simulate_location(ip, jittered.latitude, jittered.longitude, pairingPath)
+            let code = simulate_location(DeviceConnectionContext.targetIPAddress, jittered.latitude, jittered.longitude, pairingPath)
+            guard let message = OfflineBindingMessages.message(for: code) else { return }
+            Task { @MainActor [weak self] in
+                guard let self, commandGeneration.isCurrent(generation) else { return }
+                // Stop only this keep-alive. Restoring real location remains an explicit action.
+                self.stop()
+                self.lastError = message
+                LogManager.shared.addErrorLog(message)
+            }
         }
 
         if sendImmediately {
