@@ -1,9 +1,9 @@
 import Foundation
 import Darwin
-@_implementationOnly import idevice
 
-// The real production identity entry point is compiled against a device boundary
-// that cannot reach FFI. An open TCP port must still require the paired tunnel.
+// Compile the real production connection entry point against a paired-tunnel
+// boundary. Its empty Tunnel deliberately provides no identity or lockdown API:
+// successful pairing is sufficient, but an open TCP port alone is not.
 public enum StikJIT {
     public struct Configuration {
         public var deviceAddress: String
@@ -19,23 +19,18 @@ public enum StikJIT {
 }
 private enum TestFailure: Error { case tunnelBoundary, unexpected(String) }
 enum DeviceTools {
-    struct Tunnel { var adapter: OpaquePointer?; var handshake: OpaquePointer? }
+    struct Tunnel {}
+    static var allowsHandshake = false
     static var attempts = 0
+    static var completedHandshakes = 0
+    static var cleanedUpTunnels = 0
     static func withTunnel<T>(_ file: URL, _ config: StikJIT.Configuration,
                               _ body: (Tunnel) throws -> T) throws -> T {
         attempts += 1
-        throw TestFailure.tunnelBoundary
-    }
-    static func withClient<T>(_ name: String,
-                              connect: (UnsafeMutablePointer<OpaquePointer?>) -> UnsafeMutablePointer<IdeviceFfiError>?,
-                              free: (OpaquePointer?) -> Void,
-                              _ body: (OpaquePointer) throws -> T) throws -> T {
-        fatalError("The test tunnel boundary must stop before client creation")
-    }
-}
-enum IdeviceFFI {
-    static func check(_ message: String, _ call: () -> UnsafeMutablePointer<IdeviceFfiError>?) throws {
-        fatalError("The test tunnel boundary must stop before FFI")
+        guard allowsHandshake else { throw TestFailure.tunnelBoundary }
+        completedHandshakes += 1
+        defer { cleanedUpTunnels += 1 }
+        return try body(Tunnel())
     }
 }
 private final class TCPFixture {
@@ -77,15 +72,18 @@ enum DeviceConnectionProbeTests {
         let file = URL(fileURLWithPath: "/unused/pairing.plist")
         var checks = 0
         func run(_ title: String, _ body: () throws -> Void) rethrows {
+            DeviceTools.allowsHandshake = false
             DeviceTools.attempts = 0
+            DeviceTools.completedHandshakes = 0
+            DeviceTools.cleanedUpTunnels = 0
             try body(); checks += 1; print("PASS \(title)")
         }
         func expectFailure(_ config: StikJIT.Configuration,
                            cancellationCheck: () throws -> Void = {}, matches: (Error) -> Bool) throws {
             do {
-                _ = try StikJIT.deviceUDID(pairingFile: file, configuration: config,
-                                           cancellationCheck: cancellationCheck)
-                throw TestFailure.unexpected("TCP reachability was accepted as device identity")
+                try StikJIT.checkDeviceConnection(pairingFile: file, configuration: config,
+                                                 cancellationCheck: cancellationCheck)
+                throw TestFailure.unexpected("Connection check unexpectedly succeeded")
             } catch {
                 guard matches(error) else { throw TestFailure.unexpected("Unexpected failure: \(error)") }
             }
@@ -98,7 +96,16 @@ enum DeviceConnectionProbeTests {
             })
             precondition(DeviceTools.attempts == 1)
         }
-        try run("An unavailable endpoint fails within its deadline before FFI") {
+        try run("A completed paired tunnel succeeds without reading device identity") {
+            DeviceTools.allowsHandshake = true
+            var count = 0
+            try StikJIT.checkDeviceConnection(pairingFile: file, configuration: liveConfiguration,
+                                             cancellationCheck: { count += 1 })
+            precondition(count == 3)
+            precondition(DeviceTools.attempts == 1 && DeviceTools.completedHandshakes == 1)
+            precondition(DeviceTools.cleanedUpTunnels == 1)
+        }
+        try run("An unavailable endpoint fails within its deadline before the paired tunnel") {
             let started = ProcessInfo.processInfo.systemUptime
             try expectFailure(absentConfiguration, matches: {
                 if case StikJITError.deviceNotReady = $0 { return true }; return false
@@ -106,7 +113,7 @@ enum DeviceConnectionProbeTests {
             precondition(ProcessInfo.processInfo.systemUptime - started < 3)
             precondition(DeviceTools.attempts == 0)
         }
-        try run("An invalid endpoint fails before FFI") {
+        try run("An invalid endpoint fails before the paired tunnel") {
             try expectFailure(.init(deviceAddress: " ", rsdPort: live.port), matches: {
                 if case StikJITError.deviceNotReady = $0 { return true }; return false
             })
@@ -125,6 +132,16 @@ enum DeviceConnectionProbeTests {
                 count += 1; if count == 2 { throw CancellationError() }
             }, matches: { $0 is CancellationError })
             precondition(count == 2 && DeviceTools.attempts == 0)
+        }
+        try run("Cancellation after pairing rejects success and releases the tunnel") {
+            DeviceTools.allowsHandshake = true
+            var count = 0
+            try expectFailure(liveConfiguration, cancellationCheck: {
+                count += 1; if count == 3 { throw CancellationError() }
+            }, matches: { $0 is CancellationError })
+            precondition(count == 3)
+            precondition(DeviceTools.attempts == 1 && DeviceTools.completedHandshakes == 1)
+            precondition(DeviceTools.cleanedUpTunnels == 1)
         }
         try run("Cancellation during an unavailable probe wins over its network error") {
             var count = 0

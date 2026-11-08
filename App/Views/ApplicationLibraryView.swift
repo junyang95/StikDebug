@@ -21,7 +21,7 @@ struct ApplicationLibraryView: View {
 
     private var isAvailable: Bool { model.isPrepared && model.isDeviceConnectionReady }
     private var isWorking: Bool { model.isBusy || vpn.isBusy || pairing.isRunning }
-    private var canRequestIcons: Bool { isAvailable && !model.isBusy && model.isDeviceAccessVerified }
+    private var canRequestIcons: Bool { isAvailable && !model.isBusy }
     private var isLoadingApplications: Bool { model.isBusy && model.progressKey == "progress.loading_apps" }
     private var debuggableApplications: [LauncherApplication] { model.applications.filter(\.isDebuggable) }
 
@@ -53,7 +53,7 @@ struct ApplicationLibraryView: View {
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
                         Button(action: openSetup) {
-                            Text(model.isSetupAccessReady ? "access.setup.continue" : "access.setup.start", tableName: "WowAccess")
+                            Text("setup.start")
                         }
                         .buttonStyle(.borderedProminent)
                     } else {
@@ -292,7 +292,7 @@ private struct ApplicationDetailSheet: View {
     }
 
     private var canRequestIcon: Bool {
-        model.isPrepared && model.isDeviceConnectionReady && !model.isBusy && model.isDeviceAccessVerified
+        model.isPrepared && model.isDeviceConnectionReady && !model.isBusy
     }
 
     var body: some View {

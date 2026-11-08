@@ -21,7 +21,7 @@
 "guide.readiness.ddi" = "裝置連線與開發者磁碟映像";
 "guide.readiness.ddi.ready" = "裝置連線與 DDI 檢查已通過";
 "guide.readiness.ddi.pending" = "等待檢查與準備";
-"guide.readiness.ddi.note" = "準備過程會檢查裝置連線，並按需下載、掛載開發者磁碟映像（DDI）。首次下載可能需要幾分鐘，請保持 App 在前景。";
+"guide.readiness.ddi.note" = "開發者映像檔已內建，準備時會依系統要求掛載。請保持 Wi-Fi 和本地 VPN 連線。";
 "guide.action.waiting_hint" = "請前往系統設定依步驟操作。若工作階段逾時，請返回這裡重新開始。";
 "guide.action.confirm_developer" = "確認已開啟開發者模式後再繼續。";
 "guide.action.connecting" = "正在連接本機 VPN…";

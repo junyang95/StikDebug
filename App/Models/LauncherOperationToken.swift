@@ -1,7 +1,7 @@
 import Foundation
 
 /// Cancellation crosses the main actor and blocking device queues. It prevents
-/// a queued command from starting after its connection or authorization expired.
+/// a queued command from starting after its connection was invalidated.
 final class LauncherOperationToken: @unchecked Sendable {
     private let lock = NSLock()
     private var cancelled = false
@@ -10,8 +10,8 @@ final class LauncherOperationToken: @unchecked Sendable {
 
     func cancel() { lock.lock(); cancelled = true; lock.unlock() }
 
-    /// Atomically admits device work, so leaving the foreground during an
-    /// authorization wait cannot race a later queued command into execution.
+    /// Atomically admits device work, so leaving the foreground during a
+    /// connection check cannot race a later queued command into execution.
     func beginWork() throws {
         lock.lock()
         defer { lock.unlock() }

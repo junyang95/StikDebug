@@ -1,8 +1,6 @@
 {
   "schemaVersion": 1,
   "upstreamRevision": "6eae353ae694bda1c421d4a3eee5459ae59c99a1",
-  "mirrorBaseURL": "https://static.wow-app.store/Xcode_iOS_DDI_Personalized/releases/6eae353ae694bda1c421d4a3eee5459ae59c99a1",
-  "upstreamBaseURL": "https://raw.githubusercontent.com/doronz88/DeveloperDiskImage/6eae353ae694bda1c421d4a3eee5459ae59c99a1/PersonalizedImages",
   "families": {
     "cryptex": {
       "directory": "Xcode_iOS_DDI_Cryptex",

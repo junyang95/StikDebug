@@ -13,8 +13,8 @@ configFiles:
 settings:
   base:
     SWIFT_VERSION: "5.0"
-    MARKETING_VERSION: "2.0.7"
-    CURRENT_PROJECT_VERSION: "18"
+    MARKETING_VERSION: "2.0.8"
+    CURRENT_PROJECT_VERSION: "19"
     CLANG_CXX_LIBRARY: "libc++"
 
 targetTemplates:
@@ -90,6 +90,11 @@ targets:
     sources:
       - path: Sources
       - path: Resources
+        excludes:
+          - DDI
+        buildPhase: resources
+      - path: Resources/DDI
+        type: folder
         buildPhase: resources
     dependencies:
       - sdk: JavaScriptCore.framework

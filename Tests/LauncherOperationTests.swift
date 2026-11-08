@@ -41,25 +41,25 @@ enum LauncherOperationTests {
         }
 
         let pending = LauncherOperationToken()
-        let authorizationStarted = DispatchSemaphore(value: 0)
-        let authorizationReturns = DispatchSemaphore(value: 0)
+        let connectionCheckStarted = DispatchSemaphore(value: 0)
+        let connectionCheckReturns = DispatchSemaphore(value: 0)
         let waitingFinished = DispatchSemaphore(value: 0)
         let waitingProbe = Probe()
         DispatchQueue.global().async {
-            authorizationStarted.signal()
-            guard authorizationReturns.wait(timeout: .now() + 5) == .success else {
-                preconditionFailure("Authorization test was not released")
+            connectionCheckStarted.signal()
+            guard connectionCheckReturns.wait(timeout: .now() + 5) == .success else {
+                preconditionFailure("Connection check test was not released")
             }
             do { try pending.beginWork(); waitingProbe.append("device command") }
             catch { waitingProbe.record(error) }
             waitingFinished.signal()
         }
-        wait(authorizationStarted, "authorization started")
-        check(pending.leaveForeground(), "Background cancels authorization still waiting")
-        authorizationReturns.signal()
-        wait(waitingFinished, "late authorization returned")
+        wait(connectionCheckStarted, "connection check started")
+        check(pending.leaveForeground(), "Background cancels a connection check still waiting")
+        connectionCheckReturns.signal()
+        wait(waitingFinished, "late connection check returned")
         check(waitingProbe.events.isEmpty && waitingProbe.error is CancellationError,
-              "A late authorization cannot admit a device command")
+              "A late connection check cannot admit a device command")
         check(!pending.allowsForegroundCompletion, "Late console completion is not admitted")
 
         let started = LauncherOperationToken()

@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Replaces only the downloaded developer image; the model rechecks device access.
+/// Restores the bundled developer image and prepares the device connection.
 struct DDIRecoveryView: View {
     @ObservedObject var model: LauncherModel
     @ObservedObject private var vpn: LocalVPNManager
@@ -12,14 +12,14 @@ struct DDIRecoveryView: View {
         self.pairing = model.pairing
     }
 
-    private var canRedownload: Bool {
+    private var canRestore: Bool {
         model.isWiFiAvailable && !model.isBusy && !pairing.isRunning && !vpn.isBusy && model.canAttemptDeviceConnection
             && model.pairingFileName != nil && model.developerModeConfirmed
     }
 
     private var isPreparingImage: Bool {
         model.isBusy && [
-            "progress.checking_device", "progress.checking_ddi", "progress.downloading_ddi",
+            "progress.checking_device", "progress.checking_ddi", "progress.preparing_ddi",
             "progress.mounting_ddi", "progress.verifying_ddi"
         ].contains(model.progressKey)
     }
@@ -27,16 +27,16 @@ struct DDIRecoveryView: View {
     var body: some View {
         Section {
             Button {
-                model.redownloadDDI()
+                model.restoreBundledDDI()
             } label: {
                 Label {
                     Text("ddi.recovery.action", tableName: "DDI")
                 } icon: {
-                    Image(systemName: "arrow.down.circle")
+                    Image(systemName: "arrow.counterclockwise.circle")
                 }
                 .frame(minHeight: 44, alignment: .leading)
             }
-            .disabled(!canRedownload)
+            .disabled(!canRestore)
             if isPreparingImage {
                 PreparationProgress(model: model)
                     .padding(.vertical, 4)

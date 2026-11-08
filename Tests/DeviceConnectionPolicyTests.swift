@@ -39,10 +39,10 @@ enum DeviceConnectionPolicyTests {
         check(validation.recordPairedDeviceResponse(for: first), "Current paired-device response verifies the connection")
         check(DeviceConnectionPolicy.isReady(mode: .external, builtInConnected: false, external: validation),
               "Actual external validation works without the owned VPN")
-        check(validation.isCurrent(first), "Verified ticket remains current through website authorization and device work")
+        check(validation.isCurrent(first), "Verified ticket remains current through preparation and device work")
         check(!validation.recordPairedDeviceResponse(for: first), "A duplicate response cannot restart a completed check")
         check(!DeviceConnectionPolicy.isReady(mode: .builtIn, builtInConnected: false, external: validation),
-              "External verification cannot authorize a disconnected built-in route")
+              "External verification cannot validate a disconnected built-in route")
 
         // Network/foreground/pairing/mode invalidations all discard outstanding
         // tickets. A delayed native call is allowed to return but not revalidate.
@@ -65,13 +65,13 @@ enum DeviceConnectionPolicyTests {
         check(!DeviceConnectionPolicy.isReady(mode: .external, builtInConnected: false, external: validation),
               "A new device request does not display an old verified result while checking")
         check(!validation.isCurrent(recovered) && validation.isCurrent(refresh),
-              "An older website authorization cannot complete against the refreshed route")
+              "An older device operation cannot complete against the refreshed route")
         validation.invalidate()
         validation.invalidate()
         check(validation.phase == .unverified && !validation.isCurrent(refresh), "Repeated failure invalidation is idempotent")
         check(DeviceConnectionPolicy.isReady(mode: .builtIn, builtInConnected: true, external: validation),
               "External validation lifecycle does not change built-in readiness")
 
-        print("\(count) device connection policy tests passed. Native pairing, third-party VPN ownership, and website authorization are not simulated.")
+        print("\(count) device connection policy tests passed. Native pairing and third-party VPN ownership are not simulated.")
     }
 }

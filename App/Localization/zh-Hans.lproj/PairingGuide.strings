@@ -21,7 +21,7 @@
 "guide.readiness.ddi" = "设备连接与开发者磁盘映像";
 "guide.readiness.ddi.ready" = "设备连接与 DDI 检查已通过";
 "guide.readiness.ddi.pending" = "等待检查与准备";
-"guide.readiness.ddi.note" = "准备过程会检查设备连接，并按需下载、挂载开发者磁盘映像（DDI）。首次下载可能需要几分钟，请保持应用在前台。";
+"guide.readiness.ddi.note" = "开发者镜像已内置，准备时会按系统要求挂载。请保持 Wi-Fi 和本地 VPN 连接。";
 "guide.action.waiting_hint" = "请前往系统设置按步骤操作。若会话超时，请返回这里重新开始。";
 "guide.action.confirm_developer" = "确认已开启开发者模式后再继续。";
 "guide.action.connecting" = "正在连接本地 VPN…";

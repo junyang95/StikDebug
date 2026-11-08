@@ -21,7 +21,7 @@
 "guide.readiness.ddi" = "Device connection and developer disk image";
 "guide.readiness.ddi.ready" = "Connection and DDI checks passed";
 "guide.readiness.ddi.pending" = "Waiting to check and prepare";
-"guide.readiness.ddi.note" = "Preparation checks the device connection and downloads and mounts a developer disk image (DDI) when needed. The first download may take a few minutes; keep the app open.";
+"guide.readiness.ddi.note" = "The developer image is included in this app and mounted as required by iOS. Keep Wi-Fi and the local VPN connected while preparing JIT.";
 "guide.action.waiting_hint" = "Follow the steps in Settings. If the session expires, return here to restart.";
 "guide.action.confirm_developer" = "Confirm that Developer Mode is enabled before continuing.";
 "guide.action.connecting" = "Connecting the local VPN…";

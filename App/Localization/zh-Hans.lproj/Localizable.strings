@@ -57,7 +57,7 @@
 "vpn.disconnecting" = "VPN 正在断开，请稍候再重新连接。";
 "vpn.profile_name" = "JIT启动器本地连接";
 "setup.prepare.title" = "准备本设备";
-"setup.prepare.instructions" = "检查连接并准备开发者磁盘映像。首次准备可能需要下载文件，请耐心等待几分钟。";
+"setup.prepare.instructions" = "检查连接并准备内置开发者镜像。挂载期间请保持应用在前台。";
 "setup.prepare.action" = "准备设备";
 "setup.prepare.again" = "重新检查设备";
 "setup.open_launch" = "选择需要启用 JIT 的应用";
@@ -119,7 +119,7 @@
 "progress.connecting" = "正在连接设备…";
 "progress.checking_device" = "正在检查设备连接…";
 "progress.checking_ddi" = "正在检查开发者磁盘映像…";
-"progress.downloading_ddi" = "正在下载开发者磁盘映像…";
+"progress.preparing_ddi" = "正在准备内置开发者镜像…";
 "progress.mounting_ddi" = "正在挂载开发者磁盘映像…";
 "progress.verifying_ddi" = "正在验证设备准备状态…";
 "progress.ready" = "设备已就绪";
@@ -187,8 +187,6 @@
 "App Bundle ID" = "应用 Bundle ID";
 "Open JIT Launcher and confirm a JIT request for an installed app." = "打开 JIT启动器，确认对已安装应用启用 JIT。";
 "error.operation_busy" = "另一项操作仍在进行，请等待完成后重新发起此请求。";
-"progress.verifying_access" = "正在验证设备…";
-"error.access_failed" = "设备验证未通过。";
 
 // Wi-Fi is required before device connection and preparation.
 "wifi.title" = "Wi-Fi 连接";
@@ -210,10 +208,13 @@
 "connection.mode.hint" = "切换连接方式后，需要重新准备 JIT。";
 "connection.external.instructions" = "先在 LocalDevVPN 或兼容的本地回环 VPN 中使用默认配置连接，再返回这里检查设备连接并准备 JIT。";
 "connection.external.configuration" = "默认本地地址为 10.7.0.1，暂不支持自定义地址。";
-"connection.external.verification_note" = "「已验证」表示上次设备服务检查成功。本应用不会实时监测或控制外部 VPN。";
-"connection.external.unverified" = "设备连接未验证";
+"connection.external.verification_note" = "「连接可用」表示上次设备服务检查成功。本应用不会实时监测或控制外部 VPN。";
+"connection.external.unverified" = "设备连接尚未检查";
 "connection.external.checking" = "正在检查设备连接…";
-"connection.external.verified" = "设备连接已验证";
+"connection.external.verified" = "设备连接可用";
 "connection.external.check" = "检查设备连接";
 "connection.external.pairing_required" = "请先在配对引导中完成配对，并确认已开启开发者模式。";
-"error.external_connection_failed" = "无法验证外部设备连接。请先在 LocalDevVPN 或兼容的本地回环 VPN 中使用默认配置连接，再返回这里重试。";
+"error.external_connection_failed" = "无法通过外部 VPN 连接设备。请先在 LocalDevVPN 或兼容的本地回环 VPN 中使用默认配置连接，再返回这里重试。";
+"setup.start" = "开始设置";
+"progress.checking_connection" = "正在检查设备连接…";
+"error.connection_failed" = "无法连接已配对设备。请检查配对和本地 VPN 后重试。";

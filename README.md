@@ -2,7 +2,7 @@
 
 ## JIT启动器 — integrated iOS app
 
-This branch adds **JIT启动器** (2.0.7, build 18), a standalone SwiftUI app integrating
+This branch adds **JIT启动器** (2.0.8, build 19), a standalone SwiftUI app integrating
 StikDebug's installed-app launch/JIT workflow and device tools, on-device pairing,
 the StikJIT engine, and [LocalDevVPN](https://github.com/jkcoxson/LocalDevVPN).
 Four tabs cover applications, the seven-step pairing guide, debugging tools, and
@@ -15,17 +15,19 @@ The application list shows only targets with `get-task-allow`, excludes the
 launcher itself, and loads their real icons from the device. An unavailable icon
 uses a fallback without preventing the rest of the list from loading.
 
-Version 2.0.7 starts device authorization only after **Start setup**, reuses the
-shared signed authorization core, and supports domain fallback and seven-day
-device-bound offline access. Registered, unbanned devices remain eligible without
-VIP membership. The compatible backend must be deployed before this package.
+Version 2.0.8 removes the website registration, VIP and UDID authorization flow
+present in 2.0.7. Setup proceeds directly to pairing, Developer Mode and the
+selected VPN connection. Device commands check the paired connection locally;
+there is no website authorization request, signed access permit or offline
+license expiry. Both developer disk image (DDI) families are included in the IPA;
+preparation copies and verifies the selected bundled files before mounting them.
 
 Version 2.0.6 adds an **External VPN** connection mode in Setup and Settings.
 Start LocalDevVPN with its default configuration, select External VPN, and check
 and prepare JIT. Compatible loopback VPNs exposing the same device endpoint are
 also usable. External mode never starts the built-in VPN; it checks the actual
-paired device connection before protected operations and retains signed device
-registration verification. An ordinary internet VPN is not sufficient.
+paired device connection before device operations. An ordinary internet VPN is
+not sufficient.
 
 Version 2.0.5 imports pairing files as local copies supplied by the system document
 picker. Read, validation, save, and busy-state failures now have distinct feedback;
@@ -40,42 +42,36 @@ Version 2.0.4 requires an available Wi-Fi path before pairing, VPN connection,
 device verification, DDI preparation or new JIT operations. It shows Wi-Fi
 readiness, blocks cellular-only connections, rechecks after foreground entry,
 and cancels pending work when Wi-Fi disappears while retaining verified DDI
-files. Download requests disallow cellular handoff. Real-location restoration
+files. Real-location restoration
 remains a recovery exception when the existing local device connection works.
 
-Version 2.0.3 addresses downloads that appear stuck at **Downloading developer
-disk image**. It shows transferred bytes and progress, uses a versioned Qiniu
-mirror with a fixed upstream fallback, bounds connection/stall times, and verifies
-the complete DDI file group before replacing cached files. Settings includes
-**Download developer image again**, preserving the pairing record. The bundled
-asset catalog pins upstream commit `6eae353ae694bda1c421d4a3eee5459ae59c99a1`
-(build `27A5228h`); publishing new server files does not silently change that pin.
-Release preparation must upload the versioned mirror and verify its public
-URLs, sizes, and hashes before distributing the corresponding app.
+The IPA includes eight DDI files across the Personalized and Cryptex families
+(33,239,188 bytes, about 31.7 MiB before IPA compression). Their source is pinned
+to `doronz88/DeveloperDiskImage` commit
+`6eae353ae694bda1c421d4a3eee5459ae59c99a1`, build `27A5228h`. The bundled catalog
+records each file's size and SHA-256. Preparation selects the family for the
+running OS, copies the complete group into the local cache, verifies it, and
+mounts it when needed. Missing or corrupt bundled files report an error; DDI
+preparation has no remote download or fallback.
 
-Cryptex mounting was already present in 2.0.2, with the same relevant FFI/core
-as pinned StikDebug 3.1.13. The
-[StikDebug 3.1.11 release](https://github.com/StikDebug/StikDebug/releases/tag/3.1.11)
-introduced that mounting path to address iPhone 18 Pro compatibility. This release
-repairs download handling, rather than introducing cryptex support. A successful
-download still needs physical-device mounting and target JIT verification.
+Settings includes **Restore bundled developer image**, which rebuilds the cache
+from the IPA while preserving the pairing record. Changing the bundled DDI
+version requires an app update. Apple's device personalization or mounting
+protocol may still need network access; bundling the image does not guarantee
+that the whole JIT setup can complete offline. Physical-device mounting and a
+target JIT run remain necessary to verify compatibility.
 
-Device access keeps the launcher's original rule: **registered and not banned**.
-VIP membership is not required, and expired VIP is allowed. Opening the app shows
-the application library without starting authorization. Choose **Start setup** to
-begin: a per-device signed package can check its bundled identity first, then
-pair and connect the VPN. Public unsigned/self-signed packages without a unique
-identity continue to pairing and verify the actual connected device instead.
+Opening the app shows the application library. Setup and device tools require
+no website account, VIP membership or UDID registration. Pairing, Developer Mode,
+available Wi-Fi, a working loopback VPN and DDI mounting remain the technical
+requirements for JIT. Device connection checks do not upload a device identifier.
+Restoring real location remains available when the existing local device
+connection works.
 
-Before a protected operation, the launcher still reads the real device UDID.
-It checks a fresh signed registration result using **app-shop.cn**, with
-**wow-app.store** as fallback; a valid setup precheck can be bound locally after
-that real-identity match. Bound permits cover network failures for at most seven
-days from server issuance, independent of VIP expiry. A signed ban or missing
-registration denies access immediately. Restoring real location remains a
-recovery exception; JIT already obtained by another process cannot be revoked.
-The backend must first deploy the signed `isRegistered` field. See
-[LAUNCHER.md](LAUNCHER.md#device-registration-and-offline-access) for the contract.
+For website signing and distribution, keep this app's `vipCheckEnabled=N` and
+verify that the signed package contains no legacy WowVipGuard injection. The
+native device-access signing marker has been removed. See
+[LAUNCHER.md](LAUNCHER.md#signing-and-distribution) for the release checks.
 
 A separate StikDebug, StikPair or LocalDevVPN app is not needed for these integrated
 workflows. On-device pairing requires iOS/iPadOS 27 or later; on earlier supported
@@ -104,10 +100,9 @@ remote main reconfirmed with `git ls-remote` on 2026-10-02).
 The combined launcher and StikDebug-derived additions are distributed under
 AGPL-3.0 with corresponding source. See
 [`ThirdParty/StikDebug`](ThirdParty/StikDebug) for attribution and scope.
-The pairing guide and signed-license verification reference the user's
-`codex/pikmin-helper` working tree without modifying that branch. This launcher's
-device-registration policy is separate from its VIP/subscription policy; HealthKit
-and walking/step-writing features are not included.
+The pairing guide references the user's `codex/pikmin-helper` working tree without
+modifying that branch. HealthKit and walking/step-writing features are not
+included. Its separate subscription workflow is unchanged.
 
 The integrated VPN **uses code from LocalDevVPN**, based on StosVPN by the SideStore
 Team and contributors. It is an independently named integration, not an official

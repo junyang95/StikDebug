@@ -27,10 +27,6 @@ struct PairingSetupView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
-                WowDeviceAccessView(model: model)
-                    .padding(20)
-                    .background(Color(uiColor: .secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 20))
-                if model.isSetupAccessReady {
                 statusHeader
                 if !model.isWiFiAvailable {
                     Label(LocalizedStringKey(model.wifiStatusKey), systemImage: "wifi.slash")
@@ -50,7 +46,6 @@ struct PairingSetupView: View {
                 Text("setup.reuse_hint")
                     .font(.footnote)
                     .foregroundStyle(.secondary)
-                }
             }
             .frame(maxWidth: 680)
             .padding(20)
@@ -59,7 +54,7 @@ struct PairingSetupView: View {
         .background(Color(uiColor: .systemGroupedBackground))
         .navigationTitle("app.name")
         .navigationBarTitleDisplayMode(.inline)
-        .safeAreaInset(edge: .bottom, spacing: 0) { if model.isSetupAccessReady { actionBar } }
+        .safeAreaInset(edge: .bottom, spacing: 0) { actionBar }
         .sheet(isPresented: $importingPairing) {
             PairingFileImporter(onCompletion: handlePairingImport)
         }
@@ -74,9 +69,6 @@ struct PairingSetupView: View {
             }
         }
         .onChange(of: model.connectionMode) { _, _ in prepareWhenConnected = false }
-        .onChange(of: model.isSetupAccessReady) { _, ready in
-            if !ready { prepareWhenConnected = false; importingPairing = false }
-        }
         .onChange(of: model.wifiState) { _, state in
             if !state.isAvailable { prepareWhenConnected = false }
         }
@@ -355,7 +347,6 @@ struct PairingSetupView: View {
     }
 
     private func presentPairingImporter() {
-        guard model.isSetupAccessReady else { model.startSetup(); return }
         importFeedback = nil
         importingPairing = true
     }
@@ -479,7 +470,6 @@ struct PairingSetupView: View {
     }
 
     private func primaryAction() {
-        guard model.isSetupAccessReady else { model.startSetup(); return }
         if pairing.isRunning { pairing.cancel(); return }
         guard !operationInProgress else { return }
         if hasRecord || pairing.isSupported { guard model.requireWiFi() else { return } }
@@ -511,7 +501,7 @@ struct PairingSetupView: View {
     }
 
     private func prepareIfReady() {
-        guard model.isSetupAccessReady, hasRecord, model.isWiFiAvailable, model.developerModeConfirmed, model.canAttemptDeviceConnection,
+        guard hasRecord, model.isWiFiAvailable, model.developerModeConfirmed, model.canAttemptDeviceConnection,
               !model.isBusy, !pairing.isRunning else { return }
         model.prepareDevice()
     }

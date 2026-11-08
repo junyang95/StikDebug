@@ -57,7 +57,7 @@
 "vpn.disconnecting" = "VPN 正在中斷，請稍候再重新連線。";
 "vpn.profile_name" = "JIT啟動器本機連線";
 "setup.prepare.title" = "準備本裝置";
-"setup.prepare.instructions" = "檢查連線並準備開發者磁碟映像檔。首次準備可能需要下載檔案，請耐心等候幾分鐘。";
+"setup.prepare.instructions" = "檢查連線並準備內建開發者映像檔。掛載期間請保持 App 在前景。";
 "setup.prepare.action" = "準備裝置";
 "setup.prepare.again" = "重新檢查裝置";
 "setup.open_launch" = "選擇需要啟用 JIT 的 App";
@@ -119,7 +119,7 @@
 "progress.connecting" = "正在連接裝置…";
 "progress.checking_device" = "正在檢查裝置連線…";
 "progress.checking_ddi" = "正在檢查開發者磁碟映像檔…";
-"progress.downloading_ddi" = "正在下載開發者磁碟映像檔…";
+"progress.preparing_ddi" = "正在準備內建開發者映像檔…";
 "progress.mounting_ddi" = "正在掛載開發者磁碟映像檔…";
 "progress.verifying_ddi" = "正在驗證裝置準備狀態…";
 "progress.ready" = "裝置已就緒";
@@ -187,8 +187,6 @@
 "App Bundle ID" = "App Bundle ID";
 "Open JIT Launcher and confirm a JIT request for an installed app." = "開啟 JIT啟動器，確認對已安裝 App 啟用 JIT。";
 "error.operation_busy" = "另一項操作仍在進行，請等待完成後重新發起此請求。";
-"progress.verifying_access" = "正在驗證裝置…";
-"error.access_failed" = "裝置驗證未通過。";
 
 // Wi-Fi is required before device connection and preparation.
 "wifi.title" = "Wi-Fi 連線";
@@ -210,10 +208,13 @@
 "connection.mode.hint" = "切換連線方式後，需要重新準備 JIT。";
 "connection.external.instructions" = "先在 LocalDevVPN 或相容的本機回環 VPN 中使用預設設定連線，再返回這裡檢查裝置連線並準備 JIT。";
 "connection.external.configuration" = "預設本機位址為 10.7.0.1，暫不支援自訂位址。";
-"connection.external.verification_note" = "「已驗證」表示上次裝置服務檢查成功。本 App 不會即時監測或控制外部 VPN。";
-"connection.external.unverified" = "裝置連線尚未驗證";
+"connection.external.verification_note" = "「連線可用」表示上次裝置服務檢查成功。本 App 不會即時監測或控制外部 VPN。";
+"connection.external.unverified" = "裝置連線尚未檢查";
 "connection.external.checking" = "正在檢查裝置連線…";
-"connection.external.verified" = "裝置連線已驗證";
+"connection.external.verified" = "裝置連線可用";
 "connection.external.check" = "檢查裝置連線";
 "connection.external.pairing_required" = "請先在配對引導中完成配對，並確認已開啟開發者模式。";
-"error.external_connection_failed" = "無法驗證外部裝置連線。請先在 LocalDevVPN 或相容的本機回環 VPN 中使用預設設定連線，再返回這裡重試。";
+"error.external_connection_failed" = "無法透過外部 VPN 連線至裝置。請先在 LocalDevVPN 或相容的本機回環 VPN 中使用預設設定連線，再返回這裡重試。";
+"setup.start" = "開始設定";
+"progress.checking_connection" = "正在檢查裝置連線…";
+"error.connection_failed" = "無法連線至已配對裝置。請檢查配對和本地 VPN 後重試。";

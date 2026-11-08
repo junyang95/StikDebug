@@ -1,6 +1,6 @@
 # StikDebug integration provenance
 
-Current integrated launcher release: **2.0.3 (14)**.
+Current integrated launcher release: **2.0.8 (19)**.
 
 Upstream project: <https://github.com/StikDebug/StikDebug>
 
@@ -37,18 +37,19 @@ initial port of this functionality. The upstream
 introduced cryptex mounting to address iPhone 18 Pro compatibility and documented
 that on iOS 26.4 and later the mounted image persists across ordinary reboots.
 
-The 2.0.3 download changes are launcher-specific: a bundled file catalog pins
-DDI asset commit `6eae353ae694bda1c421d4a3eee5459ae59c99a1` (build `27A5228h`),
-tries a versioned Qiniu mirror and then the upstream fixed-commit URL, checks
-complete three-file personalized or five-file cryptex groups by size and SHA-256,
-and writes a cache completion receipt. Streaming progress, bounded timeouts,
-cancellation, and a pairing-preserving re-download action address download stalls.
-These adaptations do not change the upstream cryptex mounting protocol or force
-an already mounted system DDI to unmount. Publishing mirror files is a separate
-release operation; this source change does not assert that it has occurred.
-The DDI asset source is `doronz88/DeveloperDiskImage`, separate from StikDebug's
-application commit. See [LAUNCHER.md](../../LAUNCHER.md) for the cache and download
-contract and physical-device verification requirements.
+The current bundled-DDI installation is launcher-specific. The asset catalog
+pins `doronz88/DeveloperDiskImage` commit
+`6eae353ae694bda1c421d4a3eee5459ae59c99a1` (build `27A5228h`), separate from
+StikDebug's application commit. The framework ships the complete three-file
+Personalized and five-file Cryptex groups in `Resources/DDI`. Local copying,
+size/SHA-256 verification, a completion receipt and cache restoration replace the
+earlier remote downloader. Missing or corrupt resources report an error without
+a network fallback. These adaptations preserve the upstream mounting protocol
+and do not forcibly unmount an already mounted system DDI. Apple's device
+personalization or mounting protocol may still need network access. See
+[LAUNCHER.md](../../LAUNCHER.md) for the bundled-resource contract and
+physical-device verification requirements. Existing upstream license notices
+remain unmodified.
 
 The application catalog, entitlement interpretation, app launch, process control,
 device metadata, provisioning-profile operations, and location-service calls
@@ -86,30 +87,21 @@ background lifetime, and notification cleanup. The app cannot observe or mark
 manual Settings actions complete. The Pikmin branch's HealthKit, walking/step
 writing, VIP/subscription, and proxy workflows are not included.
 
-## Device-verification reference
+## Local connection checks
 
-The local `codex/pikmin-helper` signed-license implementation also informs the
-P-256 public-key/signature, UDID, nonce, and timestamp contract. The launcher
-implements a separate registration/non-ban policy in
-`App/Models/WowDeviceAccess.swift` and `App/Services/WowDeviceAccessClient.swift`.
-It does not adopt the branch's VIP gate or offline permission cache.
+Earlier launcher versions referenced the local `codex/pikmin-helper`
+signed-license implementation. That commercial authorization flow was removed in
+2.0.8, including its UDID reads, website requests, signature checks and offline
+access cache. It is no longer part of this integration.
 
-Sign in to **wow-app.store** in Safari and complete device identification to
-create the device registration. Each protected new operation reads the actual
-connected device UDID and sends it over HTTPS to the existing
-`/api/checkVipInfo.action` and `/api/vip-license.action` endpoints. Registration
-requires `code: 0` and a matching `data.device`; the signed response must match the
-UDID, fresh nonce and allowed timestamp, with explicit `isBanned: false` and a
-recognized status other than `BANNED`. Non-VIP and expired-VIP devices are allowed.
-The registration record does not prove a current browser session or an independent
-last-login timestamp. No backend modification or deployment is included.
-
-Network or verification failures block new protected operations. Responses and
-offline permission are not cached, and the UDID/response is not logged. Restoring
-real location remains available for recovery when the local device connection
-works, including after a ban or network outage. Admission checks cannot revoke
-JIT already obtained by a running process. See [LAUNCHER.md](../../LAUNCHER.md) for
-the request limits and operation scope.
+The launcher retains `StikJIT.checkDeviceConnection`, which checks the selected
+endpoint and performs a paired device-service handshake without reading a UDID.
+Connection generation and cancellation checks protect queued device operations.
+Setup requires pairing, Developer Mode, Wi-Fi and a working local tunnel. JIT
+preparation also uses the bundled developer image when a mounted DDI is needed.
+These technical checks grant no commercial license and send no registration
+request. See [LAUNCHER.md](../../LAUNCHER.md) for current setup and distribution
+requirements.
 
 ## Compatibility boundaries
 
@@ -127,7 +119,7 @@ the request limits and operation scope.
   interrupt for a pending log read. The app waits for that read to return before
   releasing handles or starting a replacement stream.
 - Shortcuts and the `jitlauncher`/`stikpair` URL schemes require in-app confirmation,
-  prior preparation, and fresh online device verification. Arbitrary external
+  prior preparation, and a working paired-device connection. Arbitrary external
   scripts and upstream `stikdebug://` compatibility are not provided.
 - This build needs signing with the app/extension VPN entitlements and physical
   device acceptance. Neither an unsigned archive nor a simulator preview verifies

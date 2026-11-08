@@ -49,7 +49,7 @@ public enum StikJIT {
 
         case checkingDDI
 
-        case downloadingDDI(fraction: Double, status: String)
+        case installingDDI(fraction: Double, status: String)
 
         case mountingDDI(fraction: Double)
 
@@ -175,10 +175,9 @@ public enum StikJIT {
             progress(.checkingDDI)
             let session = DDISession(pairingFilePath: pairingFile.path, configuration: configuration)
             if try !session.isMounted() {
-                if !paths.allFilesUsable {
-                    try SynchronousDDIDownloader.download(to: paths, progress: { fraction, status in
-                        progress(.downloadingDDI(fraction: fraction, status: status))
-                    }, cancellationCheck: cancellationCheck)
+                try DDIAssetInstaller.install(to: paths, onlyIfNeeded: true,
+                                              cancellationCheck: cancellationCheck) { fraction, status in
+                    progress(.installingDDI(fraction: fraction, status: status))
                 }
                 try cancellationCheck()
                 try session.mountDDI(paths: paths) { fraction in
@@ -199,14 +198,14 @@ public enum StikJIT {
         }
     }
 
-    /// Downloads and validates a complete new asset set, including when the
-    /// device already has a mounted DDI. It preserves pairing credentials.
-    public static func redownloadDDI(to paths: DDIPaths,
+    /// Restores a complete validated asset set from the app bundle, including
+    /// when the device already has a mounted DDI. It preserves pairing credentials.
+    public static func restoreBundledDDI(to paths: DDIPaths,
                                      progress: @escaping (PreparationStage) -> Void = { _ in },
                                      cancellationCheck: @escaping () throws -> Void = {}) throws {
-        try SynchronousDDIDownloader.download(to: paths, progress: { fraction, status in
-            progress(.downloadingDDI(fraction: fraction, status: status))
-        }, cancellationCheck: cancellationCheck)
+        try DDIAssetInstaller.install(to: paths, cancellationCheck: cancellationCheck) { fraction, status in
+            progress(.installingDDI(fraction: fraction, status: status))
+        }
     }
 
     public static func resetCachedDDI(at paths: DDIPaths) throws {
@@ -219,9 +218,9 @@ public enum StikJIT {
     }
 
     @available(iOS 17.4, *)
-    public static func downloadDDIIfNeeded(to paths: DDIPaths,
+    public static func prepareDDIIfNeeded(to paths: DDIPaths,
                                            progress: @escaping (Double, String) -> Void = { _, _ in }) async throws {
-        try await DeveloperDiskImageService.shared.downloadIfNeeded(to: paths, progress: progress)
+        try await DeveloperDiskImageService.shared.prepareIfNeeded(to: paths, progress: progress)
     }
 
     public static func mountDDI(pairingFile: URL,

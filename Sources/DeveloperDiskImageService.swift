@@ -41,7 +41,7 @@ public struct DDIPaths: Sendable {
         case "Image.dmg.trustcache": return trustcachePath
         case "Image.dmg.cryptex_info": return cryptexInfoPath
         case "Image.dmg.root_hash": return rootHashPath
-        default: throw StikJITError.ddiDownload("Unknown DDI asset: \(name)")
+        default: throw StikJITError.ddiInstallation("Unknown DDI asset: \(name)")
         }
     }
 
@@ -67,60 +67,28 @@ enum DDIMountMethod: String, Codable {
     }
 }
 
-struct DDIDownloadItem {
-    let name: String
-    let destinationPath: String
-    let url: URL
-    let fallbackURL: URL
-    let size: Int64
-    let sha256: String
-}
-
-enum DDIDownloadCatalog {
-    static func items(for paths: DDIPaths, method: DDIMountMethod = .current,
-                      catalog: DDIAssetCatalog? = nil) throws -> [DDIDownloadItem] {
-        let catalog = try catalog ?? DDIAssetCatalog.load()
-        try catalog.validate()
-        guard let family = catalog.families[method.rawValue],
-              let mirror = URL(string: catalog.mirrorBaseURL), let upstream = URL(string: catalog.upstreamBaseURL) else {
-            throw StikJITError.ddiDownload("DDI catalog is missing the selected mount method")
-        }
-        return try family.files.map { file in
-            DDIDownloadItem(name: file.name, destinationPath: try paths.path(for: file.name),
-                            url: mirror.appendingPathComponent(family.directory).appendingPathComponent(file.name),
-                            fallbackURL: upstream.appendingPathComponent(family.directory).appendingPathComponent(file.name),
-                            size: file.size, sha256: file.sha256)
-        }
-    }
-}
-
 @available(iOS 17.4, *)
 public actor DeveloperDiskImageService {
     public static let shared = DeveloperDiskImageService()
-    private let configuration: URLSessionConfiguration
 
-    public init(session: URLSession = .shared) { configuration = session.configuration }
+    public init() {}
 
-    public func downloadIfNeeded(to paths: DDIPaths, progress: @escaping (Double, String) -> Void = { _, _ in }) async throws {
+    public func prepareIfNeeded(to paths: DDIPaths, progress: @escaping (Double, String) -> Void = { _, _ in }) async throws {
         try await run(to: paths, onlyIfNeeded: true, progress: progress)
     }
 
-    public func download(to paths: DDIPaths, progress: @escaping (Double, String) -> Void = { _, _ in }) async throws {
+    public func restore(to paths: DDIPaths, progress: @escaping (Double, String) -> Void = { _, _ in }) async throws {
         try await run(to: paths, onlyIfNeeded: false, progress: progress)
     }
 
     private func run(to paths: DDIPaths, onlyIfNeeded: Bool, progress: @escaping (Double, String) -> Void) async throws {
-        let cancellation = DDITransferCancellation()
-        let configuration = self.configuration
+        let cancellation = DDIInstallationCancellation()
         try await withTaskCancellationHandler(operation: {
             try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
                 DispatchQueue.global(qos: .utility).async {
                     continuation.resume(with: Result {
-                        try cancellation.check()
-                        let catalog = try DDIAssetCatalog.load()
-                        if onlyIfNeeded && DDICache.isUsable(paths: paths, method: .current, catalog: catalog) { return }
-                        try DDIDownloadRunner.download(to: paths, catalog: catalog, configuration: configuration,
-                                                       cancellation: cancellation, progress: progress)
+                        try DDIAssetInstaller.install(to: paths, onlyIfNeeded: onlyIfNeeded,
+                                                      cancellation: cancellation, progress: progress)
                     })
                 }
             }

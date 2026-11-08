@@ -7,9 +7,9 @@ xcrun swiftc -parse-as-library -module-cache-path "$test_directory/ModuleCache" 
   "$repo_root/Sources/StikJITError.swift" \
   "$repo_root/Sources/DeveloperDiskImageService.swift" \
   "$repo_root/Sources/DDIAssetCatalog.swift" \
-  "$repo_root/Sources/DDIDownloadRunner.swift" \
-  "$repo_root/Sources/SynchronousDDIDownloader.swift" \
+  "$repo_root/Sources/DDIAssetInstaller.swift" \
   "$repo_root/Tests/DDIDownloadTests.swift" \
   -o "$test_directory/DDIDownloadTests"
 cp "$repo_root/Resources/DDIAssets.json" "$test_directory/DDIAssets.json"
+cp -R "$repo_root/Resources/DDI" "$test_directory/DDI"
 "$test_directory/DDIDownloadTests"

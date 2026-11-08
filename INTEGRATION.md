@@ -88,7 +88,9 @@ Helper app extension (StikJIT, DDI cache, blocking work)
 1. Add `StikJIT.xcframework` to the Xcode project.
 2. Link and embed it in the helper extension, not the host app.
 3. Set the helper extension deployment target to iOS 17.4 or later.
-4. Make sure the final app contains and signs the framework.
+4. Make sure the final app contains and signs the framework, including its
+   `DDIAssets.json` and complete `DDI` resource directory. Preserve both family
+   subdirectories; the framework does not download missing image files.
 5. Give the helper a way to receive the host PID, pairing-file data, settings, progress, and results. XPC is a good fit.
 
 If the host app supports older iOS versions, do not strongly link StikJIT into it. Keeping StikJIT in the iOS 17.4 helper prevents the app from trying to load the framework on an older system.
@@ -209,7 +211,9 @@ let paths = DDIPaths.default(
 )
 ```
 
-Use the same `DDIPaths` for preparation, JIT enablement, and cache reset. Before iOS 26.4, StikJIT downloads and mounts the three-file personalized DDI. On iOS 26.4 and newer, it downloads and installs the five-file cryptex DDI, which additionally includes cryptex info and a root hash. Do not validate cached DDI versions or contents yourself; StikJIT selects and replaces the cache format required by the running OS.
+Use the same `DDIPaths` for preparation, JIT enablement, and cache restoration. Before iOS 26.4, StikJIT copies and verifies the three-file Personalized DDI from its framework bundle. On iOS 26.4 and newer, it uses the five-file Cryptex DDI, which additionally includes cryptex info and a root hash. StikJIT selects the family, verifies each file against its bundled catalog, and installs a complete cache before mounting. Do not implement a separate cache validator. Missing or corrupt packaged resources report an error and do not trigger a download.
+
+Both families must be included in the shipped framework, even when testing on only one OS generation. The eight files total about 31.7 MiB before compression. Image installation is local; Apple's personalization or mounting protocol may still require network access.
 
 A successful DDI mount persists until the device reboots, so it normally needs to be mounted only once per boot.
 
@@ -242,7 +246,7 @@ Display the result as:
 - `.unreachable(reason)` → **Unreachable**, with the reason
 - `.preparationFailed(reason)` → **Not Ready**, with the reason
 
-Preparation checks reachability, checks whether the DDI is mounted, downloads missing files, mounts, verifies the mount, and determines whether TXM is present. Those steps execute in that order.
+Preparation checks the paired connection and whether the DDI is mounted. If mounting is needed, it validates the local cache or installs the selected bundled family, mounts it, and verifies the result. Handle `.installingDDI(fraction:status:)` as local copy/verification progress, alongside `.mountingDDI` and `.verifyingDDI`. TXM detection remains part of readiness; installation success alone is not successful JIT.
 
 ### When the user launches a game or workload
 
@@ -268,15 +272,26 @@ Configure exactly one script in backend code: `.universal` or `.legacy` for the 
 let selectedScript: StikJIT.Script = .customBase64(storedScriptBase64)
 ```
 
-### When the user resets the cache
+### When the user restores the cache
 
-Provide a **Reset Developer Disk Image** action that calls:
+Provide a **Restore bundled developer image** action that runs on the helper's
+serial background queue:
 
 ```swift
-try StikJIT.resetCachedDDI(at: paths)
+try StikJIT.restoreBundledDDI(to: paths, progress: { stage in
+    reportPreparationStage(stage)
+})
 ```
 
-This removes only the five possible cached DDI files. The next preparation downloads the three-file personalized DDI or five-file cryptex DDI required by the running OS if mounting is necessary.
+This copies and verifies a fresh group from the installed framework, preserving
+the pairing file. It does not download a replacement, and it does not forcibly
+unmount a DDI already in use by the system. After restoration, run normal device
+preparation to check or mount the image as needed.
+
+`StikJIT.resetCachedDDI(at: paths)` remains available when the integration needs
+to remove the local cache. The next preparation installs the system's selected
+bundled family if mounting is necessary. A damaged framework resource must be
+fixed by installing a complete app package; clearing the cache cannot repair it.
 
 ## Configure the JIT methods
 
@@ -403,9 +418,9 @@ Tell users all of the following before their first Built-in StikJIT attempt:
 4. A pairing file obtained through AFC/Finder, `idevice_pair`, or another pairing method must be imported or placed at `StikJIT/pairingFile.plist` in the app's Documents folder.
 5. LocalDevVPN must be connected.
 6. Use a nearby Wi-Fi network when available. Without Wi-Fi, enable cellular data, connect LocalDevVPN, and then enable Airplane Mode before returning to the app.
-7. If preparation repeatedly fails, reboot the device and try again. Use **Reset Developer Disk Image** when the cached files need to be downloaded again.
+7. If preparation repeatedly fails, reboot the device and try again. Use **Restore bundled developer image** when the local cache needs to be rebuilt from the installed package.
 
-Always surface the actual unreachable, download, mount, pairing, and script errors. Do not reduce every failure to “DDI unmounted.”
+Always surface the actual unreachable, bundled-resource, copy/verification, mount, pairing, and script errors. Do not reduce every failure to “DDI unmounted.”
 
 ## Request endorsement
 
@@ -439,5 +454,7 @@ After completing Part 1, Part 2, or both, please get in touch with us in the [id
 - [ ] Pairing data is sent to the helper without logging it.
 - [ ] The helper uses one serial background queue.
 - [ ] The helper owns one persistent DDI cache location.
+- [ ] The shipped framework retains `DDIAssets.json` and both complete DDI families.
+- [ ] Restore UI handles `.installingDDI` progress and surfaces missing/corrupt package errors without a remote fallback.
 - [ ] Game or workload launch calls `enableJIT` directly rather than requiring manual preparation first.
 - [ ] The host disables Built-in StikJIT and avoids launching the helper inside LiveContainer.

@@ -1,60 +1,12 @@
 import Foundation
 import CryptoKit
 
-private final class FixtureProtocol: URLProtocol, @unchecked Sendable {
-    enum Behavior { case success, missing, corrupt, connectionStall, bodyStall, oversized }
-    static let lock = NSLock()
-    static var mirrorBehavior: Behavior = .success
-    static var upstreamBehavior: Behavior = .success
-    static var payloads: [String: Data] = [:]
-    static var requests: [URL] = []
-    static var cellularPermissions: [Bool?] = []
-    private let stateLock = NSLock()
-    private var stopped = false
-
-    override class func canInit(with request: URLRequest) -> Bool { true }
-    override class func canonicalRequest(for request: URLRequest) -> URLRequest { request }
-    override func startLoading() {
-        let url = request.url!
-        Self.lock.lock()
-        Self.requests.append(url)
-        // Inspect the production task's request policy for both origins,
-        // rather than asserting against the fixture's supplied configuration.
-        Self.cellularPermissions.append(task?.currentRequest?.allowsCellularAccess)
-        let behavior = url.host == "mirror.test" ? Self.mirrorBehavior : Self.upstreamBehavior
-        let bytes = Self.payloads[url.lastPathComponent]!
-        Self.lock.unlock()
-        guard behavior != .connectionStall else { return }
-        let headers = behavior == .oversized ? [:] : ["Content-Length": "\(bytes.count)"]
-        client?.urlProtocol(self, didReceive: HTTPURLResponse(url: url, statusCode: behavior == .missing ? 404 : 200,
-                                                            httpVersion: "HTTP/1.1", headerFields: headers)!, cacheStoragePolicy: .notAllowed)
-        if behavior == .missing { client?.urlProtocolDidFinishLoading(self); return }
-        let body = behavior == .corrupt ? Data(repeating: 0xEE, count: bytes.count) : bytes
-        if behavior == .oversized {
-            client?.urlProtocol(self, didLoad: body + Data([0]))
-            client?.urlProtocolDidFinishLoading(self)
-            return
-        }
-        let split = max(1, body.count / 2)
-        client?.urlProtocol(self, didLoad: body.prefix(split))
-        guard behavior != .bodyStall else { return }
-        DispatchQueue.global().asyncAfter(deadline: .now() + 0.02) { [weak self] in
-            guard let self else { return }
-            self.stateLock.lock(); let alive = !self.stopped; self.stateLock.unlock()
-            guard alive else { return }
-            self.client?.urlProtocol(self, didLoad: body.suffix(body.count - split))
-            self.client?.urlProtocolDidFinishLoading(self)
-        }
-    }
-    override func stopLoading() { stateLock.lock(); stopped = true; stateLock.unlock() }
-    static func configure(mirror: Behavior, upstream: Behavior = .success) {
-        lock.lock(); mirrorBehavior = mirror; upstreamBehavior = upstream; requests = []; cellularPermissions = []; lock.unlock()
-    }
-}
-
+// The script retains its historical filename, but all fixtures and production
+// assets are local files. No URL protocol, network configuration or server exists.
 @main
-enum DDIDownloadTests {
-    static func main() throws {
+enum DDIBundledInstallationTests {
+    static func main() async throws {
+        let manager = FileManager.default
         var count = 0
         func check(_ condition: Bool, _ name: String) {
             precondition(condition, name); count += 1
@@ -62,100 +14,161 @@ enum DDIDownloadTests {
         func rejects(_ name: String, _ body: () throws -> Void) {
             do { try body(); preconditionFailure(name) } catch { count += 1 }
         }
+        let root = manager.temporaryDirectory.appendingPathComponent("DDIFixtures-\(UUID().uuidString)")
+        try manager.createDirectory(at: root, withIntermediateDirectories: true)
+        defer { try? manager.removeItem(at: root) }
+
         let bundled = try DDIAssetCatalog.load()
+        let bundledDirectory = try DDIAssetCatalog.assetsDirectory()
         check(bundled.families["cryptex"]?.files.count == 5 && bundled.families["personalized"]?.files.count == 3,
-              "Production bundled catalog decodes both asset families")
-        check(bundled.upstreamBaseURL.contains(bundled.upstreamRevision) && bundled.mirrorBaseURL.contains(bundled.upstreamRevision),
-              "Production download URLs pin the catalog revision")
-        let root = FileManager.default.temporaryDirectory.appendingPathComponent("DDIFixtures-\(UUID().uuidString)")
-        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
-        defer { try? FileManager.default.removeItem(at: root) }
-        let common = ["BuildManifest.plist", "Image.dmg", "Image.dmg.trustcache"]
-        let all = common + ["Image.dmg.cryptex_info", "Image.dmg.root_hash"]
-        var payloads: [String: Data] = [:]
-        let assets: [DDIAssetCatalog.File] = all.enumerated().map { index, name in
-            let bytes = Data(repeating: UInt8(index + 1), count: 16_384 + index)
-            payloads[name] = bytes
-            return .init(name: name, size: Int64(bytes.count), sha256: SHA256.hash(data: bytes).map { String(format: "%02x", $0) }.joined())
+              "Production catalog contains both DDI families")
+        check(bundledDirectory.lastPathComponent == "DDI", "Bundle keeps the DDI folder hierarchy")
+        for family in bundled.families.values {
+            for file in family.files {
+                try DDICache.verify(bundledDirectory.appendingPathComponent(family.directory).appendingPathComponent(file.name), file: file)
+                check(true, "Production bundled asset matches its pinned size and SHA-256")
+            }
         }
-        let catalog = DDIAssetCatalog(schemaVersion: 1, upstreamRevision: String(repeating: "a", count: 40),
-                                      mirrorBaseURL: "https://mirror.test/revision", upstreamBaseURL: "https://upstream.test/revision/PersonalizedImages",
-                                      families: ["cryptex": .init(directory: "Xcode_iOS_DDI_Cryptex", files: assets),
-                                                 "personalized": .init(directory: "Xcode_iOS_DDI_Personalized", files: Array(assets.prefix(3)))])
+        let catalogData = try JSONEncoder().encode(bundled)
+        let encodedCatalog = String(decoding: catalogData, as: UTF8.self)
+        check(!encodedCatalog.contains("https:") && !encodedCatalog.contains("BaseURL"), "Catalog contains no download destinations")
+        for method in [DDIMountMethod.cryptex, .personalized] {
+            let paths = DDIPaths.default(in: root.appendingPathComponent("production-\(method.rawValue)"))
+            try DDIAssetInstaller.install(to: paths, method: method)
+            check(DDICache.isUsable(paths: paths, method: method, catalog: bundled), "Production bundle installs the complete selected family")
+        }
+
+        let common = ["BuildManifest.plist", "Image.dmg", "Image.dmg.trustcache"]
+        let names = common + ["Image.dmg.cryptex_info", "Image.dmg.root_hash"]
+        let source = root.appendingPathComponent("fixture-bundle/DDI", isDirectory: true)
+        var families: [String: DDIAssetCatalog.Family] = [:]
+        for (familyIndex, method) in [DDIMountMethod.cryptex, .personalized].enumerated() {
+            let directoryName = method == .cryptex ? "Xcode_iOS_DDI_Cryptex" : "Xcode_iOS_DDI_Personalized"
+            let directory = source.appendingPathComponent(directoryName, isDirectory: true)
+            try manager.createDirectory(at: directory, withIntermediateDirectories: true)
+            let files = try (method == .cryptex ? names : common).enumerated().map { index, name -> DDIAssetCatalog.File in
+                let size = name == "Image.dmg" ? 3 * 1_048_576 + 7 : 16_384 + index
+                // Families intentionally differ: picking the wrong folder must fail.
+                let data = Data(repeating: UInt8(1 + index + familyIndex * 10), count: size)
+                try data.write(to: directory.appendingPathComponent(name))
+                return .init(name: name, size: Int64(size), sha256: SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined())
+            }
+            families[method.rawValue] = .init(directory: directoryName, files: files)
+        }
+        let catalog = DDIAssetCatalog(schemaVersion: 1, upstreamRevision: String(repeating: "a", count: 40), families: families)
         try catalog.validate()
-        let configuration = URLSessionConfiguration.ephemeral
-        configuration.protocolClasses = [FixtureProtocol.self]
-        FixtureProtocol.payloads = payloads
-        let timeouts = DDIDownloadRunner.Timeouts(connection: 0.12, stalled: 0.12, resource: 2)
-        func run(_ name: String, method: DDIMountMethod = .cryptex,
-                 cancellationCheck: @escaping () throws -> Void = {},
-                 progress: @escaping (Double, String) -> Void = { _, _ in }) throws -> DDIPaths {
+        func install(_ name: String, method: DDIMountMethod = .cryptex, source override: URL? = nil,
+                     onlyIfNeeded: Bool = false, cancellation: DDIInstallationCancellation = .init(),
+                     cancellationCheck: @escaping () throws -> Void = {},
+                     progress: @escaping (Double, String) -> Void = { _, _ in }) throws -> DDIPaths {
             let paths = DDIPaths.default(in: root.appendingPathComponent(name))
-            try DDIDownloadRunner.download(to: paths, method: method, catalog: catalog, configuration: configuration,
-                                           timeouts: timeouts, cancellationCheck: cancellationCheck, progress: progress)
+            try DDIAssetInstaller.install(to: paths, method: method, catalog: catalog, assetsDirectory: override ?? source,
+                                          onlyIfNeeded: onlyIfNeeded, cancellation: cancellation,
+                                          cancellationCheck: cancellationCheck, progress: progress)
             return paths
         }
-        check(DDIMountMethod.forVersion(.init(majorVersion: 26, minorVersion: 3, patchVersion: 9)) == .personalized, "iOS 26.3 uses personalized assets")
-        check(DDIMountMethod.forVersion(.init(majorVersion: 26, minorVersion: 4, patchVersion: 0)) == .cryptex, "iOS 26.4 uses Cryptex")
-        check(DDIMountMethod.forVersion(.init(majorVersion: 27, minorVersion: 0, patchVersion: 0)) == .cryptex, "iOS 27 uses Cryptex")
-        let items = try DDIDownloadCatalog.items(for: .default(in: root), method: .cryptex, catalog: catalog)
-        check(items.count == 5 && items.allSatisfy { $0.url.host == "mirror.test" && $0.fallbackURL.host == "upstream.test" }, "Cryptex has five pinned dual-source assets")
-        check(try DDIDownloadCatalog.items(for: .default(in: root), method: .personalized, catalog: catalog).count == 3, "Personalized has three assets")
-        let unknown = DDIAssetCatalog(schemaVersion: 2, upstreamRevision: catalog.upstreamRevision, mirrorBaseURL: catalog.mirrorBaseURL,
-                                     upstreamBaseURL: catalog.upstreamBaseURL, families: catalog.families)
-        rejects("Reject unknown catalog schema") { try unknown.validate() }
-        FixtureProtocol.configure(mirror: .success)
-        let eventLock = NSLock()
-        var events: [(Double, String)] = []
-        let cryptex = try run("cryptex", progress: { fraction, status in eventLock.lock(); events.append((fraction, status)); eventLock.unlock() })
-        check(DDICache.isUsable(paths: cryptex, method: .cryptex, catalog: catalog), "Five validated files and matching receipt are usable")
-        check(FixtureProtocol.requests.count == 5 && FixtureProtocol.requests.allSatisfy { $0.host == "mirror.test" }, "Healthy mirror never contacts upstream")
-        check(FixtureProtocol.cellularPermissions.count == 5 && FixtureProtocol.cellularPermissions.allSatisfy { $0 == false },
-              "Every mirror task prohibits cellular access in its effective request: \(FixtureProtocol.cellularPermissions)")
-        check(events.contains { $0.0 > 0 && $0.0 < 1 && $0.1.hasPrefix("ddi|downloading|") }, "Streaming bytes produce intermediate total progress")
-        check(events.last?.1.hasPrefix("ddi|committing|") == true, "Verified group reports commit phase")
-        check(!DDICache.isUsable(paths: cryptex, method: .personalized, catalog: catalog), "Mount method mismatch invalidates cache")
-        let changed = DDIAssetCatalog(schemaVersion: 1, upstreamRevision: String(repeating: "b", count: 40), mirrorBaseURL: catalog.mirrorBaseURL,
-                                     upstreamBaseURL: catalog.upstreamBaseURL, families: catalog.families)
-        check(!DDICache.isUsable(paths: cryptex, method: .cryptex, catalog: changed), "Catalog revision mismatch invalidates cache")
-        try Data(repeating: 0xFF, count: payloads["Image.dmg"]!.count).write(to: URL(fileURLWithPath: cryptex.imagePath))
-        check(!DDICache.isUsable(paths: cryptex, method: .cryptex, catalog: catalog), "Same-length corruption fails SHA-256 check")
-        _ = try run("cryptex", method: .personalized)
-        check(DDICache.isUsable(paths: cryptex, method: .personalized, catalog: catalog), "Personalized commit replaces cache and receipt")
-        check(cryptex.cryptexOnlyPaths.allSatisfy { !FileManager.default.fileExists(atPath: $0) }, "Personalized commit removes Cryptex-only assets")
-        try FileManager.default.removeItem(at: cryptex.receiptURL)
-        check(!DDICache.isUsable(paths: cryptex, method: .personalized, catalog: catalog), "Legacy or interrupted cache without receipt is rejected")
-        FixtureProtocol.configure(mirror: .missing)
-        let fallback = try run("fallback")
-        check(DDICache.isUsable(paths: fallback, method: .cryptex, catalog: catalog), "404 mirror recovers using pinned upstream")
-        check(FixtureProtocol.requests.count == 10, "Every failed mirror asset gets one upstream attempt")
-        check(FixtureProtocol.cellularPermissions.count == 10 && FixtureProtocol.cellularPermissions.allSatisfy { $0 == false },
-              "Fallback tasks retain the cellular access restriction")
-        FixtureProtocol.configure(mirror: .corrupt)
-        check(DDICache.isUsable(paths: try run("checksum-fallback"), method: .cryptex, catalog: catalog), "Bad mirror hashes trigger upstream fallback")
-        FixtureProtocol.configure(mirror: .oversized)
-        check(DDICache.isUsable(paths: try run("oversized-fallback"), method: .cryptex, catalog: catalog), "Unbounded HTTP body is rejected and recovered")
-        FixtureProtocol.configure(mirror: .connectionStall)
-        check(DDICache.isUsable(paths: try run("connect-fallback"), method: .cryptex, catalog: catalog), "Connection timeout switches to upstream")
-        FixtureProtocol.configure(mirror: .bodyStall)
-        check(DDICache.isUsable(paths: try run("stall-fallback"), method: .cryptex, catalog: catalog), "Stalled byte stream switches to upstream")
-        FixtureProtocol.configure(mirror: .missing, upstream: .missing)
-        rejects("Both sources fail the operation") { _ = try run("both-fail") }
-        check(!FileManager.default.fileExists(atPath: DDIPaths.default(in: root.appendingPathComponent("both-fail")).receiptURL.path), "Failed batch cannot create receipt")
-        let prior = try Data(contentsOf: fallback.receiptURL)
-        rejects("Redownload failure is reported") { _ = try run("fallback") }
-        check(try Data(contentsOf: fallback.receiptURL) == prior && DDICache.isUsable(paths: fallback, method: .cryptex, catalog: catalog), "Failed staged download preserves prior complete batch")
-        FixtureProtocol.configure(mirror: .connectionStall, upstream: .connectionStall)
-        let deadline = ProcessInfo.processInfo.systemUptime + 0.02
-        rejects("External operation cancellation stops transfer") {
-            _ = try run("cancel", cancellationCheck: { if ProcessInfo.processInfo.systemUptime > deadline { throw CancellationError() } })
+        func sourceCopy(_ name: String) throws -> URL {
+            let result = root.appendingPathComponent(name)
+            try manager.copyItem(at: source, to: result)
+            return result
         }
-        check(FixtureProtocol.requests.count == 1, "Cancellation does not start fallback")
-        let cancelPaths = DDIPaths.default(in: root.appendingPathComponent("cancel"))
-        let leftovers = try FileManager.default.contentsOfDirectory(atPath: cancelPaths.receiptURL.deletingLastPathComponent().path)
-        check(leftovers.isEmpty, "Cancellation cleans temporary batch")
-        try fallback.removeCachedFiles()
-        check(!FileManager.default.fileExists(atPath: fallback.receiptURL.path) && fallback.allPaths.allSatisfy { !FileManager.default.fileExists(atPath: $0) }, "Reset removes receipt and every asset")
-        print("\(count) DDI download/cache tests passed")
+        func snapshot(_ paths: DDIPaths) throws -> [String: Data] {
+            var result: [String: Data] = [:]
+            for path in paths.allPaths + [paths.receiptURL.path] where manager.fileExists(atPath: path) {
+                result[path] = try Data(contentsOf: URL(fileURLWithPath: path))
+            }
+            return result
+        }
+        func noStaging(_ paths: DDIPaths) throws -> Bool {
+            try manager.contentsOfDirectory(atPath: paths.receiptURL.deletingLastPathComponent().path)
+                .allSatisfy { !$0.hasPrefix(".ddi-install-") }
+        }
+        check(DDIMountMethod.forVersion(.init(majorVersion: 26, minorVersion: 3, patchVersion: 9)) == .personalized, "iOS 26.3 selects Personalized")
+        check(DDIMountMethod.forVersion(.init(majorVersion: 26, minorVersion: 4, patchVersion: 0)) == .cryptex, "iOS 26.4 selects Cryptex")
+        check(DDIMountMethod.forVersion(.init(majorVersion: 27, minorVersion: 0, patchVersion: 0)) == .cryptex, "iOS 27 selects Cryptex")
+        rejects("Unknown catalog schemas are rejected") {
+            try DDIAssetCatalog(schemaVersion: 2, upstreamRevision: catalog.upstreamRevision, families: families).validate()
+        }
+        var invalidFamilies = families
+        invalidFamilies["cryptex"] = .init(directory: "../other", files: families["cryptex"]!.files)
+        rejects("Catalog directories cannot escape the bundled family") {
+            try DDIAssetCatalog(schemaVersion: 1, upstreamRevision: catalog.upstreamRevision, families: invalidFamilies).validate()
+        }
+
+        var events: [(Double, String)] = []
+        let paths = try install("working", progress: { events.append(($0, $1)) })
+        check(DDICache.isUsable(paths: paths, method: .cryptex, catalog: catalog), "Five copied files and receipt form a valid Cryptex cache")
+        check(events.contains { $0.0 > 0 && $0.0 < 1 && $0.1.hasPrefix("ddi|copying|bundle|Image.dmg|") }, "Large file copying reports intermediate progress")
+        check(events.contains { $0.1.hasPrefix("ddi|verifying|bundle|") } && events.last?.1.hasPrefix("ddi|committing|bundle|") == true,
+              "Progress covers verification and final commit")
+        check(events.allSatisfy { (0...1).contains($0.0) && $0.1.split(separator: "|")[2] == "bundle" }, "Every progress event uses only the bundle source")
+        check(try noStaging(paths), "Successful installation removes temporary staging")
+        let prior = try snapshot(paths)
+
+        let missing = try sourceCopy("missing")
+        try manager.removeItem(at: missing.appendingPathComponent("Xcode_iOS_DDI_Cryptex/Image.dmg.root_hash"))
+        rejects("Missing bundled files fail instead of requesting a fallback") { _ = try install("working", source: missing) }
+        check(try snapshot(paths) == prior && DDICache.isUsable(paths: paths, method: .cryptex, catalog: catalog), "Missing resources preserve the previous complete cache")
+        check(try noStaging(paths), "Missing-resource failure cleans staging")
+
+        let corrupt = try sourceCopy("corrupt")
+        let corruptFile = corrupt.appendingPathComponent("Xcode_iOS_DDI_Cryptex/Image.dmg.trustcache")
+        try Data(repeating: 0xEE, count: Int(families["cryptex"]!.files[2].size)).write(to: corruptFile)
+        rejects("Matching size with a wrong checksum is rejected") { _ = try install("working", source: corrupt) }
+        check(try snapshot(paths) == prior, "Corrupt bundle preserves the previous complete cache")
+        try Data([0]).write(to: corruptFile)
+        rejects("A truncated bundle file is rejected") { _ = try install("working", source: corrupt) }
+        check(try snapshot(paths) == prior && noStaging(paths), "Truncated bundle preserves old files and cleans staging")
+
+        let token = DDIInstallationCancellation()
+        token.cancel()
+        rejects("Pre-cancelled work never mutates the cache") { _ = try install("working", cancellation: token) }
+        var cancelCopy = false
+        rejects("Cancellation interrupts a multi-chunk local copy") {
+            _ = try install("working", cancellationCheck: { if cancelCopy { throw CancellationError() } }, progress: { _, status in
+                let fields = status.split(separator: "|")
+                if fields[1] == "copying", fields[3] == "Image.dmg", Int(fields[4])! > 0 { cancelCopy = true }
+            })
+        }
+        check(try cancelCopy && snapshot(paths) == prior && noStaging(paths), "Cancelled copy keeps the old set and removes partial files")
+        var cancelCommit = false
+        rejects("Cancellation just before commit preserves the old receipt") {
+            _ = try install("working", cancellationCheck: { if cancelCommit { throw CancellationError() } }, progress: { _, status in
+                if status.hasPrefix("ddi|committing|") { cancelCommit = true }
+            })
+        }
+        check(try cancelCommit && snapshot(paths) == prior && noStaging(paths), "Cancellation at the commit boundary leaves the old cache intact")
+
+        _ = try install("working", source: root.appendingPathComponent("does-not-exist"), onlyIfNeeded: true)
+        check(try snapshot(paths) == prior, "A valid cache needs no source-file access")
+        try Data([1, 2, 3]).write(to: URL(fileURLWithPath: paths.imagePath))
+        check(!DDICache.isUsable(paths: paths, method: .cryptex, catalog: catalog), "Damaged cache cannot pass its receipt")
+        _ = try install("working", onlyIfNeeded: true)
+        check(DDICache.isUsable(paths: paths, method: .cryptex, catalog: catalog), "Bundled resources repair a damaged cache")
+        _ = try install("working", method: .personalized)
+        check(DDICache.isUsable(paths: paths, method: .personalized, catalog: catalog), "Three-file Personalized replacement is complete")
+        check(paths.cryptexOnlyPaths.allSatisfy { !manager.fileExists(atPath: $0) }, "Switching families removes Cryptex-only files")
+        check(!DDICache.isUsable(paths: paths, method: .cryptex, catalog: catalog), "A receipt cannot be reused for another family")
+        try manager.removeItem(at: paths.receiptURL)
+        check(!DDICache.isUsable(paths: paths, method: .personalized, catalog: catalog), "Files without a completion receipt are not a cache")
+        _ = try install("working", method: .personalized)
+        let personalizedPrior = try snapshot(paths)
+        var invalidPaths = paths
+        invalidPaths.rootHashPath = root.appendingPathComponent("blocked-destination").path
+        try manager.createDirectory(atPath: invalidPaths.rootHashPath, withIntermediateDirectories: false)
+        rejects("Invalid cache destinations fail before replacing old files") {
+            try DDIAssetInstaller.install(to: invalidPaths, method: .cryptex, catalog: catalog, assetsDirectory: source)
+        }
+        check(try snapshot(paths) == personalizedPrior, "Commit preflight failure preserves the previous family")
+
+        let servicePaths = DDIPaths.default(in: root.appendingPathComponent("service"))
+        let service = DeveloperDiskImageService()
+        try await service.prepareIfNeeded(to: servicePaths)
+        check(DDICache.isUsable(paths: servicePaths, method: .current, catalog: bundled), "Public async preparation installs the packaged family")
+        try await service.restore(to: servicePaths)
+        check(DDICache.isUsable(paths: servicePaths, method: .current, catalog: bundled), "Public restore uses the same verified bundle")
+        try paths.removeCachedFiles()
+        check(!manager.fileExists(atPath: paths.receiptURL.path) && paths.allPaths.allSatisfy { !manager.fileExists(atPath: $0) }, "Reset removes only cache receipt and assets")
+        print("\(count) bundled DDI installation/cache tests passed")
     }
 }
