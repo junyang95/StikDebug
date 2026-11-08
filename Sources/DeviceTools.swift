@@ -83,10 +83,6 @@ extension StikJIT {
         try DeviceTools.sendSignal(SIGKILL, pid: pid, pairingFile: pairingFile, configuration: configuration)
     }
 
-    public static func resumeProcess(pid: Int32, pairingFile: URL, configuration: Configuration = .default) throws {
-        try DeviceTools.sendSignal(SIGCONT, pid: pid, pairingFile: pairingFile, configuration: configuration)
-    }
-
     public static func deviceDetails(pairingFile: URL, configuration: Configuration = .default) throws -> [String: String] {
         try DeviceTools.withTunnel(pairingFile, configuration) { tunnel in
             try DeviceTools.withClient("lockdown", connect: {
@@ -139,16 +135,7 @@ extension StikJIT {
         }
     }
 
-    public static func setSimulatedLocation(latitude: Double, longitude: Double, pairingFile: URL, configuration: Configuration = .default) throws {
-        guard latitude.isFinite, longitude.isFinite, (-90...90).contains(latitude), (-180...180).contains(longitude) else {
-            throw DeviceTools.error("Latitude or longitude is outside its valid range")
-        }
-        try DeviceLocationController.shared.set(latitude: latitude, longitude: longitude, pairingFile: pairingFile, configuration: configuration)
-    }
 
-    public static func clearSimulatedLocation(pairingFile: URL, configuration: Configuration = .default) throws {
-        try DeviceLocationController.shared.clear(pairingFile: pairingFile, configuration: configuration)
-    }
 }
 
 enum DeviceTools {
@@ -161,8 +148,8 @@ enum DeviceTools {
         }
     }
 
-    static func withTunnel<T>(_ pairingFile: URL, _ configuration: StikJIT.Configuration, _ body: (JITSession.Tunnel) throws -> T) throws -> T {
-        let tunnel = try JITSession(pairingFilePath: pairingFile.path, configuration: configuration).makeTunnel()
+    static func withTunnel<T>(_ pairingFile: URL, _ configuration: StikJIT.Configuration, cancellationCheck: () throws -> Void = {}, _ body: (JITSession.Tunnel) throws -> T) throws -> T {
+        let tunnel = try JITSession(pairingFilePath: pairingFile.path, configuration: configuration).makeTunnel(cancellationCheck: cancellationCheck)
         defer { tunnel.free() }
         return try body(tunnel)
     }
@@ -188,15 +175,23 @@ enum DeviceTools {
     }
 
     static func sendSignal(_ signal: Int32, pid: Int32, pairingFile: URL, configuration: StikJIT.Configuration) throws {
-        guard pid > 0, pid != getpid() else { throw error("Refusing to signal an invalid process or the launcher itself") }
+        try validatePID(pid)
         try withTunnel(pairingFile, configuration) { tunnel in
-            try withClient("application service", connect: { app_service_connect_rsd(tunnel.adapter, tunnel.handshake, $0) }, free: app_service_free) { client in
-                var response: UnsafeMutablePointer<SignalResponseC>?
-                defer { if let response { app_service_free_signal_response(response) } }
-                try IdeviceFFI.check("Failed to send signal to process \(pid)") { app_service_send_signal(client, UInt32(pid), UInt32(signal), &response) }
-                guard let response, response.pointee.pid == UInt32(pid), response.pointee.signal == UInt32(signal) else {
-                    throw error("The device did not confirm the process signal")
-                }
+            try sendSignal(signal, pid: pid, over: tunnel)
+        }
+    }
+
+    private static func validatePID(_ pid: Int32) throws {
+        guard pid > 0, pid != getpid() else { throw error("Refusing to signal an invalid process or the launcher itself") }
+    }
+
+    private static func sendSignal(_ signal: Int32, pid: Int32, over tunnel: JITSession.Tunnel) throws {
+        try withClient("application service", connect: { app_service_connect_rsd(tunnel.adapter, tunnel.handshake, $0) }, free: app_service_free) { client in
+            var response: UnsafeMutablePointer<SignalResponseC>?
+            defer { if let response { app_service_free_signal_response(response) } }
+            try IdeviceFFI.check("Failed to send signal to process \(pid)") { app_service_send_signal(client, UInt32(pid), UInt32(signal), &response) }
+            guard let response, response.pointee.pid == UInt32(pid), response.pointee.signal == UInt32(signal) else {
+                throw error("The device did not confirm the process signal")
             }
         }
     }
@@ -212,59 +207,6 @@ enum DeviceTools {
             throw error("Device metadata is not a dictionary")
         }
         return dictionary
-    }
-}
-
-private final class DeviceLocationController {
-    static let shared = DeviceLocationController()
-    private let lock = NSLock()
-    private var tunnel: JITSession.Tunnel?
-    private var server: OpaquePointer?
-    private var client: OpaquePointer?
-    private var identity: String?
-
-    func set(latitude: Double, longitude: Double, pairingFile: URL, configuration: StikJIT.Configuration) throws {
-        lock.lock(); defer { lock.unlock() }
-        try connect(pairingFile, configuration)
-        do {
-            try IdeviceFFI.check("Failed to set simulated location") { location_simulation_set(client, latitude, longitude) }
-        } catch {
-            cleanup()
-            throw error
-        }
-    }
-
-    func clear(pairingFile: URL, configuration: StikJIT.Configuration) throws {
-        lock.lock(); defer { lock.unlock() }
-        defer { cleanup() }
-        try connect(pairingFile, configuration)
-        try IdeviceFFI.check("Failed to clear simulated location") { location_simulation_clear(client) }
-    }
-
-    private func connect(_ pairingFile: URL, _ configuration: StikJIT.Configuration) throws {
-        let modified = try pairingFile.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate?.timeIntervalSince1970 ?? 0
-        let key = "\(pairingFile.path)|\(modified)|\(configuration.deviceAddress)|\(configuration.rsdPort)"
-        if client != nil, identity == key { return }
-        cleanup()
-        do {
-            let tunnel = try JITSession(pairingFilePath: pairingFile.path, configuration: configuration).makeTunnel()
-            self.tunnel = tunnel
-            try IdeviceFFI.check("Failed to connect location remote server") { remote_server_connect_rsd(tunnel.adapter, tunnel.handshake, &server) }
-            guard server != nil else { throw DeviceTools.error("Location remote server was not returned") }
-            try IdeviceFFI.check("Failed to connect location simulation") { location_simulation_new(server, &client) }
-            guard client != nil else { throw DeviceTools.error("Location simulation service was not returned") }
-            identity = key
-        } catch {
-            cleanup()
-            throw error
-        }
-    }
-
-    private func cleanup() {
-        if let client { location_simulation_free(client) }
-        if let server { remote_server_free(server) }
-        tunnel?.free()
-        client = nil; server = nil; tunnel = nil; identity = nil
     }
 }
 

@@ -33,6 +33,12 @@
             <key>CFBundleURLSchemes</key><array><string>jitlauncher</string><string>stikpair</string></array>
         </dict>
     </array>
+    <key>WowOfflineDeviceBinding</key>
+    <dict>
+        <key>schema</key><integer>1</integer>
+        <key>product</key><string>jit-launcher</string>
+        <key>keyId</key><string>9a6a40f263ac458839e9a4fe6973cee315e10111e1ffd30425788491deefe607</string>
+    </dict>
     <key>LSRequiresIPhoneOS</key>
     <true/>
     <key>NSLocalNetworkUsageDescription</key>

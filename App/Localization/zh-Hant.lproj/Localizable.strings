@@ -218,3 +218,13 @@
 "setup.start" = "開始設定";
 "progress.checking_connection" = "正在檢查裝置連線…";
 "error.connection_failed" = "無法連線至已配對裝置。請檢查配對和本地 VPN 後重試。";
+
+/* Offline device binding */
+"binding.error.missingCredential" = "此安裝包缺少離線裝置憑證（wowdevice.plist），請安裝為這台裝置簽發的安裝包。";
+"binding.error.invalidCredential" = "離線裝置憑證已損壞或無效，請安裝為這台裝置簽發的有效安裝包。";
+"binding.error.invalidSignature" = "離線裝置憑證簽章無效，請安裝為這台裝置簽發的有效安裝包。";
+"binding.error.unsupportedCredential" = "不支援此離線裝置憑證格式，請安裝相容的安裝包。";
+"binding.error.wrongProduct" = "此離線裝置憑證屬於其他 App，請安裝為這台裝置簽發的 JIT 啟動器。";
+"binding.error.invalidDeviceIdentifier" = "裝置識別碼無效，請檢查安裝包、配對檔案及實際連線的裝置。";
+"binding.error.deviceMismatch" = "此安裝包綁定的是另一台裝置，請連接對應裝置，或安裝為目前連線裝置簽發的安裝包。";
+"binding.error.identityUnavailable" = "無法讀取目前連線裝置的識別碼，請檢查配對及本機 VPN 連線後再試。";

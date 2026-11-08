@@ -4,7 +4,7 @@ repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 test_directory="$(mktemp -d "${TMPDIR:-/tmp}/jit-connection-tests.XXXXXX")"
 trap 'rm -rf "$test_directory"' EXIT
 # Compile the actual connection entry point with a paired-tunnel test boundary.
-# No device identity, lockdown, libplist or iOS-only FFI is involved.
+# The actual binding/lockdown gate is exercised by test-device-binding.sh.
 xcrun swiftc -parse-as-library \
   -module-cache-path "$test_directory/ModuleCache" \
   "$repo_root/Sources/StikJITError.swift" \

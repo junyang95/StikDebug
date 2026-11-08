@@ -2,8 +2,8 @@ import Foundation
 import Darwin
 
 // Compile the real production connection entry point against a paired-tunnel
-// boundary. Its empty Tunnel deliberately provides no identity or lockdown API:
-// successful pairing is sufficient, but an open TCP port alone is not.
+// boundary. Binding itself is covered by DeviceTunnelBindingTests against the
+// real factory, core verifier, and lockdown reader. An open TCP port is not enough.
 public enum StikJIT {
     public struct Configuration {
         public var deviceAddress: String
@@ -25,6 +25,7 @@ enum DeviceTools {
     static var completedHandshakes = 0
     static var cleanedUpTunnels = 0
     static func withTunnel<T>(_ file: URL, _ config: StikJIT.Configuration,
+                              cancellationCheck: () throws -> Void = {},
                               _ body: (Tunnel) throws -> T) throws -> T {
         attempts += 1
         guard allowsHandshake else { throw TestFailure.tunnelBoundary }
@@ -96,7 +97,7 @@ enum DeviceConnectionProbeTests {
             })
             precondition(DeviceTools.attempts == 1)
         }
-        try run("A completed paired tunnel succeeds without reading device identity") {
+        try run("An authorized paired tunnel completes the connection check") {
             DeviceTools.allowsHandshake = true
             var count = 0
             try StikJIT.checkDeviceConnection(pairingFile: file, configuration: liveConfiguration,

@@ -2,7 +2,7 @@
 
 ## JIT启动器 — integrated iOS app
 
-This branch adds **JIT启动器** (2.0.8, build 19), a standalone SwiftUI app integrating
+This branch adds **JIT启动器** (2.0.9, build 20), a standalone SwiftUI app integrating
 StikDebug's installed-app launch/JIT workflow and device tools, on-device pairing,
 the StikJIT engine, and [LocalDevVPN](https://github.com/jkcoxson/LocalDevVPN).
 Four tabs cover applications, the seven-step pairing guide, debugging tools, and
@@ -15,12 +15,19 @@ The application list shows only targets with `get-task-allow`, excludes the
 launcher itself, and loads their real icons from the device. An unavailable icon
 uses a fallback without preventing the rest of the list from loading.
 
-Version 2.0.8 removes the website registration, VIP and UDID authorization flow
-present in 2.0.7. Setup proceeds directly to pairing, Developer Mode and the
-selected VPN connection. Device commands check the paired connection locally;
-there is no website authorization request, signed access permit or offline
-license expiry. Both developer disk image (DDI) families are included in the IPA;
-preparation copies and verifies the selected bundled files before mounting them.
+Version 2.0.9 adds an **offline device binding**. The signing service supplies
+`wowdevice.plist` for one device; the client verifies its signature using a fixed
+public key and matches it to the actual connected device's lockdown
+`UniqueDeviceID` on every newly opened paired tunnel, before device operations.
+The identifier stays local: no website authorization request, VIP state, license
+expiry or persistent access cache is used. Opening the app and pairing setup
+remain available without a credential. Missing, invalid or mismatched credentials
+block protected device functions with a clear error. Recovery of a suspended
+process and clearing simulated location remain available through a working
+paired connection.
+
+Both developer disk image (DDI) families remain included in the IPA; preparation
+copies and verifies the selected bundled files before mounting them.
 
 Version 2.0.6 adds an **External VPN** connection mode in Setup and Settings.
 Start LocalDevVPN with its default configuration, select External VPN, and check
@@ -62,16 +69,22 @@ that the whole JIT setup can complete offline. Physical-device mounting and a
 target JIT run remain necessary to verify compatibility.
 
 Opening the app shows the application library. Setup and device tools require
-no website account, VIP membership or UDID registration. Pairing, Developer Mode,
-available Wi-Fi, a working loopback VPN and DDI mounting remain the technical
-requirements for JIT. Device connection checks do not upload a device identifier.
+no website account or VIP membership. Protected device operations require a valid
+per-device offline credential. Pairing, Developer Mode, available Wi-Fi, a working
+loopback VPN and DDI mounting remain the technical requirements for JIT.
+The connected device identifier is read locally and is not uploaded by binding checks.
 Restoring real location remains available when the existing local device
 connection works.
 
-For website signing and distribution, keep this app's `vipCheckEnabled=N` and
-verify that the signed package contains no legacy WowVipGuard injection. The
-native device-access signing marker has been removed. See
-[LAUNCHER.md](LAUNCHER.md#signing-and-distribution) for the release checks.
+The unsigned source IPA intentionally contains no `wowdevice.plist`. It can be
+opened for setup but cannot run protected device functions until the signing
+service adds a valid device-specific credential. The main app declares
+`WowOfflineDeviceBinding` with product `jit-launcher`; the old
+`WowNativeDeviceAccess`/VIP guard must remain absent. Shared enterprise packages
+cannot serve multiple devices with one credential. This is an application-level
+binding, not a claim of resistance to binary modification. See
+[LAUNCHER.md](LAUNCHER.md#offline-device-binding-and-distribution) for the exact
+format, signing contract and recovery behavior.
 
 A separate StikDebug, StikPair or LocalDevVPN app is not needed for these integrated
 workflows. On-device pairing requires iOS/iPadOS 27 or later; on earlier supported

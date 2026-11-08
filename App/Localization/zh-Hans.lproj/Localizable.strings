@@ -218,3 +218,13 @@
 "setup.start" = "开始设置";
 "progress.checking_connection" = "正在检查设备连接…";
 "error.connection_failed" = "无法连接已配对设备。请检查配对和本地 VPN 后重试。";
+
+/* Offline device binding */
+"binding.error.missingCredential" = "此安装包缺少离线设备凭据（wowdevice.plist），请安装为这台设备签发的安装包。";
+"binding.error.invalidCredential" = "离线设备凭据已损坏或无效，请安装为这台设备签发的有效安装包。";
+"binding.error.invalidSignature" = "离线设备凭据签名无效，请安装为这台设备签发的有效安装包。";
+"binding.error.unsupportedCredential" = "不支持此离线设备凭据格式，请安装兼容的安装包。";
+"binding.error.wrongProduct" = "此离线设备凭据属于其他应用，请安装为这台设备签发的 JIT 启动器。";
+"binding.error.invalidDeviceIdentifier" = "设备标识无效，请检查安装包、配对文件及实际连接的设备。";
+"binding.error.deviceMismatch" = "此安装包绑定的是另一台设备，请连接对应设备，或安装为当前连接设备签发的安装包。";
+"binding.error.identityUnavailable" = "无法读取当前连接设备的标识，请检查配对及本地 VPN 连接后重试。";

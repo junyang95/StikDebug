@@ -12,15 +12,16 @@ The display name is **JIT启动器**, or **JIT啟動器** in Traditional Chinese
 Simplified Chinese, and Traditional Chinese interfaces follow the system or the
 app's language preference in iOS Settings.
 
-## Current release: 2.0.8 (19)
+## Current release: 2.0.9 (20)
 
-Version 2.0.8 removes the website device-registration and VIP authorization
-present in 2.0.7. Pairing and VPN setup are available directly. No UDID is
-submitted to a commercial authorization service, and there is no signed access
-permit, authorization Keychain cache or seven-day license deadline. Device
-operations retain their local connection, cancellation and readiness checks.
-Both DDI families are included in the IPA. Preparation installs the selected
-bundled group and mounts it when the system has no usable developer image.
+Version 2.0.9 binds the package to one device with a signed offline credential.
+Each new paired tunnel verifies that credential and compares its device identifier
+with `UniqueDeviceID` read from that same connection's lockdown service, before
+performing protected device operations. Pairing setup and normal browsing remain
+available. Missing credentials, invalid signatures and wrong devices fail closed
+with English, Simplified Chinese and Traditional Chinese explanations.
+There is no website authorization request, VIP interface, persistent access grant
+or license deadline. Both DDI families remain included in the IPA.
 
 ## Connection and import changes retained from 2.0.6 (17)
 
@@ -185,8 +186,10 @@ The external route must expose the paired device at `10.7.0.1:49152`; arbitrary
 internet VPNs and custom LocalDevVPN peer addresses are not supported by this
 release. The app cannot read another app’s VPN status. A successful paired
 device-service handshake validates the connection; a TCP connection alone is not
-proof. The check does not read a UDID or contact a website. Failed device
-communication clears external readiness and asks the user to check the external
+proof. The check also verifies the offline credential against the actual target's
+lockdown UDID, without contacting a website. A status check never authorizes a
+later independent tunnel: each actual operation's new tunnel checks again.
+Failed device communication clears external readiness and asks the user to check the external
 VPN and pairing record. Switching connection mode or
 returning from the background invalidates external readiness for a fresh check.
 The readiness section separately reports the saved record, connection status,
@@ -255,41 +258,82 @@ structure and third-party notices. If the installed package itself is incomplete
 or corrupt, install a verified replacement package rather than retrying a remote
 source.
 
-## Local device requirements
+## Offline device binding and distribution
 
-The launcher does not require website registration, VIP membership or commercial
-UDID verification. It does not read a bundled device hint, send an authorization
-request, verify a commercial license or keep an offline access deadline.
+The main app's `Info.plist` declares `WowOfflineDeviceBinding`:
 
-Pairing, Developer Mode, an available Wi-Fi path and a working selected loopback
-VPN are still required for device operations. Preparation also mounts a verified
-DDI when the system needs one. Removing the commercial check does not make a
-missing pairing record, developer image or device connection usable.
+```plist
+{ schema: 1, product: "jit-launcher",
+  keyId: "9a6a40f263ac458839e9a4fe6973cee315e10111e1ffd30425788491deefe607" }
+```
 
-Before a device command, the launcher checks the paired device connection. It
-keeps operation-generation and cancellation checks so that delayed results
-cannot revive an old connection or start work after the operation is cancelled.
-Shortcut and URL actions still require confirmation. **Restore real location**
-remains a recovery action through an existing local connection.
+The marker describes the signing contract. The verifier uses the compiled P-256
+public key and the hardcoded product `jit-launcher`; changing Info.plist cannot
+replace the trust anchor or change the product accepted by the client. The
+private key stays on the signing service.
 
-## Signing and distribution
+The signer adds a main-app resource named `wowdevice.plist`. It contains exactly
+`payload` and `sig` strings. `payload` is base64 of the exact signed UTF-8 JSON;
+`sig` is base64 of a DER-encoded P-256/SHA-256 ECDSA signature over those bytes.
+The JSON fields are:
 
-The source IPA no longer declares a native device-access signing marker or
-consumes a per-device authorization hint. Standard iOS signing and provisioning
-requirements still apply to the app and VPN extension.
+```json
+{"schema":1,"purpose":"wow.offline-device-binding","product":"jit-launcher","udid":"00008110-000a010203040506"}
+```
 
-For the existing website listing (app ID 106), keep `vipCheckEnabled=N` before
-signing the new version. Without the removed marker, the site's ordinary signing
-route could otherwise inject its legacy WowVipGuard library. The 2026-11-06
-release verification recorded this flag as `N`; check the current value when
-publishing, invalidate old signed-package caches, and inspect a newly signed
-package for the absence of the legacy guard and authorization hint. An enterprise
-signing route has a separate `freeGuardEnabled` switch that must also remain off
-if that route is used. These are distribution checks; this client change does
-not deploy or modify the backend.
+The example identifier is illustrative. A credential's UDID must be lowercase;
+actual device identifiers are normalized locally before comparison. Do not
+reformat the JSON between signing and verification. Other products, malformed
+credentials, invalid signatures and unsupported schemas are rejected.
 
-Verify an ordinary signed package and a publicly downloaded/self-signed package
-on a physical device before claiming end-to-end installation or JIT success.
+The unsigned source IPA intentionally has the marker but no credential; the
+signing service must issue one for the intended device before the protected
+functions are usable. A missing credential does not unlock a development mode.
+A single shared enterprise-signed package cannot satisfy this per-device
+binding for multiple devices. Keep old `WowNativeDeviceAccess`, `PikminNativeVIP`,
+WowVipGuard injection, online authorization requests and legacy license hints
+out of these packages. The server must validate the marker's schema, product and
+key ID before signing, and must fail on a key mismatch. This source change does
+not itself deploy the server.
+
+Device identity comes from **the actual connected target**, not the local
+pairing record or the launcher host's identifier. `DeviceTunnelFactory` opens the
+paired tunnel, verifies the credential, reads only lockdown `UniqueDeviceID` over
+that same adapter/handshake, compares the IDs, and returns the connection only on
+success. JIT, scripts, application launch/listing, process commands, DDI checks and
+mounts, logs, profiles and new location sessions all pass through this gate.
+The deprecated no-DDI JIT entry point follows the same connection gate. The
+optional script heartbeat cannot silently ignore a binding rejection.
+
+No global success flag or persistent permit cache grants access to later
+connections. A live location session can reuse its already-checked connection;
+its pairing-content digest and endpoint identify that connection. Replacing the
+record or reconnecting requires another check. Recovery connections are internal
+and restricted to the public **resume process (SIGCONT only)** and **clear
+simulated location** operations. Clearing location closes its recovery connection,
+so it cannot be reused to set a new simulated location. Debugger detach/cleanup
+on an existing connection does not require a new credential check.
+
+Pairing-file validation/import, on-device pairing, VPN setup, local DDI cache
+restoration and browsing remain available. Pairing, Developer Mode, Wi-Fi, the
+selected loopback VPN and required DDI mounting are still technical prerequisites.
+The binding check itself is local and sends no UDID or license request to a
+website. Apple's pairing, personalization or mounting protocols retain their
+existing behavior. Cancellation and operation-generation checks remain in force.
+Shortcut and URL actions still require confirmation.
+
+This is application-level device binding. It does not claim to resist a modified
+binary, a patched verifier or compromised device services. Verify a signed package
+on its intended physical device and verify denial on a different connected device
+before claiming end-to-end acceptance. The simulator preview never invokes the
+real device framework.
+
+Run `scripts/test-offline-device-binding.sh` for the shared cryptographic format
+checks and `scripts/test-device-binding.sh` for the actual connection factory,
+typed lockdown reader, fail-closed errors, per-connection checks, cancellation,
+handle cleanup and public recovery APIs. The latter uses a temporary test key and
+simulated transport with real CryptoKit/libplist; it does not use the production
+private key or establish physical-device JIT success.
 
 ## Application and script compatibility
 
@@ -448,8 +492,10 @@ Physical-device verification remains required for VPN consent and extension
 launch, Bonjour host visibility, real PIN notifications, pairing/expiry/cancellation,
 DDI preparation, installed-app discovery/icons and launch, each target/script JIT
 combination, logs, profile changes, and location restoration after connection
-failures. Verify that setup and device commands work without a website account
-or commercial authorization request. The on-device pairing sequence specifically
+failures. Verify that setup remains available without a credential, protected
+commands require the intended device's valid credential, and clearing location
+or resuming a suspended process still works after a credential failure. Binding
+must not send a website authorization request. The on-device pairing sequence specifically
 needs an iOS/iPadOS 27+ device. Review all three languages, Dynamic Type,
 light/dark appearance, and compact iPhone/iPad layouts as well.
 

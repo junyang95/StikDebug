@@ -3,14 +3,7 @@ import Foundation
 
 final class JITSession {
 
-    struct Tunnel {
-        var adapter: OpaquePointer?
-        var handshake: OpaquePointer?
-        func free() {
-            if let handshake { rsd_handshake_free(handshake) }
-            if let adapter { adapter_free(adapter) }
-        }
-    }
+    typealias Tunnel = DeviceTunnel
 
     private struct DebugSession {
         var remoteServer: OpaquePointer?
@@ -30,8 +23,7 @@ final class JITSession {
     }
 
     func validatePairingFile() throws {
-        let pairing = try openPairingFile()
-        rp_pairing_file_free(pairing)
+        try tunnelFactory.validatePairingFile()
     }
 
     func runningProcesses() throws -> [StikJIT.RunningProcess] {
@@ -93,7 +85,7 @@ final class JITSession {
         let txmStatus = txmPresence.isPresent.map { $0 ? "present" : "absent" } ?? "unknown"
         progress("Detected TXM: \(txmStatus).")
         let mode = try JITExecutionMode.select(forceScript: forceScript, isTXMPresent: txmPresence.isPresent)
-        let tunnel = try makeTunnel()
+        let tunnel = try makeTunnel(cancellationCheck: cancellationCheck)
         defer { tunnel.free() }
 
         let session = try connectDebugSession(over: tunnel)
@@ -114,7 +106,12 @@ final class JITSession {
             // tunnel and thread; it must never share the debugger's FFI handles.
             let heartbeat = DebugHeartbeatSession(pairingFilePath: pairingFilePath, configuration: configuration, progress: progress)
             do { try heartbeat.start() }
-            catch { progress("Heartbeat unavailable: \(error.localizedDescription)") }
+            catch let error as StikJITError {
+                // Optional heartbeat transport errors are recoverable. A denied
+                // new device connection must never be treated as optional.
+                if case .offlineDeviceBinding = error { throw error }
+                progress("Heartbeat unavailable: \(error.localizedDescription)")
+            } catch { progress("Heartbeat unavailable: \(error.localizedDescription)") }
             defer { heartbeat.stop() }
             let runner = ScriptRunner(targetPID: targetPID, debugProxy: debugProxy, script: script, txmPresence: txmPresence, progress: progress,
                                       cancellationCheck: cancellationCheck)
@@ -141,52 +138,12 @@ final class JITSession {
         progress("JIT enabled (debugger attached and detached).")
     }
 
-    private func openPairingFile() throws -> OpaquePointer {
-        guard !pairingFilePath.isEmpty, FileManager.default.fileExists(atPath: pairingFilePath) else {
-            throw StikJITError.pairingFile("not found at \(pairingFilePath)")
-        }
-        var handle: OpaquePointer?
-        var succeeded = false
-        defer { if !succeeded, let handle { rp_pairing_file_free(handle) } }
-        try IdeviceFFI.check("failed to read pairing file") {
-            pairingFilePath.withCString { rp_pairing_file_read($0, &handle) }
-        }
-        guard let handle else { throw StikJITError.pairingFile("unreadable at \(pairingFilePath)") }
-        succeeded = true
-        return handle
+    private var tunnelFactory: DeviceTunnelFactory {
+        DeviceTunnelFactory(pairingFilePath: pairingFilePath, configuration: configuration)
     }
 
-    func makeTunnel() throws -> Tunnel {
-        let pairing = try openPairingFile()
-        defer { rp_pairing_file_free(pairing) }
-
-        var address = sockaddr_in()
-        address.sin_family = sa_family_t(AF_INET)
-        address.sin_port = configuration.rsdPort.bigEndian
-        guard configuration.deviceAddress.withCString({ inet_pton(AF_INET, $0, &address.sin_addr) }) == 1 else {
-            throw StikJITError.device(code: -1, subCode: 0, message: "Invalid device IPv4 address")
-        }
-
-        var tunnel = Tunnel()
-        var succeeded = false
-        defer { if !succeeded { tunnel.free() } }
-        try IdeviceFFI.check("failed to create RSD tunnel") {
-            "StikJIT".withCString { hostname in
-                withUnsafePointer(to: &address) { pointer in
-                    pointer.withMemoryRebound(to: sockaddr.self, capacity: 1) { sa in
-                        tunnel_create_rppairing(
-                            sa, socklen_t(MemoryLayout<sockaddr_in>.stride),
-                            hostname, pairing, nil, nil,
-                            &tunnel.adapter, &tunnel.handshake)
-                    }
-                }
-            }
-        }
-        guard tunnel.adapter != nil, tunnel.handshake != nil else {
-            throw StikJITError.device(code: -1, subCode: 0, message: "RSD tunnel was not returned")
-        }
-        succeeded = true
-        return tunnel
+    func makeTunnel(cancellationCheck: () throws -> Void = {}) throws -> Tunnel {
+        try tunnelFactory.makeTunnel(cancellationCheck: cancellationCheck)
     }
 
     private func connectDebugSession(over tunnel: Tunnel) throws -> DebugSession {

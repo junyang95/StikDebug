@@ -75,6 +75,32 @@ Part 2 preserves that existing **Wait for Debugger** path and adds automatic Sti
 
 Complete the Built-in StikJIT subsections only if the app will embed the framework. A StikDebug-only integration can skip directly to **Configure the JIT methods**.
 
+## This branch's offline device binding
+
+The JIT Launcher 2.0.9 framework requires a signed `wowdevice.plist` in the invoking
+process's main bundle for protected device operations. This branch's product is
+fixed to `jit-launcher`; it is not a configurable authorization SDK. The unsigned
+source IPA intentionally omits the credential. Package signing must add the
+per-device credential described in
+[LAUNCHER.md](LAUNCHER.md#offline-device-binding-and-distribution).
+
+Every newly opened paired tunnel verifies the fixed-key signature and compares
+the credential to the actual connected target's lockdown `UniqueDeviceID` on that
+same connection before any protected service is used. A separate UI readiness
+check or previously successful tunnel cannot authorize a new connection.
+Failures never fall back to unbound operation, including the deprecated no-DDI
+JIT API. No website license check, identifier upload or expiration is involved.
+This application-level check is not a claim of resistance to binary patching.
+
+`StikJITError.offlineDeviceBinding` gives a stable failure reason and a localized
+explanation. `resumeProcess` sends only SIGCONT and `clearSimulatedLocation`
+clears only location; these recovery operations still establish a real paired
+connection but do not require a credential. Use resume in suspended-launch
+failure cleanup. No public option disables verification for ordinary commands.
+Pairing-file validation, pairing setup and local bundled-DDI cache preparation
+remain available without the device credential. The simulator preview does not
+link or invoke the device-only framework.
+
 ## Built-in StikJIT: Embed the framework
 
 Built-in StikJIT uses two processes because a process that attaches a debugger to itself deadlocks:

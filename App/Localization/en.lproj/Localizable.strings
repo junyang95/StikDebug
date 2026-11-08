@@ -218,3 +218,13 @@
 "setup.start" = "Start setup";
 "progress.checking_connection" = "Checking device connection…";
 "error.connection_failed" = "Could not connect to the paired device. Check pairing and the local VPN, then try again.";
+
+/* Offline device binding */
+"binding.error.missingCredential" = "This package is missing its offline device credential (wowdevice.plist). Install a package signed for this device.";
+"binding.error.invalidCredential" = "The offline device credential is damaged or invalid. Install a valid package for this device.";
+"binding.error.invalidSignature" = "The offline device credential signature is invalid. Install a valid package for this device.";
+"binding.error.unsupportedCredential" = "This offline device credential format is unsupported. Install a compatible package.";
+"binding.error.wrongProduct" = "This offline device credential is for a different app. Install the JIT Launcher package for this device.";
+"binding.error.invalidDeviceIdentifier" = "The device identifier is invalid. Check the package, pairing record, and actual connected device.";
+"binding.error.deviceMismatch" = "This package is bound to a different device. Connect its matching device or install a package signed for the connected device.";
+"binding.error.identityUnavailable" = "Could not read the connected device’s identifier. Check pairing and the local VPN connection, then try again.";

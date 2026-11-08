@@ -669,7 +669,8 @@ final class LauncherModel: ObservableObject {
             do {
                 if let externalCheck {
                     // A TCP route alone is insufficient: establish the paired tunnel.
-                    // This never reads a device identifier or contacts an account service.
+                    // Each actual device operation also validates its own signed binding
+                    // and connected-device identifier; this status check grants no access.
                     try await self.onDeviceWorker {
                         try LauncherEngine.checkDeviceConnection(record: record, cancellationCheck: token.check)
                     }
