@@ -26,6 +26,9 @@ struct SavedWalkingRoute: Identifiable, Codable, Equatable {
     var planningStyleRawValue: String?
     /// 导入/手绘轨迹要原样保存全部几何点；旧版路线没有该字段，按途经点重新规划。
     var preservesExactPathValue: Bool?
+    /// Optional fields keep existing saved routes readable without migration.
+    var isPastedRouteValue: Bool?
+    var routeEndBehaviorRawValue: String?
 
     init(
         id: UUID = UUID(),
@@ -34,15 +37,20 @@ struct SavedWalkingRoute: Identifiable, Codable, Equatable {
         isLoop: Bool,
         planningStyle: RoutePlanningStyle = .footpaths,
         preservesExactPath: Bool = false,
-        createdAt: Date = Date()
+        createdAt: Date = Date(),
+        isPastedRoute: Bool = false,
+        endBehavior: RouteEndBehavior? = nil
     ) {
         self.id = id
         self.name = name
         points = coordinates.map(Point.init)
-        self.isLoop = isLoop
+        let effectiveEndBehavior = endBehavior ?? (isLoop ? .loop : (isPastedRoute ? .stopAtEnd : .reverse))
+        self.isLoop = effectiveEndBehavior == .loop
         self.createdAt = createdAt
         planningStyleRawValue = planningStyle.rawValue
-        preservesExactPathValue = preservesExactPath
+        preservesExactPathValue = preservesExactPath || isPastedRoute
+        isPastedRouteValue = isPastedRoute
+        routeEndBehaviorRawValue = effectiveEndBehavior.rawValue
     }
 
     var coordinates: [CLLocationCoordinate2D] {
@@ -54,7 +62,16 @@ struct SavedWalkingRoute: Identifiable, Codable, Equatable {
     }
 
     var preservesExactPath: Bool {
-        preservesExactPathValue ?? false
+        (preservesExactPathValue ?? false) || isPastedRoute
+    }
+
+    var isPastedRoute: Bool {
+        isPastedRouteValue ?? false
+    }
+
+    var routeEndBehavior: RouteEndBehavior {
+        RouteEndBehavior(rawValue: routeEndBehaviorRawValue ?? "")
+            ?? (isLoop ? .loop : (isPastedRoute ? .stopAtEnd : .reverse))
     }
 }
 

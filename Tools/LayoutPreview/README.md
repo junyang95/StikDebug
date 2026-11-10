@@ -7,6 +7,7 @@ Build with `bash Tools/LayoutPreview/build.sh`. The output defaults to `/tmp/pik
 The app writes PNGs to its Documents directory and creates `complete.txt` when all selected cases are rendered. Cases cover 320–1024 point widths, portrait and landscape, light and dark appearance, and standard or large accessibility text. These are layout previews, not physical-device validation.
 
 - Launch with `--ddi` for the bundled DDI installation page, local preparation progress, failure recovery and checklist entry. Installation and mounting use fixtures.
+- Launch with `--coordinate-paste` for the production batch coordinate form with 19 points, invalid rows, single-point compatibility, dark appearance, iPad and accessibility text.
 - Launch with `--setup-entry` for the passive home setup prompt at regular and maximum accessibility text sizes. The prompt occupies its own layout space above the tabs. Setup is now a direct device-settings action; there is no account-verification page.
 - Launch with `--interactive --setup-entry` to inspect the passive home layout, or use `--interactive --route` for the route fixture. Add `--large-type` to inspect accessibility text.
 

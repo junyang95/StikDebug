@@ -36,6 +36,30 @@ enum SessionGoalKind: String, CaseIterable, Codable, Identifiable {
     }
 }
 
+enum RouteEndBehavior: String, CaseIterable, Codable, Identifiable {
+    case stopAtEnd
+    case reverse
+    case loop
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .stopAtEnd: "到终点停止".localized
+        case .reverse: "原路往返".localized
+        case .loop: "循环绕圈".localized
+        }
+    }
+
+    var detail: String {
+        switch self {
+        case .stopAtEnd: "按顺序走完所有坐标后停止，并保持终点位置。".localized
+        case .reverse: "到终点后原路返回，持续往返直到停止。".localized
+        case .loop: "终点连回起点，持续绕圈直到停止。".localized
+        }
+    }
+}
+
 struct WalkingSessionConfig: Codable, Equatable {
     var mode: MovementMode = .joystick
     var goalKind: SessionGoalKind = .steps

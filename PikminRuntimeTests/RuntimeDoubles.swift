@@ -54,6 +54,7 @@ final class DeviceCommands: @unchecked Sendable {
     }
 }
 func simulate_location(_ ip: String, _ lat: Double, _ lon: Double, _ pairing: String) -> Int32 {
-    DeviceCommands.shared.sendSet()
+    guard LocationNetworkGate.shared.state.isReady else { return LocationNetworkGate.blockedStatus }
+    return DeviceCommands.shared.sendSet()
 }
 func clear_simulated_location(_ ip: String, _ pairing: String) -> Int32 { DeviceCommands.shared.append("clear"); return 0 }

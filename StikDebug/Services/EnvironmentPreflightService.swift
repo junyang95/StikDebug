@@ -70,9 +70,11 @@ final class EnvironmentPreflightService: ObservableObject {
     @Published private(set) var ddiFilesMissing = false
     @Published private(set) var isRefreshing = false
     @Published private(set) var lastCheckedAt: Date?
+    @Published private(set) var locationNetworkState: LocationNetworkState = .checking
     /// Explicit setup intent enables local device work; opening the app stays passive.
     @Published private(set) var deviceSetupEnabled = false
     private var setupGeneration = UUID()
+    private var refreshAfterNetworkRecovery = false
 
     private let pathMonitor = NWPathMonitor()
     private let monitorQueue = DispatchQueue(label: "com.pikminhelper.preflight.network")
@@ -94,29 +96,47 @@ final class EnvironmentPreflightService: ObservableObject {
 
     private func canContinueRefresh(_ generation: UUID) -> Bool {
         deviceSetupEnabled && setupGeneration == generation && !DeveloperConnectionGate.isBlocked
+            && LocationNetworkGate.shared.state.isReady
     }
 
     var blockingItems: [PreflightItem] {
-        items.filter { item in
+        if !locationNetworkState.isReady {
+            return items.filter { $0.kind == .wifi }
+        }
+        return items.filter { item in
             switch item.kind {
-            case .wifi, .ddi:
+            case .ddi:
                 return false
-            case .vpnRoute, .pairing, .coreDeviceTunnel:
+            case .wifi, .vpnRoute, .pairing, .coreDeviceTunnel:
                 return !item.status.isReady
             }
         }
     }
 
     var canStartSession: Bool {
-        deviceSetupEnabled && !DeveloperConnectionGate.isBlocked && blockingItems.isEmpty
+        deviceSetupEnabled && LocationNetworkGate.shared.state.isReady
+            && !DeveloperConnectionGate.isBlocked && blockingItems.isEmpty
     }
 
     private init() {
         pathMonitor.pathUpdateHandler = { [weak self] path in
+            LocationNetworkGate.shared.update(LocationNetworkState(path: path))
             Task { @MainActor in
                 guard let self else { return }
+                let wasReady = self.locationNetworkState.isReady
                 self.latestPath = path
                 self.updateWiFiStatus(path)
+                FixedLocationSessionController.shared.handleNetworkChange()
+                WalkingSessionController.shared.handleNetworkChange()
+                guard self.locationNetworkState.isReady else { return }
+                if !wasReady {
+                    if self.isRefreshing {
+                        self.refreshAfterNetworkRecovery = true
+                    } else {
+                        await self.refresh()
+                    }
+                    return
+                }
                 // 网络路径变化很频繁（VPN 连接/重连时尤甚）。完整探测很重
                 // （2.5s TCP 探测 + 建隧道 FFI），这里做节流：距上次检查不足 12 秒就跳过，
                 // 只保留上面轻量的 Wi‑Fi 状态更新，避免反复重活导致发热。
@@ -142,6 +162,14 @@ final class EnvironmentPreflightService: ObservableObject {
               !DeveloperConnectionGate.isBlocked, !isRefreshing else { return }
         isRefreshing = true
         let generation = setupGeneration
+        if let latestPath {
+            updateWiFiStatus(latestPath)
+        }
+        guard LocationNetworkGate.shared.state.isReady else {
+            set(.failed(locationNetworkState.blockingMessage ?? "正在检测网络，请稍后重试。".localized), for: .wifi)
+            finishRefresh()
+            return
+        }
         for kind in PreflightKind.allCases {
             set(.checking, for: kind)
         }
@@ -267,7 +295,8 @@ final class EnvironmentPreflightService: ObservableObject {
 
     func connectDevice() {
         guard deviceSetupEnabled,
-              !DeveloperConnectionGate.isBlocked else { return }
+              !DeveloperConnectionGate.isBlocked,
+              LocationNetworkGate.shared.state.isReady else { return }
         startTunnelInBackground(showErrorUI: true)
         Task {
             for _ in 0..<24 {
@@ -284,18 +313,23 @@ final class EnvironmentPreflightService: ObservableObject {
     }
 
     private func updateWiFiStatus(_ path: NWPath) {
-        if path.status != .satisfied {
-            set(.failed("当前没有可用网络".localized), for: .wifi)
-        } else if path.usesInterfaceType(.wifi) {
+        locationNetworkState = LocationNetworkState(path: path)
+        if locationNetworkState.isReady {
             set(.ready("Wi-Fi 已连接".localized), for: .wifi)
         } else {
-            set(.warning("未检测到 Wi-Fi；若 VPN 隧道可用仍可继续".localized), for: .wifi)
+            set(.failed(locationNetworkState.blockingMessage ?? ""), for: .wifi)
         }
     }
 
     private func finishRefresh() {
         lastCheckedAt = Date()
         isRefreshing = false
+        if refreshAfterNetworkRecovery {
+            refreshAfterNetworkRecovery = false
+            if LocationNetworkGate.shared.state.isReady {
+                Task { await refresh() }
+            }
+        }
     }
 
     private func set(_ status: PreflightStatus, for kind: PreflightKind) {

@@ -72,6 +72,7 @@ struct PreflightItem: Identifiable, Equatable {
 
 @MainActor final class EnvironmentPreflightService: ObservableObject {
     static let shared = EnvironmentPreflightService()
+    var locationNetworkState: LocationNetworkState = .wifi
     var items = PreflightKind.allCases.map { PreflightItem(kind: $0, status: $0 == .ddi ? .warning("未安装 DDI；不影响定位模拟，仅额外开发服务需要。") : .ready("已就绪")) }
     var isRefreshing = false
     var ddiFilesMissing = true

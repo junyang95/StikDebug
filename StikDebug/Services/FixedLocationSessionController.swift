@@ -13,6 +13,7 @@ final class FixedLocationSessionController: ObservableObject {
     private var hasKeepAliveLease = false
     private let commandGeneration = FixedLocationCommandGeneration()
     private var isForeground = true
+    private var networkBlock: LocationNetworkState?
 
     private init() {}
 
@@ -23,7 +24,14 @@ final class FixedLocationSessionController: ObservableObject {
     func start(_ coordinate: CLLocationCoordinate2D, isForeground: Bool) {
         guard !DeveloperConnectionGate.isBlocked else { return }
         guard CLLocationCoordinate2DIsValid(coordinate) else { return }
+        if let message = LocationNetworkGate.shared.state.blockingMessage {
+            stop()
+            networkBlock = LocationNetworkGate.shared.state
+            lastError = message
+            return
+        }
         self.lastError = nil
+        networkBlock = nil
         self.coordinate = coordinate
         self.isForeground = isForeground
         acquireKeepAliveIfNeeded()
@@ -49,7 +57,23 @@ final class FixedLocationSessionController: ObservableObject {
         resendTimer = nil
         coordinate = nil
         lastError = nil
+        networkBlock = nil
         releaseKeepAliveIfNeeded()
+    }
+
+    func handleNetworkChange() {
+        if LocationNetworkGate.shared.state.isReady {
+            if networkBlock != nil {
+                networkBlock = nil
+                lastError = nil
+            }
+            return
+        }
+        guard coordinate != nil,
+              let message = LocationNetworkGate.shared.state.blockingMessage else { return }
+        stop()
+        networkBlock = LocationNetworkGate.shared.state
+        lastError = message
     }
 
     private func schedule(sendImmediately: Bool) {
@@ -68,12 +92,14 @@ final class FixedLocationSessionController: ObservableObject {
                 northMeters: Double.random(in: -1.5...1.5)
             )
             let code = simulate_location(DeviceConnectionContext.targetIPAddress, jittered.latitude, jittered.longitude, pairingPath)
-            guard let message = OfflineBindingMessages.message(for: code) else { return }
+            guard let message = LocationNetworkGate.message(for: code) ?? OfflineBindingMessages.message(for: code) else { return }
             Task { @MainActor [weak self] in
                 guard let self, commandGeneration.isCurrent(generation) else { return }
                 // Stop only this keep-alive. Restoring real location remains an explicit action.
                 self.stop()
+                self.networkBlock = code == LocationNetworkGate.blockedStatus ? LocationNetworkGate.shared.state : nil
                 self.lastError = message
+                self.handleNetworkChange()
                 LogManager.shared.addErrorLog(message)
             }
         }

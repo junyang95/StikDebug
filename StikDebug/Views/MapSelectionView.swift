@@ -153,6 +153,8 @@ struct LocationSimulationView: View {
     @State private var showCoordinateEntry = false
     @State private var beginSetupAfterCoordinateEntry = false
     @State private var coordinateEntryText = ""
+    @State private var coordinateEntryPrefersRoute = false
+    @State private var coordinateEntryEndBehavior = RouteEndBehavior.stopAtEnd
     @State private var showGPXExporter = false
     @State private var gpxDocument: GPXRouteDocument?
     @State private var gpxFilename = "Pikmin-Helper-Route"
@@ -214,12 +216,18 @@ struct LocationSimulationView: View {
 
     private var waypointStatusText: String {
         if walkingSession.isActive {
+            if waypointPlanner.isPastedRoute {
+                return (walkingSession.activeRouteEndBehavior ?? waypointPlanner.routeEndBehavior).detail
+            }
             return waypointPlanner.isClosedLoop
                 ? String(format: "正在绕圈%@，走完一圈会自动继续下一圈".localized, profile.title)
                 : String(format: "正在沿路径%@，到终点后自动原路返回".localized, profile.title)
         }
         if waypointPlanner.isEmpty {
             return "在地图上点几个点，它们会按顺序连成行走路径".localized
+        }
+        if waypointPlanner.isPastedRoute {
+            return "按粘贴顺序连接各点，使用当前设定速度连续移动。".localized
         }
         if let name = waypointPlanner.importedName {
             return String(format: "已载入「%@」，如需自己连点请先清空".localized, name)
@@ -259,7 +267,7 @@ struct LocationSimulationView: View {
             speedMetersPerSecond: waypointSpeedMetersPerSecond
         )
         let durationText = Self.routeDurationFormatter.string(from: duration)
-        let pointsText = waypointPlanner.isImported
+        let pointsText = waypointPlanner.isImported && !waypointPlanner.isPastedRoute
             ? String(format: "轨迹 %d 点".localized, waypointPlanner.importedPointCount)
             : String(format: "%d 个点".localized, waypointPlanner.waypoints.count)
         if let durationText, !durationText.isEmpty {
@@ -454,6 +462,10 @@ struct LocationSimulationView: View {
                     }
                     .disabled(walkingSession.isActive)
                     Divider()
+                    Button(action: openBatchCoordinateEntry) {
+                        Label("批量粘贴坐标", systemImage: "list.number")
+                    }
+                    .disabled(isBusy || isRouteRunning || isImportingCoordinates || isDrawingRoute)
                     Button {
                         showCoordinateImporter = true
                     } label: {
@@ -534,13 +546,19 @@ struct LocationSimulationView: View {
                 beginDeviceSetup()
             }
         }) {
-            CoordinateEntrySheet(initialText: coordinateEntryText) { coordinate, shouldTeleport in
+            CoordinateEntrySheet(
+                initialText: coordinateEntryText,
+                speedKilometersPerHour: MovementParameters.current().speedKPH,
+                prefersRoute: coordinateEntryPrefersRoute
+            ) { coordinate, shouldTeleport in
                 if shouldTeleport && !deviceSetupEnabled {
                     applyEnteredCoordinate(coordinate, teleport: false)
                     beginSetupAfterCoordinateEntry = true
                 } else {
                     applyEnteredCoordinate(coordinate, teleport: shouldTeleport)
                 }
+            } onApplyRoute: { coordinates in
+                applyPastedCoordinates(coordinates)
             }
         }
     }
@@ -627,6 +645,8 @@ struct LocationSimulationView: View {
             }
 
             Button {
+                coordinateEntryPrefersRoute = false
+                coordinateEntryEndBehavior = .stopAtEnd
                 coordinateEntryText = coordinate.map {
                     String(format: "%.6f, %.6f", $0.latitude, $0.longitude)
                 } ?? ""
@@ -727,6 +747,15 @@ struct LocationSimulationView: View {
     }
 
     private func applyCoordinatesFromSearchText() {
+        if searchText.split(whereSeparator: \.isNewline).count > 1 {
+            coordinateEntryText = searchText
+            coordinateEntryPrefersRoute = true
+            coordinateEntryEndBehavior = .stopAtEnd
+            searchText = ""
+            searchCompleter.results = []
+            showCoordinateEntry = true
+            return
+        }
         let importedCoordinates = CoordinateImportParser.parseInline(searchText)
         guard !importedCoordinates.isEmpty else {
             // 之前解析失败时什么都不做，用户只会觉得「按了没反应」。
@@ -832,6 +861,28 @@ struct LocationSimulationView: View {
         Haptic.success()
     }
 
+    private func openBatchCoordinateEntry() {
+        guard !isRouteRunning else { return }
+        coordinateEntryPrefersRoute = true
+        coordinateEntryEndBehavior = waypointPlanner.isPastedRoute ? waypointPlanner.routeEndBehavior : .stopAtEnd
+        coordinateEntryText = waypointPlanner.isPastedRoute
+            ? waypointPlanner.sourceCoordinates.map {
+                "\($0.latitude), \($0.longitude)"
+            }.joined(separator: "\n")
+            : ""
+        showCoordinateEntry = true
+    }
+
+    private func applyPastedCoordinates(_ coordinates: [CLLocationCoordinate2D]) {
+        guard !isRouteRunning,
+              waypointPlanner.loadPastedCoordinates(coordinates, name: "粘贴的坐标路线".localized,
+                                                    endBehavior: coordinateEntryEndBehavior) else { return }
+        coordinate = nil
+        selectedMode = .route
+        if let rect = waypointPlanner.waypointsBoundingMapRect { position = .rect(rect) }
+        Haptic.success()
+    }
+
     private func showImportError(_ error: Error) {
         alertTitle = "导入失败".localized
         alertMessage = error.localizedDescription
@@ -908,6 +959,8 @@ struct LocationSimulationView: View {
     /// 经纬度直传入口。放在底部卡片里，而不是只藏在顶部那个狭窄的搜索框中。
     private var coordinateEntryButton: some View {
         Button {
+            coordinateEntryPrefersRoute = false
+            coordinateEntryEndBehavior = .stopAtEnd
             coordinateEntryText = coordinate.map { String(format: "%.6f, %.6f", $0.latitude, $0.longitude) } ?? ""
             showCoordinateEntry = true
         } label: {
@@ -962,6 +1015,13 @@ struct LocationSimulationView: View {
             if !walkingSession.isActive {
                 if waypointPlanner.isEmpty {
                     AdaptiveControlGrid(minimumWidth: 125) {
+                        Button(action: openBatchCoordinateEntry) {
+                            Label("批量粘贴坐标", systemImage: "list.number")
+                                .frame(maxWidth: .infinity, minHeight: 44)
+                        }
+                        .buttonStyle(.bordered)
+                        .disabled(isBusy || isImportingCoordinates || isDrawingRoute)
+
                         Button {
                             beginFreehandRoute()
                         } label: {
@@ -988,6 +1048,18 @@ struct LocationSimulationView: View {
                         .buttonStyle(.bordered)
                         .disabled(isBusy || isImportingCoordinates || isDrawingRoute)
                     }
+                } else if waypointPlanner.isPastedRoute {
+                    Picker("到达终点后", selection: $waypointPlanner.routeEndBehavior) {
+                        ForEach(RouteEndBehavior.allCases) { behavior in
+                            Text(behavior.title).tag(behavior)
+                        }
+                    }
+                    .adaptivePicker()
+
+                    Text(waypointPlanner.routeEndBehavior.detail)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
                 } else {
                     Toggle(isOn: $waypointPlanner.isLoop) {
                         Text(waypointPlanner.canLoop ? "闭环：终点连回起点，循环绕圈" : "闭环：至少需要 3 个点")
@@ -998,24 +1070,32 @@ struct LocationSimulationView: View {
                     .accessibilityHint("打开后走完一圈会自动继续，而不是原路折返")
                 }
 
-                AdaptiveActionStack {
-                    Picker("目标", selection: $routeGoalKind) {
-                        ForEach(SessionGoalKind.allCases) { kind in
-                            Text(kind.title).tag(kind)
+                if !waypointPlanner.isPastedRoute {
+                    AdaptiveActionStack {
+                        Picker("目标", selection: $routeGoalKind) {
+                            ForEach(SessionGoalKind.allCases) { kind in
+                                Text(kind.title).tag(kind)
+                            }
+                        }
+                        if routeGoalKind != .manual {
+                            TextField(goalPlaceholder, value: $routeGoalValue, format: .number)
+                                .textFieldStyle(.roundedBorder)
+                                .keyboardType(.decimalPad)
+                                .frame(minWidth: 100, maxWidth: .infinity)
+                                .focused($goalFocused)
+                                .accessibilityLabel("目标数值")
                         }
                     }
-                    if routeGoalKind != .manual {
-                        TextField(goalPlaceholder, value: $routeGoalValue, format: .number)
-                            .textFieldStyle(.roundedBorder)
-                            .keyboardType(.decimalPad)
-                            .frame(minWidth: 100, maxWidth: .infinity)
-                            .focused($goalFocused)
-                            .accessibilityLabel("目标数值")
-                    }
                 }
-
                 if !waypointPlanner.isEmpty {
                     AdaptiveControlGrid {
+                        if waypointPlanner.isPastedRoute {
+                            Button(action: openBatchCoordinateEntry) {
+                                Label("编辑坐标", systemImage: "list.number")
+                                    .frame(maxWidth: .infinity, minHeight: 44)
+                            }
+                            .buttonStyle(.bordered)
+                        }
                         // 导入轨迹是整条载入的，逐点撤销没有意义，只能整条清空。
                         if !waypointPlanner.isImported {
                             Button {
@@ -1068,6 +1148,7 @@ struct LocationSimulationView: View {
     /// 「开始行走」变灰时告诉用户卡在哪一步，而不是让按钮默默不可点。
     private var startBlockReason: String? {
         guard !walkingSession.isActive, !waypointPlanner.isEmpty else { return nil }
+        if let message = preflight.locationNetworkState.blockingMessage { return message }
         if !deviceSetupEnabled { return nil }
         if !pairingExists {
             return "尚未导入 pairing file，请先在设置页完成配对".localized
@@ -1097,8 +1178,8 @@ struct LocationSimulationView: View {
         let movement = MovementParameters.current()
         let config = WalkingSessionConfig(
             mode: .route,
-            goalKind: routeGoalKind,
-            goalValue: normalizedGoal,
+            goalKind: waypointPlanner.isPastedRoute ? .manual : routeGoalKind,
+            goalValue: waypointPlanner.isPastedRoute ? 0 : normalizedGoal,
             speedKilometersPerHour: movement.speedKPH,
             strideMeters: movement.strideMeters,
             usesNaturalSpeedVariation: movement.usesNaturalSpeedVariation,
@@ -1110,7 +1191,8 @@ struct LocationSimulationView: View {
             await walkingSession.startRoute(
                 config: config,
                 coordinates: coordinates,
-                isLoop: waypointPlanner.isClosedLoop
+                isLoop: waypointPlanner.isClosedLoop,
+                endBehavior: waypointPlanner.isPastedRoute ? waypointPlanner.routeEndBehavior : nil
             )
         }
     }
@@ -1129,7 +1211,9 @@ struct LocationSimulationView: View {
             coordinates: coordinates,
             isLoop: waypointPlanner.isLoop,
             planningStyle: waypointPlanner.planningStyle,
-            preservesExactPath: preservesExactPath
+            preservesExactPath: preservesExactPath,
+            isPastedRoute: waypointPlanner.isPastedRoute,
+            endBehavior: waypointPlanner.isPastedRoute ? waypointPlanner.routeEndBehavior : nil
         )
         savedRoutes.append(route)
         SavedWalkingRouteStore.save(savedRoutes)
@@ -1183,7 +1267,9 @@ struct LocationSimulationView: View {
     private func loadRoute(_ route: SavedWalkingRoute) {
         guard !walkingSession.isActive else { return }
         selectedMode = .route
-        if route.preservesExactPath {
+        if route.isPastedRoute {
+            _ = waypointPlanner.loadPastedCoordinates(route.coordinates, name: route.name, endBehavior: route.routeEndBehavior)
+        } else if route.preservesExactPath {
             _ = waypointPlanner.loadImportedPath(route.coordinates, name: route.name)
             waypointPlanner.isLoop = route.isLoop
         } else {
@@ -1214,12 +1300,18 @@ struct LocationSimulationView: View {
 
     // 显式传坐标：手动输入经纬度时刚写完 @State 就要用，不依赖状态回读的时序。
     private func simulate(at coord: CLLocationCoordinate2D) {
+        if let message = LocationNetworkGate.shared.state.blockingMessage {
+            alertTitle = "请先连接 Wi-Fi 或热点".localized
+            alertMessage = message
+            showAlert = true
+            return
+        }
         guard deviceSetupEnabled else { beginDeviceSetup(); return }
         guard pairingExists, !isBusy else { return }
         runLocationCommand(
             errorTitle: "定点失败".localized,
             errorMessage: { code in
-                OfflineBindingMessages.message(for: code) ?? String(format: "无法模拟定位（错误 %d）。请检查设备连接、开发者模式和定位服务状态。".localized, code)
+                LocationNetworkGate.message(for: code) ?? OfflineBindingMessages.message(for: code) ?? String(format: "无法模拟定位（错误 %d）。请检查设备连接、开发者模式和定位服务状态。".localized, code)
             },
             operation: { locationUpdateCode(for: coord) }
         ) {
@@ -1311,100 +1403,6 @@ struct LocationSimulationView: View {
         case .walking: .blue.opacity(0.82)
         case .imported: .purple.opacity(0.82)
         case .planning: .gray.opacity(0.6)
-        }
-    }
-}
-
-/// 经纬度直传输入页。边输边校验，明确告诉用户识别成什么，不做静默失败。
-private struct CoordinateEntrySheet: View {
-    @Environment(\.dismiss) private var dismiss
-    let onApply: (CLLocationCoordinate2D, Bool) -> Void
-
-    @State private var text: String
-    @FocusState private var isFocused: Bool
-
-    init(initialText: String, onApply: @escaping (CLLocationCoordinate2D, Bool) -> Void) {
-        _text = State(initialValue: initialText)
-        self.onApply = onApply
-    }
-
-    private var trimmed: String {
-        text.trimmingCharacters(in: .whitespacesAndNewlines)
-    }
-
-    private var parsed: CLLocationCoordinate2D? {
-        CoordinateImportParser.parseInline(text).first
-    }
-
-    var body: some View {
-        NavigationStack {
-            Form {
-                Section {
-                    TextField("35.681236, 139.767125", text: $text, axis: .vertical)
-                        .font(.body.monospaced())
-                        .keyboardType(.numbersAndPunctuation)
-                        .autocorrectionDisabled()
-                        .textInputAutocapitalization(.never)
-                        .focused($isFocused)
-
-                    Button {
-                        if let clipboard = UIPasteboard.general.string {
-                            text = clipboard
-                        }
-                    } label: {
-                        Label("从剪贴板粘贴", systemImage: "doc.on.clipboard")
-                    }
-                } header: {
-                    Text("经纬度")
-                } footer: {
-                    if let parsed {
-                        Label(
-                            String(format: "识别为 纬度 %.6f · 经度 %.6f".localized, parsed.latitude, parsed.longitude),
-                            systemImage: "checkmark.circle.fill"
-                        )
-                        .foregroundStyle(.green)
-                    } else if trimmed.isEmpty {
-                        Text("支持「纬度, 经度」，逗号或空格分隔；负数表示南纬/西经。")
-                    } else {
-                        Label("无法识别，请输入形如 35.681236, 139.767125", systemImage: "exclamationmark.triangle.fill")
-                            .foregroundStyle(.orange)
-                    }
-                }
-
-                Section {
-                    Button {
-                        guard let parsed else { return }
-                        onApply(parsed, true)
-                        dismiss()
-                    } label: {
-                        Label("传送到此处", systemImage: "location.fill")
-                            .frame(maxWidth: .infinity)
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .tint(PikminUI.actionGreen)
-                    .disabled(parsed == nil)
-
-                    Button {
-                        guard let parsed else { return }
-                        onApply(parsed, false)
-                        dismiss()
-                    } label: {
-                        Label("只放置定点，不传送", systemImage: "mappin.and.ellipse")
-                            .frame(maxWidth: .infinity)
-                    }
-                    .buttonStyle(.bordered)
-                    .disabled(parsed == nil)
-                }
-                .listRowBackground(Color.clear)
-            }
-            .navigationTitle("输入经纬度")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    Button("取消") { dismiss() }
-                }
-            }
-            .onAppear { isFocused = true }
         }
     }
 }

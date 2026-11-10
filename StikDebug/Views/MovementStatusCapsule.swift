@@ -1,5 +1,6 @@
 import CoreLocation
 import SwiftUI
+import UIKit
 
 private struct MovementStatusPresentation {
     let title: String
@@ -14,6 +15,7 @@ struct MovementStatusCapsule: View {
     @EnvironmentObject private var session: WalkingSessionController
     @EnvironmentObject private var preflight: EnvironmentPreflightService
     @EnvironmentObject private var vpn: EmbeddedVPNService
+    @Environment(\.openURL) private var openURL
     @Environment(\.deviceSetupEnabled) private var deviceSetupEnabled
     @Environment(\.beginDeviceSetup) private var beginDeviceSetup
     @ObservedObject private var fixedSession = FixedLocationSessionController.shared
@@ -26,6 +28,15 @@ struct MovementStatusCapsule: View {
     @State private var beginsSetupAfterDismissal = false
 
     private var presentation: MovementStatusPresentation {
+        if let message = preflight.locationNetworkState.blockingMessage {
+            return MovementStatusPresentation(
+                title: networkReminderTitle,
+                detail: message,
+                symbol: "wifi.slash",
+                tint: .orange,
+                isProgressing: false
+            )
+        }
         if vpn.isExperimentEnabled {
             return MovementStatusPresentation(
                 title: "本机透传实验".localized,
@@ -115,6 +126,13 @@ struct MovementStatusCapsule: View {
         }
     }
 
+    private var networkReminderTitle: String {
+        if case .checking = preflight.locationNetworkState {
+            return "正在检查网络…".localized
+        }
+        return "请先连接 Wi-Fi 或热点".localized
+    }
+
     private var idlePresentation: MovementStatusPresentation {
         switch vpn.status {
         case .loading, .connecting, .disconnecting:
@@ -179,6 +197,7 @@ struct MovementStatusCapsule: View {
     }
 
     private var usesPikminIcon: Bool {
+        guard preflight.locationNetworkState.isReady else { return false }
         if session.lastError != nil,
            session.phase == .failed || session.phase == .paused {
             return false
@@ -201,6 +220,7 @@ struct MovementStatusCapsule: View {
     }
 
     private var animatesPikmin: Bool {
+        guard preflight.locationNetworkState.isReady else { return false }
         switch session.phase {
         case .preparing, .running, .reconnecting:
             return true
@@ -249,7 +269,7 @@ struct MovementStatusCapsule: View {
                     .frame(maxWidth: 600)
                     .frame(maxWidth: .infinity, minHeight: 44)
                 }
-                .navigationTitle("连接与诊断")
+                .navigationTitle(preflight.locationNetworkState.isReady ? "连接与诊断".localized : networkReminderTitle)
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
                     ToolbarItem(placement: .confirmationAction) {
@@ -293,11 +313,11 @@ struct MovementStatusCapsule: View {
                     .foregroundStyle(.primary)
                     .lineLimit(2)
 
-                if !typeSize.isAccessibilitySize {
+                if !typeSize.isAccessibilitySize || !preflight.locationNetworkState.isReady {
                     Text(summaryLine)
                         .font(.caption)
                         .foregroundStyle(.secondary)
-                        .lineLimit(2)
+                        .lineLimit(preflight.locationNetworkState.isReady ? 2 : nil)
                         .monospacedDigit()
                 }
             }
@@ -312,6 +332,7 @@ struct MovementStatusCapsule: View {
     }
 
     private var summaryLine: String {
+        if let message = preflight.locationNetworkState.blockingMessage { return message }
         if session.phase == .running || session.phase == .reconnecting || session.phase == .paused {
             if session.phase == .reconnecting {
                 return presentation.detail
@@ -323,7 +344,21 @@ struct MovementStatusCapsule: View {
         return presentation.detail
     }
 
+    @ViewBuilder
     private var diagnosticContent: some View {
+        if preflight.locationNetworkState.isReady {
+            connectionDiagnostics
+        } else {
+            Button(action: openWiFiSettings) {
+                Label("打开 Wi‑Fi 设置", systemImage: "wifi")
+                    .frame(maxWidth: .infinity, minHeight: 44)
+            }
+            .buttonStyle(.borderedProminent)
+            .tint(PikminUI.actionGreen)
+        }
+    }
+
+    private var connectionDiagnostics: some View {
         VStack(alignment: .leading, spacing: 10) {
             if let coordinate = session.currentCoordinate ?? fixedSession.coordinate {
                 diagnosticRow(
@@ -385,6 +420,17 @@ struct MovementStatusCapsule: View {
                 .disabled(deviceSetupEnabled && preflight.isRefreshing)
             }
             .font(.subheadline.weight(.semibold))
+        }
+    }
+
+    private func openWiFiSettings() {
+        guard let settingsURL = URL(string: UIApplication.openSettingsURLString) else { return }
+        guard let wifiURL = URL(string: "App-Prefs:root=WIFI") else {
+            openURL(settingsURL)
+            return
+        }
+        openURL(wifiURL) { accepted in
+            if !accepted { openURL(settingsURL) }
         }
     }
 

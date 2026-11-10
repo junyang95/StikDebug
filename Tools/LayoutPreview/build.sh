@@ -11,6 +11,9 @@ xcrun swiftc -swift-version 5 -sdk "$SDK" -target arm64-apple-ios17.4-simulator 
   "$ROOT/StikDebug/Views/TodayDashboardView.swift" "$ROOT/StikDebug/Views/OnDevicePairingView.swift" \
   "$ROOT/StikDebug/Services/DDIInstallationController.swift" "$ROOT/StikDebug/Views/DDIInstallationView.swift" \
   "$ROOT/StikDebug/Views/PreflightChecklistView.swift" \
+  "$ROOT/StikDebug/Core/LocationNetworkPolicy.swift" \
+  "$ROOT/StikDebug/Core/CoordinatePasteParser.swift" "$ROOT/StikDebug/Views/CoordinateEntrySheet.swift" \
+  "$ROOT/Tools/LayoutPreview/CoordinatePastePreview.swift" \
   "$ROOT/Tools/LayoutPreview/Fixtures.swift" "$ROOT/Tools/LayoutPreview/Capture.swift" \
   -o "$APP/PikminLayoutPreview"
 python3 - "$APP" "$ROOT" <<'PY'

@@ -57,8 +57,15 @@ import UIKit
         try? FileManager.default.removeItem(at: out.appendingPathComponent("complete.txt"))
         let ddiOnly = ProcessInfo.processInfo.arguments.contains("--ddi")
         let setupEntryOnly = ProcessInfo.processInfo.arguments.contains("--setup-entry")
+        let coordinatePasteOnly = ProcessInfo.processInfo.arguments.contains("--coordinate-paste")
         UserDefaults.standard.set(AppearancePreference.system.rawValue, forKey: AppearancePreference.storageKey)
         let allCases: [(String, String, CGFloat, CGFloat, DynamicTypeSize, ColorScheme)] = [
+            ("coordinates-small", "coordinates", 375, 667, .large, .light),
+            ("coordinates-dark", "coordinates", 430, 932, .large, .dark),
+            ("coordinates-accessibility", "coordinates", 320, 667, .accessibility3, .light),
+            ("coordinates-ipad", "coordinates", 1024, 768, .large, .light),
+            ("coordinates-invalid", "coordinates-invalid", 375, 667, .large, .light),
+            ("coordinates-single", "coordinates-single", 375, 667, .large, .light),
             ("setup-entry-small", "setup-entry", 375, 667, .large, .light),
             ("setup-entry-accessibility", "setup-entry", 320, 667, .accessibility5, .light),
             ("ddi-small", "ddi", 375, 667, .large, .light),
@@ -86,7 +93,8 @@ import UIKit
             ("pairing-ipad", "pairing", 1024, 768, .large, .light),
             ("pin-dark", "pin", 430, 932, .large, .dark)
         ]
-        let cases = setupEntryOnly ? allCases.filter { $0.0.hasPrefix("setup-entry") }
+        let cases = coordinatePasteOnly ? allCases.filter { $0.0.hasPrefix("coordinates") }
+            : setupEntryOnly ? allCases.filter { $0.0.hasPrefix("setup-entry") }
             : ddiOnly ? allCases.filter { $0.0.hasPrefix("ddi") } : allCases
         for (name, page, width, height, type, scheme) in cases {
             let pairing = OnDevicePairingService()
@@ -106,6 +114,8 @@ import UIKit
             if page == "pin" { pairing.phase = .awaitingPIN }
             let content: AnyView
             switch page {
+            case "coordinates", "coordinates-invalid", "coordinates-single":
+                content = CoordinatePastePreview.page(page)
             case "ddi", "ddi-installing", "ddi-failed":
                 let installer = DDIInstallationController.preview(failing: page == "ddi-failed")
                 if page != "ddi" { installer.start() }
@@ -120,7 +130,7 @@ import UIKit
             if page == "setup-entry" {
                 wrapped = passiveHome()
             } else {
-                wrapped = (page == "pairing" || page == "pin" || page.hasPrefix("ddi")) ? content : AnyView(PreviewTabs(content: content, route: page != "home"))
+                wrapped = (page == "pairing" || page == "pin" || page.hasPrefix("ddi") || page.hasPrefix("coordinates")) ? content : AnyView(PreviewTabs(content: content, route: page != "home"))
             }
             let root = wrapped
                 .environmentObject(session)
@@ -151,7 +161,7 @@ import UIKit
                 host.view.drawHierarchy(in: host.view.bounds, afterScreenUpdates: true)
             }
             try! image.pngData()!.write(to: out.appendingPathComponent(name + ".png"))
-            if name.hasPrefix("setup-entry") || name == "joystick-accessibility" || name == "route-largest-type" || ["ddi-accessibility", "ddi-landscape", "ddi-failed"].contains(name) {
+            if name.hasPrefix("coordinates") || name.hasPrefix("setup-entry") || name == "joystick-accessibility" || name == "route-largest-type" || ["ddi-accessibility", "ddi-landscape", "ddi-failed"].contains(name) {
                 var scrollMetrics: [[String: CGFloat]] = []
                 func scrollToBottom(_ view: UIView) {
                     if let scroll = view as? UIScrollView {

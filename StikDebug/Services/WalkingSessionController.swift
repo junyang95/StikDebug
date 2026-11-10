@@ -45,11 +45,8 @@ final class WalkingSessionController: ObservableObject {
     private var speedOffsetTarget = 0.0
     private var speedVariationAge = 0.0
     private var speedVariationDuration = 10.0
-    private var routeCoordinates: [CLLocationCoordinate2D] = []
-    private var routeTargetIndex = 1
-    private var routeDirection = 1
-    /// 闭环路径循环绕圈，非闭环路径走到终点后原路折返。
-    private var routeIsLoop = false
+    private var routeTraversal: RouteTraversal?
+    private var networkBlock: LocationNetworkState?
     private weak var modelContext: ModelContext?
 
     private init() {}
@@ -73,8 +70,17 @@ final class WalkingSessionController: ObservableObject {
             : config.speedKilometersPerHour
     }
 
+    var activeRouteEndBehavior: RouteEndBehavior? {
+        guard config?.mode == .route else { return nil }
+        return routeTraversal?.endBehavior
+    }
+
     var progress: Double? {
-        guard let config, config.goalKind != .manual, config.goalValue > 0 else { return nil }
+        guard let config else { return nil }
+        if let routeTraversal, config.mode == .route, routeTraversal.endBehavior == .stopAtEnd {
+            return min(distanceMeters / routeTraversal.totalDistance, 1)
+        }
+        guard config.goalKind != .manual, config.goalValue > 0 else { return nil }
         let current: Double
         switch config.goalKind {
         case .steps: current = Double(estimatedSteps)
@@ -96,37 +102,42 @@ final class WalkingSessionController: ObservableObject {
 
     func start(config: WalkingSessionConfig) async {
         guard !isActive else { return }
-        routeCoordinates = []
-        routeIsLoop = false
+        routeTraversal = nil
         await startPreparedSession(config: config)
     }
 
     func startRoute(
         config: WalkingSessionConfig,
         coordinates: [CLLocationCoordinate2D],
-        isLoop: Bool = false
+        isLoop: Bool = false,
+        endBehavior: RouteEndBehavior? = nil
     ) async {
         guard !isActive else { return }
-        let validCoordinates = coordinates.filter(CLLocationCoordinate2DIsValid)
-        guard validCoordinates.count > 1 else {
+        guard let traversal = RouteTraversal(
+            coordinates: coordinates,
+            endBehavior: endBehavior ?? (isLoop ? .loop : .reverse)
+        ) else {
             fail("路线至少需要两个有效坐标".localized)
             return
         }
-        routeCoordinates = validCoordinates
-        routeTargetIndex = 1
-        routeDirection = 1
-        routeIsLoop = isLoop
+        routeTraversal = traversal
         var routeConfig = config
         routeConfig.mode = .route
-        routeConfig.startLatitude = validCoordinates[0].latitude
-        routeConfig.startLongitude = validCoordinates[0].longitude
+        routeConfig.startLatitude = traversal.coordinate.latitude
+        routeConfig.startLongitude = traversal.coordinate.longitude
         await startPreparedSession(config: routeConfig)
     }
 
     private func startPreparedSession(config: WalkingSessionConfig) async {
         guard !isActive else { return }
+        networkBlock = nil
         guard CLLocationCoordinate2DIsValid(config.startCoordinate) else {
             fail("请选择有效的起点".localized)
+            return
+        }
+        if let message = LocationNetworkGate.shared.state.blockingMessage {
+            networkBlock = LocationNetworkGate.shared.state
+            fail(message)
             return
         }
         guard EnvironmentPreflightService.shared.canStartSession else {
@@ -149,7 +160,11 @@ final class WalkingSessionController: ObservableObject {
         let initialCode = await sendLocation(config.startCoordinate)
         guard generation == startingGeneration else { return }
         guard initialCode == 0 else {
-            fail(OfflineBindingMessages.message(for: initialCode) ?? String(format: "无法开始位置模拟（错误 %d）".localized, initialCode))
+            if initialCode == LocationNetworkGate.blockedStatus {
+                networkBlock = LocationNetworkGate.shared.state
+            }
+            fail(LocationNetworkGate.message(for: initialCode) ?? OfflineBindingMessages.message(for: initialCode) ?? String(format: "无法开始位置模拟（错误 %d）".localized, initialCode))
+            handleNetworkChange()
             return
         }
 
@@ -198,10 +213,40 @@ final class WalkingSessionController: ObservableObject {
 
     func resume() {
         guard phase == .paused, !DeveloperConnectionGate.isBlocked else { return }
+        guard LocationNetworkGate.shared.state.isReady else {
+            handleNetworkChange()
+            return
+        }
         FixedLocationSessionController.shared.stop()
+        networkBlock = nil
         reconnectAttempt = 0
         lastError = nil
         phase = .running
+        lastTickAt = Date()
+        updateLiveActivity(force: true)
+    }
+
+    /// Losing Wi-Fi pauses movement without repeatedly retrying the device tunnel.
+    /// Reconnecting to Wi-Fi leaves resuming under the user's control.
+    func handleNetworkChange() {
+        let state = LocationNetworkGate.shared.state
+        if state.isReady {
+            guard networkBlock != nil else { return }
+            networkBlock = nil
+            lastError = nil
+            if phase == .failed { phase = .idle }
+            updateLiveActivity(force: true)
+            return
+        }
+        guard let message = state.blockingMessage, networkBlock != state,
+              phase == .running || phase == .reconnecting || phase == .paused else { return }
+        networkBlock = state
+        reconnectTask?.cancel()
+        reconnectTask = nil
+        reconnectAttempt = 0
+        FixedLocationSessionController.shared.stop()
+        phase = .paused
+        lastError = message
         lastTickAt = Date()
         updateLiveActivity(force: true)
     }
@@ -235,6 +280,7 @@ final class WalkingSessionController: ObservableObject {
     }
 
     func restoreRealLocation() async {
+        networkBlock = nil
         FixedLocationSessionController.shared.stop()
         if isActive {
             await stop(reason: "恢复真实定位".localized, holdLocation: false)
@@ -279,6 +325,10 @@ final class WalkingSessionController: ObservableObject {
 
     /// 从后台回到前台时立即验证一次设备通道，不必等下一个定时 tick 才发现掉线。
     func refreshAfterForeground() {
+        guard LocationNetworkGate.shared.state.isReady else {
+            handleNetworkChange()
+            return
+        }
         guard phase == .running,
               !isSendingLocation,
               let coordinate = currentCoordinate else { return }
@@ -289,11 +339,16 @@ final class WalkingSessionController: ObservableObject {
             let code = await sendLocation(coordinate)
             guard generation == sendingGeneration else { return }
             isSendingLocation = false
-            handleLocationResult(code)
+            await handleLocationResult(code)
         }
     }
 
     private func tick() {
+        guard phase == .running else { return }
+        guard LocationNetworkGate.shared.state.isReady else {
+            handleNetworkChange()
+            return
+        }
         guard phase == .running,
               let config,
               let baseCoordinate = currentCoordinate,
@@ -304,18 +359,24 @@ final class WalkingSessionController: ObservableObject {
         let now = Date()
         let delta = min(max(now.timeIntervalSince(lastTickAt ?? now), 0.25), 2.5)
         lastTickAt = now
-        elapsedSeconds += delta
 
         let speedMultiplier = updateSpeedVariation(config: config, delta: delta)
         let currentSpeedMetersPerSecond = config.speedMetersPerSecond * speedMultiplier
         currentSpeedKilometersPerHour = currentSpeedMetersPerSecond * 3.6
-        let traveled = currentSpeedMetersPerSecond * delta
+        let requestedDistance = currentSpeedMetersPerSecond * delta
         let nextBase: CLLocationCoordinate2D
-        if config.mode == .route, routeCoordinates.count > 1 {
-            nextBase = advanceAlongRoute(from: baseCoordinate, distance: traveled)
+        let traveled: CLLocationDistance
+        let reachedRouteEnd: Bool
+        if config.mode == .route, let advance = routeTraversal?.advance(distance: requestedDistance) {
+            nextBase = advance.coordinate
+            traveled = advance.distance
+            reachedRouteEnd = advance.reachedEnd
         } else {
-            nextBase = MovementMath.destination(from: baseCoordinate, distance: traveled, bearingDegrees: headingDegrees)
+            nextBase = MovementMath.destination(from: baseCoordinate, distance: requestedDistance, bearingDegrees: headingDegrees)
+            traveled = requestedDistance
+            reachedRouteEnd = false
         }
+        elapsedSeconds += reachedRouteEnd ? traveled / max(currentSpeedMetersPerSecond, 0.001) : delta
         distanceMeters += traveled
 
         let exactSteps = (traveled / max(config.strideMeters, 0.2)) + pendingFractionalSteps
@@ -324,7 +385,8 @@ final class WalkingSessionController: ObservableObject {
         estimatedSteps += wholeSteps
 
         updateJitter(delta: delta)
-        let simulatedCoordinate = MovementMath.offset(
+        // The last command targets the exact endpoint before handing it to fixed hold.
+        let simulatedCoordinate = reachedRouteEnd ? nextBase : MovementMath.offset(
             nextBase,
             eastMeters: jitterEast,
             northMeters: jitterNorth
@@ -337,11 +399,9 @@ final class WalkingSessionController: ObservableObject {
         Task {
             guard generation == sendingGeneration else { return }
             let code = await sendLocation(simulatedCoordinate)
-            await MainActor.run {
-                guard self.generation == sendingGeneration else { return }
-                self.isSendingLocation = false
-                self.handleLocationResult(code)
-            }
+            guard self.generation == sendingGeneration else { return }
+            self.isSendingLocation = false
+            await self.handleLocationResult(code)
         }
 
         if now.timeIntervalSince(batchStartedAt ?? now) >= 30 {
@@ -350,7 +410,7 @@ final class WalkingSessionController: ObservableObject {
             enqueueHealthBatch(from: batchStart, to: now)
         }
 
-        if hasReachedGoal(config) {
+        if !reachedRouteEnd, hasReachedGoal(config) {
             Task { await stop(reason: "目标完成".localized) }
         }
     }
@@ -434,8 +494,7 @@ final class WalkingSessionController: ObservableObject {
             )
         }
         config = nil
-        routeCoordinates = []
-        routeIsLoop = false
+        routeTraversal = nil
         sessionID = nil
         startedAt = nil
         lastTickAt = nil
@@ -455,12 +514,23 @@ final class WalkingSessionController: ObservableObject {
         updateLiveActivity(force: true)
     }
 
-    private func handleLocationResult(_ code: Int32) {
+    private func handleLocationResult(_ code: Int32) async {
         guard phase == .running, config != nil else { return }
-        guard code != 0 else { return }
-        if let message = OfflineBindingMessages.message(for: code) {
+        if code == 0 {
+            guard LocationNetworkGate.shared.state.isReady else {
+                handleNetworkChange()
+                return
+            }
+            if routeTraversal?.hasReachedEnd == true {
+                await stop(reason: "已到达路线终点".localized)
+            }
+            return
+        }
+        if let message = LocationNetworkGate.message(for: code) ?? OfflineBindingMessages.message(for: code) {
+            networkBlock = code == LocationNetworkGate.blockedStatus ? LocationNetworkGate.shared.state : nil
             phase = .paused
             lastError = message
+            handleNetworkChange()
             updateLiveActivity(force: true)
             return
         }
@@ -484,6 +554,10 @@ final class WalkingSessionController: ObservableObject {
 
             for (index, delay) in SessionReconnectPolicy.retryDelaysSeconds.enumerated() {
                 guard !Task.isCancelled, self.config != nil else { return }
+                guard LocationNetworkGate.shared.state.isReady else {
+                    self.handleNetworkChange()
+                    return
+                }
                 self.reconnectAttempt = index + 1
 
                 if !EmbeddedVPNService.shared.status.isConnected {
@@ -502,12 +576,30 @@ final class WalkingSessionController: ObservableObject {
 
                 latestErrorCode = await self.sendLocation(coordinate)
                 guard !Task.isCancelled, self.config != nil else { return }
+                if let message = LocationNetworkGate.message(for: latestErrorCode) {
+                    self.networkBlock = LocationNetworkGate.shared.state
+                    self.reconnectTask = nil
+                    self.reconnectAttempt = 0
+                    self.phase = .paused
+                    self.lastError = message
+                    self.handleNetworkChange()
+                    self.updateLiveActivity(force: true)
+                    return
+                }
                 if latestErrorCode == 0 {
+                    guard LocationNetworkGate.shared.state.isReady else {
+                        self.handleNetworkChange()
+                        return
+                    }
                     self.reconnectTask = nil
                     self.reconnectAttempt = 0
                     self.lastError = nil
                     self.lastTickAt = Date()
                     self.phase = .running
+                    if self.routeTraversal?.hasReachedEnd == true {
+                        await self.stop(reason: "已到达路线终点".localized)
+                        return
+                    }
                     self.updateLiveActivity(force: true)
                     SessionNotificationService.shared.notifyReconnected()
                     LogManager.shared.addInfoLog("位置连接已自动恢复")
@@ -612,43 +704,6 @@ final class WalkingSessionController: ObservableObject {
         let smoothing = min(delta / 4, 0.35)
         jitterEast += (jitterTargetEast - jitterEast) * smoothing
         jitterNorth += (jitterTargetNorth - jitterNorth) * smoothing
-    }
-
-    private func advanceAlongRoute(
-        from start: CLLocationCoordinate2D,
-        distance: CLLocationDistance
-    ) -> CLLocationCoordinate2D {
-        var current = start
-        var remaining = distance
-        var safetyCounter = 0
-
-        while remaining > 0.001, safetyCounter < routeCoordinates.count * 2 {
-            safetyCounter += 1
-            let target = routeCoordinates[routeTargetIndex]
-            let segmentDistance = CLLocation(latitude: current.latitude, longitude: current.longitude)
-                .distance(from: CLLocation(latitude: target.latitude, longitude: target.longitude))
-
-            if segmentDistance > remaining {
-                let bearing = MovementMath.bearing(from: current, to: target)
-                current = MovementMath.destination(from: current, distance: remaining, bearingDegrees: bearing)
-                remaining = 0
-            } else {
-                current = target
-                remaining -= segmentDistance
-                if routeIsLoop {
-                    routeTargetIndex = (routeTargetIndex + 1) % routeCoordinates.count
-                } else if routeDirection > 0, routeTargetIndex == routeCoordinates.count - 1 {
-                    routeDirection = -1
-                    routeTargetIndex = max(routeCoordinates.count - 2, 0)
-                } else if routeDirection < 0, routeTargetIndex == 0 {
-                    routeDirection = 1
-                    routeTargetIndex = min(1, routeCoordinates.count - 1)
-                } else {
-                    routeTargetIndex += routeDirection
-                }
-            }
-        }
-        return current
     }
 
 }

@@ -838,6 +838,9 @@ private enum LocationSimulationState {
             return LocationController(location: controller, server: remoteServer)
         },
         set: { controller, latitude, longitude in
+            guard LocationNetworkGate.shared.state.isReady else {
+                throw LocationCommandError(status: LocationNetworkGate.blockedStatus)
+            }
             if let error = location_simulation_set(controller.location, latitude, longitude) {
                 idevice_error_free(error)
                 throw LocationCommandError(status: LocationSimulationStatus.locationSet)
@@ -911,12 +914,18 @@ private func locationStatus(for error: Error, fallback: Int32) -> Int32 {
 }
 
 func simulate_location(_ deviceIP: String, _ latitude: Double, _ longitude: Double, _ pairingFile: String) -> Int32 {
-    DeveloperConnectionGate.performLocationCommand(clear: false) {
+    guard LocationNetworkGate.shared.state.isReady else { return LocationNetworkGate.blockedStatus }
+    return DeveloperConnectionGate.performLocationCommand(clear: false) {
         do {
             try LocationSimulationState.session.set(
                 identity: locationConnectionIdentity(deviceIP, pairingFile),
                 latitude: latitude, longitude: longitude,
-                connect: { try createLocationTunnel(deviceIP: deviceIP, pairingFile: pairingFile) }
+                connect: {
+                    guard LocationNetworkGate.shared.state.isReady else {
+                        throw LocationCommandError(status: LocationNetworkGate.blockedStatus)
+                    }
+                    return try createLocationTunnel(deviceIP: deviceIP, pairingFile: pairingFile)
+                }
             )
             return LocationSimulationStatus.ok
         } catch { return locationStatus(for: error, fallback: LocationSimulationStatus.locationSet) }

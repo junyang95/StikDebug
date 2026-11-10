@@ -85,7 +85,21 @@ final class WaypointRoutePlanner: ObservableObject {
     @Published var isLoop = false {
         didSet {
             guard isLoop != oldValue else { return }
+            if isLoop {
+                routeEndBehavior = .loop
+            } else if routeEndBehavior == .loop {
+                routeEndBehavior = isPastedRoute ? .stopAtEnd : .reverse
+            }
             refreshClosingLeg()
+        }
+    }
+
+    @Published private(set) var isPastedRoute = false
+    @Published var routeEndBehavior: RouteEndBehavior = .reverse {
+        didSet {
+            guard routeEndBehavior != oldValue else { return }
+            let shouldLoop = routeEndBehavior == .loop
+            if isLoop != shouldLoop { isLoop = shouldLoop }
         }
     }
 
@@ -150,7 +164,8 @@ final class WaypointRoutePlanner: ObservableObject {
     /// 不含闭环补线的原始主体路径，保存精确轨迹时使用；载入后再按 isLoop 重建闭环，
     /// 避免把旧闭环存进主体后又额外补一次。
     var sourceCoordinates: [CLLocationCoordinate2D] {
-        flattenedCoordinates(from: legs)
+        if isPastedRoute { return waypoints.map(\.coordinate) }
+        return flattenedCoordinates(from: legs)
     }
 
     private func flattenedCoordinates(from routeLegs: [RouteLeg]) -> [CLLocationCoordinate2D] {
@@ -216,7 +231,7 @@ final class WaypointRoutePlanner: ObservableObject {
     }
 
     func removeLast() {
-        guard !waypoints.isEmpty else { return }
+        guard !isImported, !waypoints.isEmpty else { return }
         waypoints.removeLast()
         if let leg = legs.popLast() {
             planningTasks.removeValue(forKey: leg.id)?.cancel()
@@ -231,7 +246,9 @@ final class WaypointRoutePlanner: ObservableObject {
         legs = []
         closingLeg = nil
         importedName = nil
+        isPastedRoute = false
         if isLoop { isLoop = false }
+        routeEndBehavior = .reverse
     }
 
     /// 载入 GPX/KML/JSON 导入的轨迹。文件本身就是完整路径，整条直接采用，
@@ -252,6 +269,30 @@ final class WaypointRoutePlanner: ObservableObject {
             )
         ]
         importedName = name
+        return true
+    }
+
+    /// A pasted list is an ordered set of stops, not a dense recorded track.
+    /// Preserve each original point for numbering/saving and let the session
+    /// interpolate between them at the configured speed without road planning.
+    @discardableResult
+    func loadPastedCoordinates(
+        _ coordinates: [CLLocationCoordinate2D],
+        name: String,
+        endBehavior: RouteEndBehavior = .stopAtEnd
+    ) -> Bool {
+        guard coordinates.count > 1,
+              coordinates.allSatisfy(CLLocationCoordinate2DIsValid),
+              let first = coordinates.first,
+              coordinates.contains(where: { !isSameCoordinate(first, $0) }) else { return false }
+
+        clear()
+        isPastedRoute = true
+        importedName = name
+        waypoints = coordinates.map { RouteWaypoint(coordinate: $0) }
+        legs = [RouteLeg(id: UUID(), coordinates: coordinates,
+                        distance: Self.distanceAlong(coordinates), status: .imported)]
+        routeEndBehavior = endBehavior
         return true
     }
 
@@ -299,6 +340,13 @@ final class WaypointRoutePlanner: ObservableObject {
               canLoop,
               let first = waypoints.first,
               let last = waypoints.last else {
+            return
+        }
+
+        if isPastedRoute {
+            let coordinates = [last.coordinate, first.coordinate]
+            closingLeg = RouteLeg(id: UUID(), coordinates: coordinates,
+                                  distance: Self.distanceAlong(coordinates), status: .imported)
             return
         }
 

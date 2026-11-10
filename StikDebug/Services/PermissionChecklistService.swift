@@ -207,6 +207,11 @@ final class PermissionChecklistService: NSObject, ObservableObject, CLLocationMa
     }
 
     private func updateNetworkStatus(_ path: Network.NWPath) {
+        let networkState = LocationNetworkState(path: path)
+        if networkState == .cellular {
+            set(.warning(networkState.blockingMessage ?? ""), for: .network)
+            return
+        }
         guard path.status == .satisfied else {
             let message: String
             switch path.unsatisfiedReason {

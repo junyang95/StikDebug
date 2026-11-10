@@ -34,9 +34,9 @@ struct PreflightChecklistView: View {
                 Label("运行环境", systemImage: "checklist")
                     .font(.headline)
                 Spacer()
-                if deviceSetupEnabled, service.isRefreshing {
+                if deviceSetupEnabled, service.locationNetworkState.isReady, service.isRefreshing {
                     ProgressView()
-                } else if deviceSetupEnabled {
+                } else if deviceSetupEnabled, service.locationNetworkState.isReady {
                     Button("检查") {
                         Task { await service.refresh() }
                     }
@@ -45,7 +45,11 @@ struct PreflightChecklistView: View {
                 }
             }
 
-            if deviceSetupEnabled {
+            if let message = service.locationNetworkState.blockingMessage {
+                let item = PreflightItem(kind: .wifi, status: .warning(message))
+                environmentRow(item)
+                environmentAction(for: item)
+            } else if deviceSetupEnabled {
                 ForEach(service.items) { item in
                     VStack(alignment: .leading, spacing: 8) {
                         if item.kind == .ddi {
@@ -163,7 +167,7 @@ struct PreflightChecklistView: View {
         switch item.kind {
         case .wifi:
             actionCard {
-                Text("下一步：连接和电脑同一网络的 Wi‑Fi。")
+                Text("下一步：连接 Wi-Fi 或其他设备的热点后，再使用模拟定位。")
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 primaryActionButton("打开 Wi‑Fi 设置", systemImage: "wifi") {
@@ -301,10 +305,13 @@ struct PreflightChecklistView: View {
     }
 
     private func openWiFiSettings() {
-        if let wifiURL = URL(string: "App-Prefs:root=WIFI") {
-            openURL(wifiURL)
-        } else if let settingsURL = URL(string: UIApplication.openSettingsURLString) {
+        guard let settingsURL = URL(string: UIApplication.openSettingsURLString) else { return }
+        guard let wifiURL = URL(string: "App-Prefs:root=WIFI") else {
             openURL(settingsURL)
+            return
+        }
+        openURL(wifiURL) { accepted in
+            if !accepted { openURL(settingsURL) }
         }
     }
 

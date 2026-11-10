@@ -131,15 +131,19 @@ struct LocationLibraryView: View {
                             dismiss()
                         } label: {
                             HStack(spacing: 12) {
-                                libraryIcon(route.preservesExactPath ? "scribble.variable" : "figure.walk.motion")
+                                libraryIcon(route.isPastedRoute ? "list.number" : route.preservesExactPath ? "scribble.variable" : "figure.walk.motion")
                                 VStack(alignment: .leading, spacing: 4) {
                                     Text(route.name)
                                         .font(.subheadline.weight(.semibold))
                                         .foregroundStyle(.primary)
                                     HStack(spacing: 6) {
                                         Text(String(format: "%d 个点".localized, route.points.count))
-                                        if route.preservesExactPath { Text("原始轨迹".localized) }
-                                        if route.isLoop { Text("闭环".localized) }
+                                        if route.isPastedRoute {
+                                            Text(route.routeEndBehavior.title)
+                                        } else {
+                                            if route.preservesExactPath { Text("原始轨迹".localized) }
+                                            if route.isLoop { Text("闭环".localized) }
+                                        }
                                         Text(route.createdAt, format: .dateTime.year().month().day())
                                     }
                                     .font(.caption)
